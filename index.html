@@ -933,7 +933,7 @@ function updateFishing(dt){
       if(F.school&&F.t>SIM.TUNE.minBiteTime)for(const e of FAI.stepSchool(F.school,L,dt,{vis:SIM.underwaterVis(lightLevel(),envNow(F.spot).turb)})){
         // 小さなアタリは感度の低いロッドだと気づけない
         if(e.type==='short'&&rnd()>clamp(.35+rodOf().sensitivity/120,.4,1))continue;
-        if(e.type==='bite'||e.type==='short'){id=e.id;F.short=e.type==='short';F.biteSize=e.size;F.biteStr=e.strength;break;}
+        if(e.type==='bite'||e.type==='short'){id=e.id;F.short=e.type==='short';F.biteSize=e.size;F.biteStr=e.strength;F.biteBeh=e.beh;break;}
         // 見えるのは水面近くの気配だけ（魚の位置は分からない）
         const p=lurePos();
         if(e.type==='chase'&&e.shallow){ripple(p[0]+.6,p[1],.9,.6);if(!S.tip.chase){S.tip.chase=1;toast('ルアーの後ろに魚の気配… 追ってきている');}}
@@ -943,8 +943,8 @@ function updateFishing(dt){
       SIM.stepLure(L,dt);
       if(F.cand.tet&&rnd()<dt*.01){snag('根掛かりした…（仕掛けがテトラの間に入った）');return;}
       if(F.t>=F.biteAt)id=pickFish();}
-    if(id){const f=FISH[id];F.fish=id;F.size=F.school&&F.biteSize?F.biteSize:sizeFor(id);F.biteSize=0;if(!F.school){F.short=false;F.biteStr=1;}F.wkg=f.a*Math.pow(F.size,3)/1000;
-      F.P=Math.max(.25,.3+F.wkg*1.05*(f.ff||1)*(f.blue?1.15:1));F.slackBite=lureWaitOrBite()&&F.lure.mode==='fall';{const rod=rodOf(),pe=rod.playerEffect||{};F.biteWin=(F.short?.5:1.05)*(pe.biteSignalMultiplier||1)*(.9+rod.sensitivity/500);}
+    if(id){const f=FISH[id];F.fish=id;F.size=F.school&&F.biteSize?F.biteSize:sizeFor(id);F.biteSize=0;if(!F.school){F.short=false;F.biteStr=1;F.biteBeh=null;}F.wkg=f.a*Math.pow(F.size,3)/1000;
+      F.P=Math.max(.25,.3+F.wkg*1.05*(f.ff||1)*(f.blue?1.15:1));F.slackBite=lureWaitOrBite()&&F.lure.mode==='fall';{const rod=rodOf(),pe=rod.playerEffect||{};F.biteWin=(F.short?.5:1.05)*(pe.biteSignalMultiplier||1)*(.9+rod.sensitivity/500)*(F.biteBeh==='hug'||F.biteBeh==='hold'?1.6:1);}
       F.st='bite';F.t=0;F.reelHold=false;buzz(F.short?12:Math.round(25+30*F.biteStr));SND.play(F.short?'short':'bite',{strength:F.biteStr||1});biteFx(F.short?.4:.8,.5);}
     else if(F.t>15&&!F.noFishTip&&F.cand.sum<=0){F.noFishTip=true;toast('アタリがない… この仕掛けで狙える魚がいないかも');}
     return;}
@@ -1040,7 +1040,7 @@ function updUI(){
       if(SIM.isLureBait(L.bait)){const md=SIM.lureState(L);Tt=(F.nabura?'ナブラ直撃！ ':'')+`ルアー ${L.rig.move==='top'?'水面':L.depth.toFixed(1)+'m'}・${MODE_LABEL[md]||''}`+(md==='retrieve'?` ${S.spd.toFixed(1)}m/s`:'');Sb=`水深 ${D.toFixed(1)}m・${bt}・残り ${Math.round(L.dist)}m・潮 ${curLabel(L.cur)}`+(L.weeded?'・海藻付き':'');}
       else{Tt=F.nabura?'ナブラ直撃！':'アタリを待っています';Sb=`${BAIT[S.bait].n}・${L.kind==='float'?`タナ ${L.depth.toFixed(1)}m`:L.onBottom?`底 ${D.toFixed(1)}m`:`沈下中 ${L.depth.toFixed(1)}m`}・${bt}・${Math.round(F.d0)}m先`;}}
     else if(F.st==='fight'){const rk=F.cand&&F.cand.tet&&FISH[F.fish].rock;Tt='ファイト中';Sb=rk?'テトラに潜られる前に巻き切れ':'テンションが赤になったら指を離す';warn=!!rk;}
-    else if(F.st==='bite'){Tt=F.short?'コツッ（小さなアタリ）':'アタリ！';Sb=F.short?'掛かりにくい… 合わせるならすぐ':'すぐにボタンをタップ';}
+    else if(F.st==='bite'){Tt=F.short?'コツッ（小さなアタリ）':F.biteBeh==='hug'?'イカが抱いた！（重みが乗った）':F.biteBeh==='hold'?'タコが乗った！':'アタリ！';Sb=F.short?'掛かりにくい… 合わせるならすぐ':'すぐにボタンをタップ';}
   }else if(nearSpot){const sp=nearSpot;Tt=sp.n;Sb=(sp.hours?(spotOpen(sp)?`営業中 ${sp.hours[0]}:00〜${sp.hours[1]}:00`:`営業時間外（${sp.hours[0]}:00〜${sp.hours[1]}:00）`):'岸壁の公園')+(sp.tetra?'・岸際にテトラ帯':'')+(N&&N.spot===sp?'・沖にナブラ！':'')+(()=>{const E=envNow(sp);return`・${turbLabel(E.turb)}・潮 ${curLabel(E.cur)}`;})();warn=!spotOpen(sp);}
   const ik=Tt+Sb+warn;if(info._k!==ik){info._k=ik;info.hidden=!Tt;$('infoT').textContent=Tt;$('infoS').textContent=Sb;info.classList.toggle('warn',warn);}
   if(F.st==='fight'){const lim=F.lineKg,r=F.ten/lim,sl=F.fg&&F.fg.slipping;$('tens').style.width=clamp(r/1.15*100,0,100)+'%';$('tens').dataset.hi=r>.85?'1':'0';

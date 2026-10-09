@@ -3,7 +3,13 @@
      cruise（通常遊泳）→ notice（ルアー発見）→ approach（接近）→ chase（追尾）→ bite（バイト）/ short（ショートバイト）
                                                           ↘ refuse（見切り）→ wary（警戒）/ flee（逃走） ↘ giveup（追いつけず見失う）
    座標：x = 釣り人からの水平距離（ルアーの dist と同じ）、y = 左右、z = 深さ（下向き正）。単位は m, 秒, m/s。
-   確率は使うが、距離・深さの差・速さ・操作の種類・活性・警戒心で決まる「起こりやすさ（1秒あたり）」から引く。 */
+   確率は使うが、距離・深さの差・速さ・操作の種類・活性・警戒心で決まる「起こりやすさ（1秒あたり）」から引く。
+   段階7：魚種ごとの行動（beh）
+     school … 青物は群れで回遊し、1匹が追うと群れの仲間も競って追う
+     ambush … ヒラメ・マゴチ・根魚は底でじっと待ち伏せ、真上を通るルアーに下から一気に襲いかかる（長くは追わない）
+     hug    … イカはエギに抱きつく（アタリは重みが乗るだけで、合わせられる時間が長い）
+     hold   … タコは底で止まったエギに乗る（底で止めないと乗らない）
+     nibble … タチウオは尾をかじるようなショートバイトが多い */
 (function(root){
 'use strict';
 const SIM=root&&root.HamaSim||(typeof require==='function'?require('./fishing-sim.js'):null);
@@ -14,17 +20,17 @@ const clamp=(v,a,b)=>v<a?a:v>b?b:v;
    caution: 警戒心（0〜1）、maxRise: 底から何mまで浮いて追うか（底の魚）、trig: 食いのきっかけへの反応の強さ、
    fallOnly: フォール中・止めたときにしか抱かない（イカ）、school: 群れで回る */
 const BASE={
-  blue:{vision:9,swim:.7,burst:3.2,pref:1.4,caution:.3,school:true,trig:{jerk:1.8,twitch:1.3,fast:1.5,fall:1.1,stop:.8,bottom:.6}},
+  blue:{beh:'school',vision:9,swim:.7,burst:3.2,pref:1.4,caution:.3,school:true,trig:{jerk:1.8,twitch:1.3,fast:1.5,fall:1.1,stop:.8,bottom:.6}},
   bottom:{vision:4,swim:.25,burst:1.8,pref:.35,caution:.45,maxRise:2.5,trig:{jerk:1,twitch:1.3,fast:.4,fall:1.6,stop:1.2,bottom:1.6}},
   general:{vision:5,swim:.4,burst:2.2,pref:.7,caution:.55,trig:{jerk:1,twitch:1.4,fast:.7,fall:1.3,stop:1.2,bottom:1}},
-  squid:{vision:5,swim:.35,burst:1.6,pref:0,caution:.4,fallOnly:true,trig:{jerk:.6,twitch:.8,fast:.2,fall:2.6,stop:1.6,bottom:.6}}};
+  squid:{beh:'hug',vision:5,swim:.35,burst:1.6,pref:0,caution:.4,fallOnly:true,trig:{jerk:.6,twitch:.8,fast:.2,fall:2.6,stop:1.6,bottom:.6}}};
 const OVR={
   seabass:{base:'general',vision:7,swim:.6,burst:3,pref:.9,caution:.55,trig:{jerk:1.3,twitch:1.6,fast:.9,fall:1.2,stop:1.4,bottom:.8}},
-  hirame:{base:'bottom',vision:6,burst:2.8,pref:.8,maxRise:5,trig:{jerk:1.3,twitch:1.2,fast:.9,fall:1.4,stop:1.1,bottom:1.2}},
-  magochi:{base:'bottom',vision:5,burst:2.4,pref:.6,maxRise:3},
-  tachiuo:{base:'blue',vision:6,pref:.8,trig:{jerk:1.5,twitch:1.3,fast:1,fall:1.6,stop:1.1,bottom:.5}},
-  madako:{base:'bottom',vision:2.5,swim:.1,burst:.6,pref:.1,maxRise:1,trig:{jerk:.5,twitch:.8,fast:.2,fall:1,stop:1.3,bottom:2.6}},
-  kurodai:{caution:.75},mebaru:{base:'general',vision:4,pref:.4,caution:.4},inada:{burst:3.6},warasa:{burst:3.8,caution:.4}};
+  hirame:{beh:'ambush',base:'bottom',vision:6,burst:2.8,pref:.8,maxRise:5,trig:{jerk:1.3,twitch:1.2,fast:.9,fall:1.4,stop:1.1,bottom:1.2}},
+  magochi:{beh:'ambush',base:'bottom',vision:5,burst:2.4,pref:.6,maxRise:3},
+  tachiuo:{nibble:.25,base:'blue',vision:6,pref:.8,trig:{jerk:1.5,twitch:1.3,fast:1,fall:1.6,stop:1.1,bottom:.5}},
+  madako:{beh:'hold',base:'bottom',vision:2.5,swim:.1,burst:.6,pref:.1,maxRise:1,trig:{jerk:.5,twitch:.8,fast:.2,fall:1,stop:1.3,bottom:2.6}},
+  kurodai:{caution:.75},kasago:{beh:'ambush',base:'bottom'},murasoi:{beh:'ambush',base:'bottom'},ainame:{beh:'ambush',base:'bottom'},mebaru:{base:'general',vision:4,pref:.4,caution:.4},inada:{burst:3.6},warasa:{burst:3.8,caution:.4}};
 function speciesParams(id){const st=SIM.styleOf(id),o=OVR[id]||{},b=BASE[o.base||st]||BASE.general;
   return Object.assign({},b,o,{trig:Object.assign({},b.trig,o.trig||{})});}
 
@@ -32,7 +38,8 @@ function speciesParams(id){const st=SIM.styleOf(id),o=OVR[id]||{},b=BASE[o.base|
 const AI={
   interestGain:1.1,interestDecay:.35,noticeTime:.5,strikeBase:.55,refuseBase:.12,unnaturalMul:3,
   chaseTooLong:6,feetDist:3,giveupTime:1.4,waryTime:15,shortBase:.12,respawnEvery:6,vertVision:1.6,
-  lateralLine:.7,spreadY:6,minCount:3,aware:3,drift:.35};
+  lateralLine:.7,spreadY:6,minCount:3,aware:3,drift:.35,
+  groupSize:5,groupSpread:2.5,rivalry:.6,ambushChase:2.5};
 
 function pickWeighted(list,rng){let s=0;for(const[,w]of list)s+=w;let r=rng()*s;for(const[id,w]of list){r-=w;if(r<=0)return id;}return list[list.length-1][0];}
 
@@ -47,9 +54,14 @@ function spawn(s,initial){const o=s.opt,rng=s.rng;if(!o.cand.length)return null;
   // 底の魚は好きな底質（岩・砂・泥・海藻）の上にいやすい（段階6）
   let x=px();if(o.bottomAt&&SIM.BOTTOM_PREF[id])for(let k=0;k<4&&SIM.bottomFactor(id,o.bottomAt(x))<1;k++)x=px();const D=o.depthAt(x);const[a,b]=SIM.layerRange(SIM.LAYER[id]||'mid',D);
   let z=a+(b-a)*rng();if(o.nabura&&p.school&&rng()<.7){z=Math.min(z,3);}
+  // 群れ：同じ魚種の群れに空きがあれば、その群れの近くに入る
+  let g=null;if(p.beh==='school'){s.groups=s.groups||[];g=s.groups.find(q=>q.id===id&&q.n<AI.groupSize);
+    if(!g){g={id,cx:x,cy:(rng()-.5)*2*AI.spreadY,cz:z,heading:rng()*6.283,n:0,k:s.groups.length};s.groups.push(g);}
+    g.n++;x=clamp(g.cx+(rng()-.5)*2*AI.groupSpread,1,o.maxDist+15);z=clamp(g.cz+(rng()-.5)*1.5,.3,D);}
   const f={n:s.nextId++,id,p,x,y:(rng()-.5)*2*AI.spreadY,z,hx:x,state:'cruise',interest:0,tState:0,lostT:0,fastT:0,wary:0,
     act:clamp((o.activity||1)*(.6+.8*rng())*(o.nabura&&p.school?1.8:1),.1,2.5),caution:clamp(p.caution*(.75+.5*rng())*(o.cautionMul||1),0,1),
-    size:o.sizeOf?o.sizeOf(id,rng):20,heading:rng()*6.283};
+    size:o.sizeOf?o.sizeOf(id,rng):20,heading:rng()*6.283,g,ox:(rng()-.5)*2*AI.groupSpread,oy:(rng()-.5)*2*AI.groupSpread,px:x,py:0};
+  if(g)f.y=clamp(g.cy+f.oy,-AI.spreadY*1.5,AI.spreadY*1.5);
   s.fish.push(f);return f;}
 
 /* ルアーの動きから「きっかけ」を読む。jerk/twitch=しゃくった直後、fall=沈んでいる、stop=急に止めた、bottom=着底、fast=速い */
@@ -67,7 +79,11 @@ function stepSchool(s,L,dt,env){const ev=[],rng=s.rng,o=s.opt;s.t+=dt;if(dt<=0||
   const light=env.vis!=null?env.vis:env.light==null?1:env.light;const c=lureCues(s,L,dt);
   const it=L.rig&&L.rig.item;const loud=it?(it.noiseLevel||0)/200+(it.actionIntensity||0)/300:0;
   const lx=L.dist,ly=SIM.lateral?SIM.lateral(L):L.side||0,lz=L.depth;s.lureX=lx;
-  for(const f of s.fish){if(f.gone)continue;const p=f.p;f.tState+=dt;
+  // 群れの中心はゆっくり回遊する（ルアーの気配があれば寄ってくる）
+  for(const g of s.groups||[]){g.heading+=(rng()-.5)*dt*.8;const sp=.5;g.cx+=Math.cos(g.heading)*sp*dt;g.cy+=Math.sin(g.heading)*sp*dt;
+    const hd=Math.hypot(lx-g.cx,ly-g.cy);if(hd>1&&hd<25&&!L.home){g.cx+=(lx-g.cx)/hd*.25*dt;g.cy+=(ly-g.cy)/hd*.25*dt;}
+    if(g.cx<2||g.cx>o.maxDist+15)g.heading=Math.PI-g.heading;if(Math.abs(g.cy)>AI.spreadY*1.5)g.heading=-g.heading;g.cx=clamp(g.cx,2,o.maxDist+15);g.cy=clamp(g.cy,-AI.spreadY*1.5,AI.spreadY*1.5);}
+  for(const f of s.fish){if(f.gone)continue;const p=f.p;f.tState+=dt;f.px=f.x;f.py=f.y;
     const dx=lx-f.x,dy=ly-f.y,dz=lz-f.z;const dist=Math.hypot(dx,dy,dz*AI.vertVision);
     // 気づく距離：目（明るさで変わる）＋ 側線（動いているルアーの波動。暗くても効く）
     const moving=c.speed>.2||c.fall;const range=Math.max(p.vision*(.45+.55*light),moving?p.vision*AI.lateralLine:0)*(1+loud)*(p.fallOnly&&c.fall?1.3:1);const sees=dist<range&&!L.home;
@@ -76,39 +92,48 @@ function stepSchool(s,L,dt,env){const ev=[],rng=s.rng,o=s.opt;s.t+=dt;if(dt<=0||
     if(f.wary>0){f.wary-=dt;f.interest=Math.min(f.interest,0);}
     switch(f.state){
       case'cruise':{// ふらふら泳ぐ。見えて魅力があれば興味が溜まる
-        f.heading+=(rng()-.5)*dt*1.5;f.x+=Math.cos(f.heading)*p.swim*.4*dt;f.y+=Math.sin(f.heading)*p.swim*.4*dt;
-        // 波動や光をうっすら感じる範囲（視界の数倍）なら、ルアーのいる方へ水平に寄っていく（深さは自分の泳層のまま）
-        const hd=Math.hypot(dx,dy);if(f.wary<=0&&hd>1&&hd<p.vision*AI.aware&&!L.home){const k=p.swim*AI.drift*dt/hd;f.x+=dx*k;f.y+=dy*k;}
+        if(f.g){moveToward(f,f.g.cx+f.ox,f.g.cy+f.oy,f.z,p.swim*1.2,dt,0);}
+        else if(p.beh==='ambush'){/* 待ち伏せ：底でじっとしている */}
+        else{f.heading+=(rng()-.5)*dt*1.5;f.x+=Math.cos(f.heading)*p.swim*.4*dt;f.y+=Math.sin(f.heading)*p.swim*.4*dt;
+          // 波動や光をうっすら感じる範囲（視界の数倍）なら、ルアーのいる方へ水平に寄っていく（深さは自分の泳層のまま）
+          const hd=Math.hypot(dx,dy);if(f.wary<=0&&hd>1&&hd<p.vision*AI.aware&&!L.home){const k=p.swim*AI.drift*dt/hd;f.x+=dx*k;f.y+=dy*k;}}
         f.x=clamp(f.x,1,o.maxDist+15);f.y=clamp(f.y,-AI.spreadY*1.5,AI.spreadY*1.5);
         if(sees&&f.wary<=0){f.interest+=dt*AI.interestGain*(appeal*f.act-f.caution*.6)*(1-dist/range*.5);if(f.interest>=1){f.state='notice';f.tState=0;}}
         else f.interest=Math.max(0,f.interest-dt*AI.interestDecay);break;}
-      case'notice':if(f.tState>AI.noticeTime){f.state='approach';f.tState=0;}break;
-      case'approach':{const sp=p.swim*(1+f.act);moveToward(f,lx,ly,lz,sp,dt,zMin);
+      case'notice':if(f.tState>(p.beh==='ambush'?.15:AI.noticeTime)){f.state='approach';f.tState=0;}break;
+      case'approach':{const sp=p.beh==='ambush'?p.burst:p.swim*(1+f.act);moveToward(f,lx,ly,lz,sp,dt,zMin);
         if(!sees){f.lostT+=dt;if(f.lostT>2){f.state='cruise';f.interest=.3;f.lostT=0;}}else f.lostT=0;
-        if(dist<2){f.state='chase';f.tState=0;f.fastT=0;ev.push({type:'chase',fish:f,shallow:lz<1.3});}break;}
+        if(dist<2){f.state='chase';f.tState=0;f.fastT=0;ev.push({type:'chase',fish:f,shallow:lz<1.3});
+          // 群れの仲間も競って追う（奪い合いで食いが立つ）
+          if(f.g)for(const m of s.fish)if(m!==f&&m.g===f.g&&m.state==='cruise'&&m.wary<=0){m.interest+=AI.rivalry;m.act=Math.min(2.5,m.act*1.1);}}break;}
       case'chase':{// 追尾：ルアーの少し後ろにつく。速すぎれば見失い、食うか見切るかを判断する
         const v=c.speed;moveToward(f,lx+.8,ly,lz,Math.min(p.burst,v+1),dt,zMin);
         if(v>p.burst*1.05)f.fastT+=dt;else f.fastT=Math.max(0,f.fastT-dt);
         if(f.fastT>AI.giveupTime){f.state='cruise';f.interest=.2;ev.push({type:'giveup',fish:f});break;}
         if(lz<zMin-.5&&p.maxRise){f.state='cruise';f.interest=.4;ev.push({type:'giveup',fish:f});break;}
+        if(p.beh==='ambush'&&f.tState>AI.ambushChase){f.state='wary';f.wary=AI.waryTime*.5;f.z=o.depthAt(f.x);ev.push({type:'giveup',fish:f});break;}
         // 食う起こりやすさ：活性 × きっかけ × 好む速さとの近さ × ルアーの魅力
         const speedFit=.4+.6*Math.exp(-Math.pow((v-p.pref)/(.5+p.pref),2));
         let strike=AI.strikeBase*f.act*trigMul(p,c)*speedFit*Math.min(1.6,appeal);
         if(p.fallOnly&&!(c.fall||c.stop||v<.25))strike*=.05;
+        // タコ：底で止まっていないエギには乗らない
+        if(p.beh==='hold'&&!(L.onBottom&&L.bottomT>.8))strike*=.03;
+        // 群れで追っているときは仲間に取られまいと食いが立つ
+        if(f.g&&s.fish.some(m=>m!==f&&m.g===f.g&&m.state==='chase'))strike*=1.4;
         // 見切る起こりやすさ：警戒心 × 不自然さ、長く追いすぎ、足元まで来た
         let refuse=AI.refuseBase*f.caution*(1+AI.unnaturalMul*c.unnatural)+(f.tState>AI.chaseTooLong?.25:0)+(lx<AI.feetDist?1.2:0);
         if(rng()<1-Math.exp(-strike*dt)){const lc=L.rig&&L.rig.sizeCm||8;
-          const pShort=clamp(AI.shortBase+f.caution*.25+(lc>f.size*.7?.25:0)-(f.act-1)*.1,.03,.85);
+          const pShort=clamp(AI.shortBase+(p.nibble||0)+f.caution*.25+(lc>f.size*.7?.25:0)-(f.act-1)*.1-(p.beh==='hug'||p.beh==='hold'?.1:0),.03,.85);
           const kind=rng()<pShort?'short':'bite';f.state='done';f.gone=true;
-          ev.push({type:kind,fish:f,id:f.id,size:f.size,strength:clamp(.4+f.act*.3+(kind==='bite'?.3:0)+(c.fall?.1:0),.2,1.3),cue:Object.keys(p.trig).find(k=>c[k])||'retrieve'});break;}
+          ev.push({type:kind,fish:f,id:f.id,size:f.size,beh:p.beh||null,strength:clamp(.4+f.act*.3+(kind==='bite'?.3:0)+(c.fall?.1:0),.2,1.3),cue:Object.keys(p.trig).find(k=>c[k])||'retrieve'});break;}
         if(rng()<1-Math.exp(-refuse*dt)){f.interest=-1;f.caution=Math.min(1,f.caution+.1);ev.push({type:'refuse',fish:f,near:lx<AI.feetDist+2,shallow:lz<1.3});
           if(c.unnatural>.5&&f.caution>.6){f.state='flee';f.tState=0;}else{f.state='wary';f.wary=AI.waryTime;f.tState=0;}}
         break;}
-      case'wary':f.x+=(f.x>lx?1:-1)*p.swim*dt*.5;if(f.wary<=0){f.state='cruise';f.wary=0;}break;
+      case'wary':if(p.beh==='ambush'){f.z=Math.min(o.depthAt(f.x),f.z+dt);}else f.x+=(f.x>lx?1:-1)*p.swim*dt*.5;if(f.wary<=0){f.state='cruise';f.wary=0;}break;
       case'flee':f.x+=p.burst*dt;f.z=Math.min(D,f.z+dt);if(f.tState>2){f.gone=true;ev.push({type:'flee',fish:f});}break;}
   }
   // いなくなった魚の代わりに、しばらくすると別の魚が回ってくる
-  s.fish=s.fish.filter(f=>!f.gone);s.respawnT-=dt;if(s.respawnT<=0){s.respawnT=AI.respawnEvery;if(s.fish.length<s.target)spawn(s,false);}
+  for(const f of s.fish)if(f.gone&&f.g)f.g.n--;s.fish=s.fish.filter(f=>!f.gone);s.respawnT-=dt;if(s.respawnT<=0){s.respawnT=AI.respawnEvery;if(s.fish.length<s.target)spawn(s,false);}
   return ev;}
 function moveToward(f,x,y,z,sp,dt,zMin){const dx=x-f.x,dy=y-f.y,dz=z-f.z,d=Math.hypot(dx,dy,dz)||1,k=Math.min(1,sp*dt/d);
   f.x+=dx*k;f.y+=dy*k;f.z=Math.max(zMin,f.z+dz*k);}

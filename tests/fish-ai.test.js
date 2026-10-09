@@ -32,7 +32,7 @@ test('近くで魅力的に動かすと、気づいて寄り、追尾する',()=
 
 test('魚の最高速より速く巻き続けると、追尾だけで見失う',()=>{
   // 中層のメジナ（最高速2.2m/s）の近くをゆっくり通して追わせてから、2.5m/sに上げる
-  const r=many(20,i=>cast({id:'mejina',style:'floating_minnow',seed:i,secs:16,ctrl:(t,L)=>({hold:true,reel:t<6?.5:2.5}),fishAt:{x:28,y:0,z:.8,caution:.2,act:.5}}));
+  const r=many(20,i=>cast({id:'mejina',style:'floating_minnow',seed:i,secs:16,ctrl:(t,L)=>({hold:true,reel:t<3?.5:2.5}),fishAt:{x:28,y:0,z:.8,caution:.2,act:.5}}));
   assert.ok(r.giveup>0,`giveup ${r.giveup}`);});
 
 test('アオリイカは巻き続けると抱かず、しゃくってフォールさせると抱く',()=>{
@@ -60,3 +60,22 @@ test('活性が高いほど食いやすく、夜（暗い）だと気づかれ�
 test('ルアーが足元まで来ると、追ってきた魚は見切りやすい',()=>{
   const r=many(30,i=>cast({id:'seabass',style:'floating_minnow',seed:i,secs:40,ctrl:()=>({hold:true,reel:.7}),fishAt:{x:8,y:0,z:1,act:.4}}));
   const near=r.refuse;assert.ok(near>0,`refuse near feet ${near}`);});
+
+/* ===== 段階7：魚種ごとの行動 ===== */
+test('青物は群れで固まって回遊する',()=>{const s=AI.createSchool({cand:[['saba',10]],activity:1,maxDist:40,depthAt,rng:mulberry(5),count:5});
+  const g=s.fish[0].g;assert.ok(g&&s.fish.every(f=>f.g===g),'同じ群れ');const xs=s.fish.map(f=>f.x);assert.ok(Math.max(...xs)-Math.min(...xs)<8);});
+
+test('待ち伏せの魚（ヒラメ）は底でじっとしていて、真上を通ると襲う',()=>{
+  const s=AI.createSchool({cand:[['hirame',10]],activity:1,maxDist:30,depthAt,rng:mulberry(2),count:1});const f=s.fish[0];Object.assign(f,{x:20,y:0,z:11.8});
+  const L=SIM.makeLure('lure',{waterDepth:DEPTH,bottomType:'sand',depthAt},{dist:40,tipH:4});L.depth=6;
+  for(let t=0;t<10;t+=1/30){SIM.stepLure(L,1/30,{hold:true,reel:0});AI.stepSchool(s,L,1/30,{light:1});}
+  assert.ok(Math.abs(f.x-20)<.01,'遠くのルアーには動かない');
+  const r=many(20,i=>cast({id:'hirame',style:'soft_shad',seed:i,secs:60,ctrl:(t,L)=>({hold:L.onBottom||L.depth>9,reel:.4}),fishAt:{x:26,y:0,z:11.8}}));
+  assert.ok(r.chase>5,`chase ${r.chase}`);});
+
+test('イカのアタリは「抱きつき」、タコは底で止めないと乗らない',()=>{
+  const sq=[];for(let i=1;i<=20;i++){const o=cast({id:'aoriika',style:'egi',seed:i,secs:25,ctrl:(t,L)=>{if(t>3&&Math.floor(t*30)%120===0)SIM.jerk(L);return{hold:false};},fishAt:{x:28,y:0,z:4}});for(const e of o.events)if(e.type==='bite'||e.type==='short')sq.push(e.beh);}
+  assert.ok(sq.length>0&&sq.every(b=>b==='hug'));
+  const moving=many(20,i=>cast({id:'madako',style:'egi',seed:i,secs:20,ctrl:()=>({hold:true,reel:.6}),fishAt:{x:24,y:0,z:11.8}}));
+  const still=many(20,i=>cast({id:'madako',style:'egi',seed:i,secs:40,ctrl:(t,L)=>({hold:false}),fishAt:{x:30,y:0,z:11.8}}));
+  assert.ok(still.any>moving.any,`still ${still.any} moving ${moving.any}`);});
