@@ -204,7 +204,7 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
 #mainBtn[data-s="bite"]{background:radial-gradient(circle,#fff3d6 0 41px,transparent 42px),#ff5a47;animation:bite2 .5s ease-in-out infinite alternate}
 #mainBtn[data-s="fight"]{background:radial-gradient(circle,rgba(255,255,255,.94) 0 41px,transparent 42px),conic-gradient(#49c1c4 calc(var(--p)*360deg),rgba(255,255,255,.28) 0)}
 @keyframes bite2{to{box-shadow:0 0 0 10px rgba(255,90,71,.35),0 8px 26px rgba(0,0,0,.32)}}
-#mainTxt small{font-weight:600;font-size:10px}
+#mainTxt small{font-weight:600;font-size:10px;white-space:nowrap;letter-spacing:-.02em}
 /* 釣り中の情報は画面の上側（指と重ならない） */
 #fight,#lureP{top:calc(238px + env(safe-area-inset-top,0px));bottom:auto;border-radius:16px}
 #fight{width:min(86vw,420px);padding:10px 14px 12px}
@@ -669,6 +669,55 @@ const EMISSIVE=[winMats.glass,winMats.apt,winMats.house];
 /* ===== 海と陸 ===== */
 const seaMat=new T.MeshPhongMaterial({color:0x2a7aa3,specular:0x9fb8c8,shininess:90,normalMap:seaNorm,normalScale:new T.Vector2(.5,.5)});
 const sea=new T.Mesh(new T.PlaneGeometry(90000,60000),seaMat);sea.rotation.x=-Math.PI/2;sea.position.set(-9000,0,10000);sea.receiveShadow=true;scene.add(sea);
+/* ===== 海面（標準・高品質）：近くはうねりで動く格子、遠くは平面。空の映り込み（フレネル）・太陽の照り返し・岸近くの浅い色と白波。
+   岸からの距離は「岸のマスク」（プレイヤーの周り約770m四方に陸を描いて縁をぼかしたテクスチャ）で求める。軽量モードは従来の海（seaMat） */
+// 海面用の法線マップ：向きのばらばらな波（整数の波数で端がつながる）を重ねた、格子模様の出ない波紋
+const seaWaveTex=(()=>{const W=256,c=document.createElement('canvas');c.width=c.height=W;const x=c.getContext('2d'),img=x.createImageData(W,W),R=mulberry(91),ws=[];
+  for(let i=0;i<46;i++){const k=2+Math.floor(R()*R()*22),a=R()*6.283;const kx=Math.round(Math.cos(a)*k),ky=Math.round(Math.sin(a)*k);if(!kx&&!ky)continue;ws.push([kx,ky,1/Math.pow(Math.hypot(kx,ky),1.15),R()*6.283]);}
+  const H=new Float32Array(W*W);for(let j=0;j<W;j++)for(let i=0;i<W;i++){let h=0;for(const[kx,ky,am,ph]of ws)h+=am*Math.sin(6.283*(kx*i+ky*j)/W+ph);H[j*W+i]=h;}
+  for(let j=0;j<W;j++)for(let i=0;i<W;i++){const dx=H[j*W+(i+1)%W]-H[j*W+(i-1+W)%W],dy=H[((j+1)%W)*W+i]-H[((j-1+W)%W)*W+i];const nx=-dx*4,ny=-dy*4,l=Math.hypot(nx,ny,1),o=(j*W+i)*4;
+    img.data[o]=(nx/l*.5+.5)*255;img.data[o+1]=(ny/l*.5+.5)*255;img.data[o+2]=Math.min(255,Math.max(0,(H[j*W+i]*.35+.5)*255));img.data[o+3]=255;}
+  x.putImageData(img,0,0);const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;t.anisotropy=8;return t;})();
+const shoreCv=document.createElement('canvas');shoreCv.width=shoreCv.height=512;const shoreTex=new T.CanvasTexture(shoreCv);shoreTex.wrapS=shoreTex.wrapT=T.ClampToEdgeWrapping;
+const SHORE={x:1e9,y:1e9,w:768};
+function drawShore(cx,cy){const c=shoreCv.getContext('2d'),W=512,k=W/SHORE.w;c.setTransform(1,0,0,1,0,0);c.fillStyle='#000';c.fillRect(0,0,W,W);c.setTransform(k,0,0,k,W/2-cx*k,W/2-cy*k);
+  const path=()=>{c.beginPath();poly2(c,LAND);poly2(c,DAIKOKU);c.moveTo(ISLE.x+ISLE.r,ISLE.y);c.arc(ISLE.x,ISLE.y,ISLE.r,0,7);poly2(c,SH.LAND);poly2(c,SH.ENOSHIMA);for(const r of RECTS)c.rect(r.x,r.y,r.w,r.h);};
+  c.lineJoin='round';for(const[w,a]of[[56,.08],[34,.1],[18,.14],[8,.2],[3,.3]]){path();c.strokeStyle=`rgba(255,255,255,${a})`;c.lineWidth=w;c.stroke();}
+  path();c.fillStyle='#fff';c.fill();SHORE.x=cx;SHORE.y=cy;shoreTex.needsUpdate=true;}
+const seaU={uTime:{value:0},uDeep:{value:new T.Color(0x2a7aa3)},uHor:{value:new T.Color()},uTop:{value:new T.Color()},uSun:{value:new V3(0,1,0)},uSunC:{value:new T.Color()},
+  uFogC:{value:new T.Color()},uFogN:{value:200},uFogF:{value:900},uAmp:{value:.15},uDisp:{value:1},uShore:{value:shoreTex},uShoreC:{value:new V3(0,0,768)},uNorm:{value:seaWaveTex},uDark:{value:0}};
+const SEA_VS=`uniform float uTime,uAmp,uDisp;uniform sampler2D uShore;uniform vec3 uShoreC;varying vec3 vW;varying vec3 vN;varying float vSh;
+float shoreAt(vec2 p){vec2 uv=(p-uShoreC.xy)/uShoreC.z+.5;if(uv.x<0.||uv.y<0.||uv.x>1.||uv.y>1.)return 0.;return texture2D(uShore,vec2(uv.x,1.-uv.y)).r;}
+void wave(vec2 d,float L,float A,float sp,vec2 p,inout float h,inout vec2 g){float k=6.2831/L;float f=k*dot(d,p)-sp*k*uTime;h+=A*sin(f);g+=A*k*cos(f)*d;}
+void main(){vec4 w=modelMatrix*vec4(position,1.);vec2 p=w.xz;float sh=shoreAt(p);vSh=sh;float h=0.;vec2 g=vec2(0.);
+  float a=uAmp*uDisp*(1.-smoothstep(.2,.85,sh))*(1.-smoothstep(160.,300.,distance(p,cameraPosition.xz)));
+  wave(normalize(vec2(1.,.3)),31.,a*.55,1.6,p,h,g);wave(normalize(vec2(.7,1.)),17.,a*.35,1.2,p,h,g);wave(normalize(vec2(-.4,1.)),9.,a*.18,.9,p,h,g);wave(normalize(vec2(1.,-.6)),5.3,a*.1,.7,p,h,g);
+  w.y+=h;vW=w.xyz;vN=normalize(vec3(-g.x,1.,-g.y));gl_Position=projectionMatrix*viewMatrix*w;}`;
+const SEA_FS=`uniform float uTime,uFogN,uFogF,uAmp,uDark;uniform vec3 uDeep,uHor,uTop,uSun,uSunC,uFogC;uniform sampler2D uNorm;varying vec3 vW;varying vec3 vN;varying float vSh;
+vec2 nm(vec2 uv){return texture2D(uNorm,uv).xy*2.-1.;}
+void main(){vec3 v=normalize(cameraPosition-vW);float dist=length(cameraPosition-vW);
+  vec2 q=vW.xz;vec2 a=nm(q*.021+vec2(uTime*.009,uTime*.006)),b=nm(mat2(.8,-.6,.6,.8)*q*.057-vec2(uTime*.017,-uTime*.012)),c2=nm(mat2(-.5,.87,-.87,-.5)*q*.13+uTime*.02);float ds=1.-smoothstep(60.,700.,dist);
+  vec2 pt=(a+b*.7+c2*.4*ds)*(.16+.2*ds);vec3 n=normalize(vN+vec3(pt.x,0.,pt.y));
+  float fr=.02+.98*pow(1.-max(dot(n,v),0.),5.);vec3 r=reflect(-v,n);vec3 sky=mix(uHor,uTop,clamp(r.y*1.6,0.,1.));
+  vec3 shallow=uDeep*1.15+vec3(.0,.09,.07)*(1.-uDark);vec3 base=mix(uDeep,shallow,smoothstep(.05,.7,vSh)*.8);
+  vec3 col=mix(base,sky,clamp(fr*.85,0.,1.));
+  float sp=pow(max(dot(r,uSun),0.),220.)*2.2+pow(max(dot(r,uSun),0.),24.)*.08;col+=uSunC*sp;
+  float band=smoothstep(.3,.55,vSh)*(1.-smoothstep(.85,.98,vSh));float fn=texture2D(uNorm,vW.xz*.05+vec2(uTime*.01,0.)).b*.6+texture2D(uNorm,mat2(.8,-.6,.6,.8)*vW.xz*.13).b*.4;
+  float foam=band*smoothstep(.5,.8,fn+.28*sin(uTime*1.3+vSh*16.));foam+=smoothstep(.55,.9,vW.y/(uAmp+.01))*.35*(1.-uDark*.6);
+  col=mix(col,vec3(.9,.94,.95)*(1.-uDark*.75),clamp(foam*.7,0.,.6));
+  col=mix(col,uFogC,smoothstep(uFogN,uFogF,dist));gl_FragColor=vec4(col,1.);}`;
+const seaShMat=new T.ShaderMaterial({uniforms:seaU,vertexShader:SEA_VS,fragmentShader:SEA_FS});
+const seaFarMat=new T.ShaderMaterial({uniforms:Object.assign({},seaU,{uDisp:{value:0}}),vertexShader:SEA_VS,fragmentShader:SEA_FS});
+const seaFar=new T.Mesh(new T.PlaneGeometry(90000,60000),seaFarMat);seaFar.rotation.x=-Math.PI/2;seaFar.position.set(-9000,-.45,10000);scene.add(seaFar);
+let seaNear=null;
+function applySeaQuality(){const q=gfx().sea;if(seaNear){scene.remove(seaNear);seaNear.geometry.dispose();seaNear=null;}
+  sea.visible=q===0;seaFar.visible=q>0;if(q>0){const n=q>=2?192:120;seaNear=new T.Mesh(new T.PlaneGeometry(620,620,n,n).rotateX(-Math.PI/2),seaShMat);seaNear.frustumCulled=false;seaNear.renderOrder=-1;scene.add(seaNear);}}
+window.applySeaQuality=applySeaQuality;
+function updSea(t){if(!seaNear)return;const E=envNow(nearSpot||F.spot);seaU.uTime.value=t;seaU.uDeep.value.copy(seaMat.color);seaU.uHor.value.copy(skyU.hor.value);seaU.uTop.value.copy(skyU.top.value);
+  seaU.uSun.value.copy(skyU.sd.value);seaU.uSunC.value.copy(skyU.sunc.value);seaU.uFogC.value.copy(scene.fog.color);seaU.uFogN.value=scene.fog.near;seaU.uFogF.value=scene.fog.far;seaU.uDark.value=keyLerp(DARK,hourF());
+  const sh=regionAt(S.x,S.y)==='shonan';seaU.uAmp.value=Math.min(.9,(sh?.12+E.wave*.32:.1)*(E.w.kind==='windy'?1.6:1));
+  const cx=Math.round(camera.position.x/8)*8,cz=Math.round(camera.position.z/8)*8;seaNear.position.set(cx,0,cz);
+  if(Math.hypot(S.x-SHORE.x,S.y-SHORE.y)>150)drawShore(S.x,S.y);seaU.uShoreC.value.set(SHORE.x,SHORE.y,SHORE.w);}
 const isleS=new T.Shape();isleS.absarc(ISLE.x,ISLE.y,ISLE.r,0,Math.PI*2,false);
 const landGeo=new T.ExtrudeGeometry([shp(LAND),shp(DAIKOKU),isleS,shp(SH.LAND),shp(SH.ENOSHIMA)],{depth:8,bevelEnabled:false,curveSegments:40});
 landGeo.rotateX(Math.PI/2);landGeo.translate(0,GROUND,0);
@@ -710,7 +759,50 @@ ribbon(YAMASHITA,55,GROUND+.05,flatMat(0xffffff,{map:grassTex}));ribbon(YAMASHIT
   const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));scene.add(new T.LineSegments(g,new T.LineBasicMaterial({color:0xe8e4da})));}
 
 /* 桟橋・デッキ・橋（手すり付き） */
-for(const r of RECTS){const colr=r.k==='deck'?0xb88f62:r.k==='bridge'?0xd5d0c3:0xb3ae9f;const h=r.top+4;
+/* 海づり施設の釣り桟橋（大黒・本牧・磯子）：杭の上の床版・手すり・街灯・あずまや・岸側の管理棟。形・長さは既存の地図のまま（細部は一般的な釣り桟橋の作り） */
+const PIER_DONE=new Set();
+// 夜の灯り：街灯の光の玉と、床に落ちる光（加算合成。暗さに合わせて updSky で濃くする）
+const NIGHT_GLOW=[];const pierGlowTex=canvasTex(64,64,(c,w,h)=>{const g=c.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'rgba(255,240,200,1)');g.addColorStop(.35,'rgba(255,220,150,.45)');g.addColorStop(1,'rgba(255,200,120,0)');c.fillStyle=g;c.fillRect(0,0,w,h);});
+pierGlowTex.wrapS=pierGlowTex.wrapT=T.ClampToEdgeWrapping;
+const pierGlowM=new T.SpriteMaterial({map:pierGlowTex,blending:T.AdditiveBlending,depthWrite:false,transparent:true,opacity:0});
+const pierPoolM=new T.MeshBasicMaterial({map:pierGlowTex,blending:T.AdditiveBlending,depthWrite:false,transparent:true,opacity:0});NIGHT_GLOW.push(pierGlowM,pierPoolM);
+function buildFishingPier(r){const dummy=new T.Object3D(),long=r.w>r.h,L=long?r.w:r.h,Wd=long?r.h:r.w;
+  const at=(u,v,y)=>long?[r.x+u,y,r.y+v]:[r.x+v,y,r.y+u];// u：桟橋の長さ方向、v：幅方向
+  const deckTex=canvasTex(256,256,(c,w,h)=>{c.fillStyle='#a9a69c';c.fillRect(0,0,w,h);const R=mulberry(31);for(let i=0;i<2600;i++){const g=R()<.5?40:255;c.fillStyle=`rgba(${g},${g},${g},${.04+R()*.05})`;c.fillRect(R()*w,R()*h,1+R()*2,1+R()*2);}
+    c.fillStyle='rgba(60,58,52,.35)';for(let y=0;y<h;y+=64)c.fillRect(0,y,w,2);c.fillStyle='rgba(255,255,255,.06)';for(let y=32;y<h;y+=64)c.fillRect(0,y,w,1);});
+  deckTex.repeat.set(long?L/8:Wd/8,long?Wd/8:L/8);
+  const deck=shadowy(box(r.w,.7,r.h,lam(0xffffff,{map:deckTex})),false,true);deck.position.set(r.x+r.w/2,r.top-.7,r.y+r.h/2);scene.add(deck);
+  // 杭：2列、8mおき（インスタンスで1回の描画）
+  const piles=[];for(let u=4;u<L-2;u+=8)for(const v of[1.2,Wd-1.2])piles.push(at(u,v,0));
+  const pg=new T.CylinderGeometry(.42,.42,r.top+3,10).translate(0,(r.top+3)/2-3,0),pim=new T.InstancedMesh(pg,lam(0x8d8a80),piles.length);
+  piles.forEach((p,i)=>{dummy.position.set(p[0],0,p[2]);dummy.rotation.set(0,0,0);dummy.scale.set(1,1,1);dummy.updateMatrix();pim.setMatrixAt(i,dummy.matrix);});shadowy(pim,false,true);scene.add(pim);
+  // 梁（杭の頭をつなぐ）
+  for(const v of[1.2,Wd-1.2]){const b=box(long?L:.5,.6,long?.5:L,lam(0x96938a));const q=at(L/2,v,r.top-1.3);b.position.set(q[0],q[1],q[2]);scene.add(b);}
+  // 手すり：上の横棒・中の横棒・2mおきの支柱
+  const rm=lam(0xe4e2dc,{}),posts=[];for(const v of[.12,Wd-.12]){for(const y of[1.1,.55]){const b=shadowy(box(long?L:.07,.06,long?.07:L,rm));const q=at(L/2,v,r.top+y);b.position.set(q[0],q[1],q[2]);scene.add(b);}
+    for(let u=0;u<=L;u+=2)posts.push(at(u,v,r.top));}
+  {const q=at(L-.12,Wd/2,r.top+1.1);const tb=box(long?.07:Wd,.06,long?Wd:.07,rm);tb.position.set(q[0],q[1],q[2]);scene.add(tb);}
+  const pm=new T.InstancedMesh(new T.BoxGeometry(.06,1.14,.06).translate(0,.57,0),rm,posts.length);posts.forEach((p,i)=>{dummy.position.set(p[0],p[1],p[2]);dummy.rotation.set(0,0,0);dummy.scale.set(1,1,1);dummy.updateMatrix();pm.setMatrixAt(i,dummy.matrix);});scene.add(pm);
+  // 街灯（24mおき、夜に灯る）とあずまや（屋根とベンチ、約90mおき）
+  const lampM=new T.MeshLambertMaterial({color:0xfff4d6,emissive:0xffe2a0,emissiveIntensity:0});EMISSIVE.push(lampM);
+  for(let u=12;u<L-4;u+=24){const v=(u/24|0)%2?.5:Wd-.5;const q=at(u,v,r.top);const pole=shadowy(new T.Mesh(new T.CylinderGeometry(.07,.09,5.2,8).translate(0,2.6,0),lam(0x6d7680)));pole.position.set(q[0],q[1],q[2]);scene.add(pole);
+    const head=new T.Mesh(new T.BoxGeometry(.5,.14,.28),lampM);head.position.set(q[0],q[1]+5.2,q[2]);scene.add(head);
+    const gl=new T.Sprite(pierGlowM);gl.scale.set(3.2,3.2,1);gl.position.set(q[0],q[1]+5.1,q[2]);scene.add(gl);
+    const pool=new T.Mesh(new T.CircleGeometry(7,24).rotateX(-Math.PI/2),pierPoolM);const c0=at(u,Wd/2,r.top+.03);pool.position.set(c0[0],c0[1],c0[2]);pool.renderOrder=3;scene.add(pool);}
+  for(let u=40;u<L-30;u+=90){const g=new T.Group();const roof=shadowy(box(6,.18,3.4,lam(0x5b6e6a)));roof.position.y=2.9;g.add(roof);
+    for(const dx of[-2.7,2.7])for(const dz of[-1.4,1.4]){const c=shadowy(new T.Mesh(new T.CylinderGeometry(.07,.07,2.9,8).translate(0,1.45,0),lam(0x9aa0a2)));c.position.set(dx,0,dz);g.add(c);}
+    const bench=shadowy(box(4.6,.45,.45,lam(0x8a6a4a)));g.add(bench);const q=at(u,Wd/2,r.top);g.position.set(q[0],q[1],q[2]);if(!long)g.rotation.y=Math.PI/2;scene.add(g);}
+  // 岸側の管理棟（看板つき）：桟橋のどちらの端が陸かを調べて、その手前に置く
+  const sp=SPOTS.find(s=>s.hours&&s.x>=r.x-30&&s.x<=r.x+r.w+30&&s.y>=r.y-30&&s.y<=r.y+r.h+30);
+  // 通路をふさがないよう、桟橋の付け根の横（16m）に置く
+  const cand=[[0,-12],[L,12]].flatMap(([u0,du])=>[at(u0+du,Wd/2+16,0),at(u0+du,Wd/2-16,0)].map(p=>({p,root:at(u0,Wd/2,0)})));const ce=cand.find(c=>isLand(c.p[0],c.p[2])&&isLand(c.p[0]+6,c.p[2]+6)&&isLand(c.p[0]-6,c.p[2]-6));const e=ce&&ce.p;
+  if(sp&&e){const g=new T.Group();const bw=14,bd=9,bh=5;const wall=shadowy(box(bw,bh,bd,lam(0xe7e3d8)));g.add(wall);
+    const glass=new T.Mesh(new T.BoxGeometry(bw*.8,2.2,.08).translate(0,1.6,bd/2+.03),winMats.glass);g.add(glass);
+    const roof=shadowy(box(bw+1.6,.35,bd+1.6,lam(0x4f5d63)));roof.position.y=bh;g.add(roof);
+    const sign=canvasTex(512,96,(c,w,h)=>{c.fillStyle='#1d4f6b';c.fillRect(0,0,w,h);c.fillStyle='#fff';c.font=`900 48px ${FONT}`;c.textAlign='center';c.textBaseline='middle';c.fillText(sp.n,w/2,h/2+2);});
+    sign.wrapS=sign.wrapT=T.ClampToEdgeWrapping;const sg=new T.Mesh(new T.PlaneGeometry(9,1.7),new T.MeshBasicMaterial({map:sign}));sg.position.set(0,bh+1.2,bd/2+.4);g.add(sg);
+    g.position.set(e[0],GROUND,e[2]);g.rotation.y=Math.atan2(ce.root[0]-e[0],ce.root[2]-e[2]);scene.add(g);addCol(e[0]-bw/2,e[2]-bw/2,e[0]+bw/2,e[2]+bw/2,bh);}}
+for(const r of RECTS){if(r.k==='pier'&&!r.name){buildFishingPier(r);continue;}const colr=r.k==='deck'?0xb88f62:r.k==='bridge'?0xd5d0c3:0xb3ae9f;const h=r.top+4;
   const m=shadowy(box(r.w,h,r.h,lam(colr)),false,true);m.position.set(r.x+r.w/2,r.top-h,r.y+r.h/2);scene.add(m);
   if(r.k==='deck'){const g=lam(0x8cbf6e);for(let x=r.x+20;x<r.x+r.w-30;x+=60){const s=shadowy(box(30,.3,r.h-30,g),false,true);s.position.set(x+15,r.top,r.y+r.h/2);scene.add(s);}}
   const rm=lam(0xdedad0);const long=r.w>r.h;for(const s of[0,1]){const rail=shadowy(box(long?r.w:.08,1.1,long?.08:r.h,rm));rail.position.set(long?r.x+r.w/2:(s?r.x+r.w-.1:r.x+.1),r.top,long?(s?r.y+r.h-.1:r.y+.1):r.y+r.h/2);scene.add(rail);}
@@ -1711,7 +1803,7 @@ function updSky(){const h=hourF();const tp=keyLerp(SKYTOP,h),hr=keyLerp(SKYHOR,h
   const sa=(h-6)/12*Math.PI;const sd=new V3(Math.cos(sa),Math.max(.08,Math.sin(sa)),-.35).normalize();skyU.sd.value.copy(sd);{const sk=sI*(1-cf)*(1-cf);skyU.sunc.value.setRGB(sc[0]/255*sk,sc[1]/255*sk*.9,sc[2]/255*sk*.75);}
   sun.position.set(S.x+sd.x*300,sd.y*300,S.y+sd.z*300);sun.target.position.set(S.x,0,S.y);sun.castShadow=sI>.05;
   scene.fog.near=lerp(220,120,dk)*(1-cf*.5)*gfx().fog;scene.fog.far=Math.min(camera.far*.95,lerp(1000,650,dk)*(1-cf*.45)*gfx().fog);
-  for(const m of EMISSIVE)m.emissiveIntensity=dk*1.2;glowMat.opacity=clamp(dk*1.1,0,.95);seaMat.shininess=lerp(90,30,dk);
+  for(const m of EMISSIVE)m.emissiveIntensity=dk*1.2;glowMat.opacity=clamp(dk*1.1,0,.95);for(const m of NIGHT_GLOW)m.opacity=m===pierPoolM?clamp(dk*.5,0,.45):clamp(dk*1.1,0,.95);seaMat.shininess=lerp(90,30,dk);
   headMat.color.setHex(dk>.3?0xfff6dc:0xd8d8d0);}
 
 /* ===== 乗り物・道路網・行き方（vehicles.js / nav.js / routing.js / osm-convert.js） =====
@@ -2187,7 +2279,7 @@ function update(dt,t){
   acc+=dt;if(acc>8){acc=0;save();}
 }
 function render(dt,t){
-  updSky();updRain(dt);{const wk=envNow(nearSpot||F.spot).w;const sp=wk.kind==='windy'?2.2:1;seaNorm.offset.x=(t*.006*sp)%1;seaNorm.offset.y=(t*.004*sp)%1;}sky.position.copy(camera.position);
+  updSky();updSea(t);updRain(dt);{const wk=envNow(nearSpot||F.spot).w;const sp=wk.kind==='windy'?2.2:1;seaNorm.offset.x=(t*.006*sp)%1;seaNorm.offset.y=(t*.004*sp)%1;}sky.position.copy(camera.position);
   wheel.rotation.z=t*.03;for(const g of wheel.userData.gond)g.rotation.z=-wheel.rotation.z;
   placeCam(Math.min(1,dt*6));
   for(const o of spotMk){const d=Math.hypot(o.sp.x-S.x,o.sp.y-S.y);const here=nearSpot===o.sp;o.b.visible=!here;o.l.visible=!here&&d<500;o.b.position.y=groundY(o.sp.x,o.sp.y)+5+Math.sin(t*2+o.sp.x)*.3;o.l.position.y=o.b.position.y;}
