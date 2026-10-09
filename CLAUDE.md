@@ -7,6 +7,10 @@
 - ユーザーとのやり取りは日本語。結論→理由→具体策の順で、前置きは短く。
 - ユーザーはスマホから Claude Code を使っている。変更後は「何をどう変えたか」を短くまとめ、スマホで確認すべき点を書く。
 - 仕様の判断に迷ったら、下の「設計方針」を優先し、変える場合は理由を添えて確認する。
+- トークン節約：必要なファイル・範囲だけ読む。大きなデータ・ログ・コードを全文出力しない。同じ調査を繰り返さない（設計決定と進捗は `docs/progress.md` に短く記録し、まずそれを読む）。
+- 指示が明確なら実装まで進める。既存コードを再利用し、関係ない機能の変更や不要なリファクタリングはしない。ツール・サブエージェントを不要に多重実行しない。
+- 報告は「変更内容・テスト結果・残課題」を各数行で。ただしテストとエラー確認は省略しない。
+- 当面の優先順位：①湘南の実在マップへの近似 ②全画面ワールドマップ（Mキー） ③3Dグラフィックの向上。
 
 ## 現状のファイル構成
 
@@ -20,6 +24,9 @@
 - `data/shonan-spots.js` — 湘南（鎌倉市〜大磯町）の釣り場39か所と規制エリアA〜G。ユーザー提供の資料のデータモデル。位置はおおよそ（実測でない）、出現確率は持たない、ゲーム用の数値は推定。
 - `shonan.js` — 湘南の地理（緯度経度→ゲーム座標、海岸線・江の島・川・防波堤・橋・国道134号・JR・江ノ電・駅・名所）と、釣りできるかの判定 `canFish`（未確認・自然保護は不可、利用時間、夏の遊泳区域、高波の磯、荒天閉鎖、禁止された釣り方）、規制エリア `restrictedAt`（`window.HamaShonan`）。
 - `fish-ai.js` — 魚のAI。`fight.js` — フッキングとファイト。`sound.js` — 効果音と環境音。
+- `geo.js` — 共通の座標システム（`window.HamaGeo`）。緯度経度⇔ゲーム座標（湘南の原点固定）、地図表示の view（拡大・移動・回転）、縮尺バー。3D・ミニマップ・地図画面・今後の全画面マップで共有。
+- `mapdata.js` — 地図データのレイヤー管理（`window.HamaMapData`）。海岸線・陸地・道路・建物・河川・砂浜・駐車場・駐輪場・構造物・釣り場・現在地。地物の出どころ（実在 gshhs/osm、ゲーム用 game_approx/game_est）を区別し、ないものは空。GeoJSON の読み込みと検査。
+- `data/geo/` — 提供された地図データ（`src/` に GSHHS の海岸線・陸地の GeoJSON と manifest）。`node tools/import_geo.mjs` で検査して `geo-data.js` を作る（結果は `VALIDATION.md`）。OSM の GeoJSON（`tools/fetch_osm_geojson.py` の出力）も `src/` に置けば取り込める。出典は `LICENSE_AND_SOURCES.md`。プレビューは `node tools/preview_map.mjs` → `docs/map-preview-*.svg`。
 - `osm-convert.js` — Overpass API（OpenStreetMap）の JSON をゲーム座標に変換（道路・海岸線・建物・駐車場・規制など）と道路網 `buildGraph`（`window.HamaOSMConvert`）。足りない属性は `est` 層（推定）に分ける。
 - `routing.js` — 道路網の A* 経路探索。徒歩・自転車・車で通れる道、一方通行、所要時間（`window.HamaRouting`）。
 - `nav.js` — OSM がないときの代わりの道路網（幹線＋各釣り場への取り付け道路。`approx:true`）、推定駐車場（`est:true`）、道のマス目 `raster`、行き方 `plan`（車→駐車場→徒歩、自転車→徒歩）（`window.HamaNav`）。

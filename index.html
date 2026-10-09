@@ -143,6 +143,8 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
 .item:disabled{opacity:.5}
 .cmp{overflow-x:auto;margin-bottom:8px}.cmp table{border-collapse:collapse;font-size:11px;white-space:nowrap}.cmp th,.cmp td{border-bottom:1px solid #e3dccb;padding:4px 6px;text-align:right}.cmp th:first-child,.cmp td:first-child{text-align:left;color:var(--mute)}
 .spNav{background:#eef9f9;border:2px solid #7cc9cb;border-top:none;border-radius:0 0 12px 12px;margin-top:-9px;padding:8px 11px;display:grid;gap:3px}.spNav span{font-size:12px;color:var(--mute);line-height:1.5}.spNav .ng{color:var(--signal)}.spNav button{border:none;border-radius:10px;padding:9px;font-weight:900;margin-top:4px}
+.chk{display:flex;gap:6px;align-items:center;font-size:12px;margin:2px 0 8px}
+.lyr{background:#fff;border:2px solid #e3dccb;border-radius:12px;padding:8px 11px;margin-bottom:8px}.lyr summary{font-weight:900;font-size:13px}.lyr ul{list-style:none;margin:6px 0;padding:0;display:grid;gap:4px}.lyr li{font-size:12px;display:flex;flex-wrap:wrap;gap:6px;align-items:baseline}.lyr em{font-style:normal;font-weight:900;font-size:11px;border-radius:999px;padding:1px 8px}.lyr .ok{background:#d6f0e4;color:#1b6b4a}.lyr .ap{background:#f6ead0;color:#8a5a00}.lyr .ng{background:#f3dcd8;color:#a0362a}.lyr span{color:var(--mute)}
 .row2{display:flex;gap:8px;margin-top:6px}.row2 button{flex:1;border:none;border-radius:10px;padding:9px;font-weight:900}
 .fine{font-size:11px;line-height:1.7;opacity:.7;margin:0}
 #fail{position:fixed;inset:0;display:grid;place-items:center;padding:24px;text-align:center;line-height:1.8}
@@ -237,9 +239,12 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
 <script src="tackle.js"></script>
 <script src="fight.js"></script>
 <script src="sound.js"></script>
+<script src="geo.js"></script>
 <script src="data/shonan-spots.js"></script>
 <script src="shonan.js"></script>
 <script src="osm-convert.js"></script>
+<script src="mapdata.js"></script>
+<script src="data/geo/geo-data.js"></script>
 <script src="routing.js"></script>
 <script src="nav.js"></script>
 <script src="vehicles.js"></script>
@@ -1540,6 +1545,11 @@ if(/osmsample/.test(location.hash)){try{const x=new XMLHttpRequest();x.open('GET
 let NET=null;
 function osmBox(D){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const r of D.roads)for(const[x,y]of r.pts){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}return{x0,y0,x1,y1};}
 function inBox(B,x,y){return x>=B.x0&&x<=B.x1&&y>=B.y0&&y<=B.y1;}
+/* 地図データ（mapdata.js）：実在データ（GSHHS の海岸線・陸地の概形、取り込んだ OSM GeoJSON）を先に入れ、
+   道路網づくりのあとでゲーム用（おおよそ・推定）の地物を足す。3D・ミニマップ・地図画面はここを見る */
+const GEO=window.HamaGeo,MD=window.HamaMapData,GEOD=window.HamaGeoData||{files:{},manifest:null};
+const MAPD=MD.create(GEO.SHONAN);
+for(const[f,o]of Object.entries(GEOD.files||{})){try{MD.addGeoJSON(MAPD,{features:o.features},{name:f,layer:o.layer||undefined});}catch(e){console.warn('地図データの読み込みに失敗',f,e);}}
 function buildNet(){const t0=performance.now();
   const land=(x,y)=>(isLand(x,y)||!!rectAt(x,y))&&!colAt(x,y,1);
   const trunks=[{pts:ROAD,w:20,kind:'primary',name:'幹線道路（おおよそ）'},...ROADS2.map(p=>({pts:p,w:12,kind:'secondary',name:'道路（おおよそ）'})),{pts:SH.R134,w:12,kind:'primary',name:'国道134号（おおよそ）'}];
@@ -1553,9 +1563,34 @@ function buildNet(){const t0=performance.now();
     roads=roads.concat(D.roads);
     for(const p of D.parking){const e=est.get(p.id)||{};lots.push(Object.assign({r:Math.max(8,Math.sqrt(p.poly?Math.abs(OC.area(p.poly)):150)/2),src:'osm'},p,{capacity:p.capacity!=null?p.capacity:e.capacity,feePerHour:p.feePerHour!=null?p.feePerHour:e.feePerHour,hours:p.hours||e.hours,estFields:Object.keys(e).filter(k=>k!=='id'),name:p.name||'駐車場（名称なし）'}));}
     bikeParks=bikeParks.concat(D.bikeParking||[]);fuel=fuel.concat(D.fuel||[]);}
+  // 取り込んだ OSM GeoJSON の道路（node id でだけつなぐ）
+  const osmRoads=MD.roadsForGraph(MAPD);if(osmRoads.length)roads=roads.concat(osmRoads);
   const G=OC.buildGraph(roads);RT.index(G);const M=NV.raster(roads,4);
   NET={roads,lots,bikeParks,fuel,G,M,missing:fb.missing,osm,ms:Math.round(performance.now()-t0)};}
 buildNet();
+// ゲーム用の地物（実在データではない）を地図データに足す
+{const A=(layer,id,pts,props,src)=>MAPD.add(layer,{id,pts,src:src||'game_approx',props:props||{},name:props&&props.name||null});
+  A('coastline','game_coast',SH.COAST,{name:'海岸線（ゲーム用・手描き）'});A('land','game_land',SH.LAND);A('land','game_enoshima',SH.ENOSHIMA,{name:'江の島'});
+  for(const r of SH.RIVERS)A('rivers','river_'+r.n,r.pts,{name:r.n,widthM:r.w});
+  for(const r of SH.STRUCTS)A('structures','st_'+r.n,[[r.x,r.y],[r.x+r.w,r.y],[r.x+r.w,r.y+r.h],[r.x,r.y+r.h],[r.x,r.y]],{name:r.n,bridge:!!r.bridge});
+  A('beaches','game_beach_band',SH.COAST,{name:'砂浜（海岸線から約24mの帯・ゲーム用）',band:24});
+  for(const r of NET.roads)if(r.approx&&r.pts.every(p=>SH.inShonan(p[0],p[1])))A('roads',r.id,r.pts,{name:r.name,car:!!r.car});
+  for(const l of NET.lots)if(SH.inShonan(l.x,l.y)&&l.src!=='osm')A('parking',l.id,[[l.x,l.y]],{name:l.name,why:l.why},'game_est');
+  for(const g of SH.GSPOTS)MAPD.add('fishing_spots',{id:g.id,ll:[g.latlon],pts:[[g.x,g.y]],src:'user',name:g.name,props:{type:g.type,accessStatus:g.accessStatus}});
+  MAPD.add('player',{id:'player',src:'game',get pts(){return[[S.x,S.y]];},set pts(v){},bbox:null});
+  const sm=MAPD.summary();console.info('[地図データ]',GEOD.manifest?`提供データ：${GEOD.manifest.data_source}（${GEOD.manifest.map_region}）`:'提供データなし',sm.map(l=>`${l.label}=${{real:'実在',approx:'おおよそ',estimate:'推定',missing:'未取得'}[l.status]}${l.count?'('+l.count+')':''}`).join(' / '));
+  if(GEOD.manifest)console.info('[地図データ] 未取得：'+Object.keys(GEOD.manifest.not_downloaded||{}).join(', '));for(const m of MAPD.log)console.info('[地図データ] '+m);}
+/* 3D：GSHHS の陸地のうち、ゲームの湘南の範囲（手描きの海岸線の両端）より外側を遠景として置く（大磯の西＝二宮方面、鎌倉の東＝逗子・三浦半島）。
+   歩けない・建物も置かない。ゲーム範囲の中は手描きの地形のまま（GSHHS は粗いので置き換えない） */
+function clipPoly(poly,inside,cut){const out=[];for(let i=0;i<poly.length;i++){const a=poly[i],b=poly[(i+1)%poly.length];const ia=inside(a),ib=inside(b);if(ia)out.push(a);if(ia!==ib)out.push(cut(a,b));}return out;}
+const clipX=(poly,x,keepLess)=>clipPoly(poly,p=>keepLess?p[0]<=x:p[0]>=x,(a,b)=>{const t=(x-a[0])/(b[0]-a[0]);return[x,a[1]+(b[1]-a[1])*t];});
+const clipY=(poly,y)=>clipPoly(poly,p=>p[1]>=y,(a,b)=>{const t=(y-a[1])/(b[1]-a[1]);return[a[0]+(b[0]-a[0])*t,y];});
+const FAR_LAND=[];
+for(const f of MAPD.real('land')){let p=f.pts.slice(0,-1);p=clipY(p,GEO.SHONAN.y0);if(p.length<3)continue;
+  for(const q of[clipX(p,SH.COAST[0][0],true),clipX(p,SH.COAST[SH.COAST.length-1][0],false)])if(q.length>=3)FAR_LAND.push(q);}
+if(FAR_LAND.length){const g=new T.ExtrudeGeometry(FAR_LAND.map(shp),{depth:8,bevelEnabled:false});g.rotateX(Math.PI/2);g.translate(0,GROUND,0);const m=new T.Mesh(g,[lam(0x8fa07a,{side:T.DoubleSide}),lam(0x9a978e,{side:T.DoubleSide})]);m.receiveShadow=true;scene.add(m);}
+// 調整用：URL の末尾に #geodebug で、GSHHS の海岸線を3Dに赤い線で重ねる（手描きの海岸線とのずれの確認）
+if(/geodebug/.test(location.hash))for(const f of MAPD.real('coastline')){const g=new T.BufferGeometry().setFromPoints(f.pts.map(([x,y])=>new V3(x,GROUND+.6,y)));scene.add(new T.Line(g,new T.LineBasicMaterial({color:0xe04a3b})));}
 // 道の上には建物を建てない（okSpot から呼ぶ）
 function onRoad(cx,cy,half){const M=NET.M,c=M.cell;for(let x=cx-half-2;x<=cx+half+2;x+=c)for(let y=cy-half-2;y<=cy+half+2;y+=c)if(M.at(x,y))return true;return false;}
 // 路面：岩場（磯）・階段（江の島）は乗ったまま進めない。砂浜・公園・舗装路
@@ -1646,12 +1681,13 @@ function spotNav(sp){const nl=NV.nearestLot(NET.lots,sp.x,sp.y);const ne=RT.near
 const realM=m=>m*SC>=1000?`${(m*SC/1000).toFixed(1)}km`:`${Math.round(m*SC/10)*10}m`;
 
 /* 地図（拡大・移動できる）：道・駐車場・釣り場・停めた乗り物・ルート */
-const NAVV={z:0,cx:0,cy:0};let navDrag=null;
+const NAVV={z:0,cx:0,cy:0,gshhs:true};let navDrag=null;
 function drawNav(cvs){const w=cvs.clientWidth||320,h=Math.round(Math.min(420,w*1.05));cvs.style.height=h+'px';const d=Math.min(window.devicePixelRatio||1,2);cvs.width=Math.round(w*d);cvs.height=Math.round(h*d);
   if(!NAVV.z){NAVV.z=w/1400;NAVV.cx=S.x;NAVV.cy=S.y;}const z=NAVV.z;const c=cvs.getContext('2d');
   c.setTransform(d,0,0,d,0,0);c.fillStyle='#2a7aa3';c.fillRect(0,0,w,h);c.setTransform(d*z,0,0,d*z,d*(w/2-NAVV.cx*z),d*(h/2-NAVV.cy*z));drawMap2D(c,false);
   const px=1/z;// 1ピクセル
   for(const{D}of NET.osm){c.fillStyle='#cdbfa6';for(const b of D.buildings){c.beginPath();poly2(c,b.pts);c.fill();}c.strokeStyle='#5b6e7a';c.lineWidth=2*px;for(const l of D.coast){pline2(c,l);c.stroke();}}
+  if(NAVV.gshhs){c.strokeStyle='#7a3fb0';c.lineWidth=2.2*px;c.setLineDash([6*px,4*px]);for(const f of MAPD.real('coastline')){pline2(c,f.pts);c.stroke();}c.setLineDash([]);}
   for(const r of NET.roads){if(r.pts.length<2)continue;c.lineCap='round';c.lineJoin='round';c.setLineDash(r.car?[]:[4*px,3*px]);c.strokeStyle=r.car?(r.approx?'#d9d4c7':'#ffffff'):'#a0805a';c.lineWidth=Math.max(r.w||4,(r.car?2.4:1.4)*px);pline2(c,r.pts);c.stroke();}c.setLineDash([]);
   if(regionAt(S.x,S.y)==='shonan')for(const r of SH.GRESTRICTED){c.fillStyle='rgba(224,74,59,.3)';c.beginPath();c.arc(r.x,r.y,Math.max(r.gr,60),0,7);c.fill();}
   const fs=11*px;c.font=`900 ${fs}px ${FONT}`;c.textAlign='center';c.textBaseline='middle';
@@ -1666,18 +1702,24 @@ function drawNav(cvs){const w=cvs.clientWidth||320,h=Math.round(Math.min(420,w*1
   c.setTransform(d,0,0,d,0,0);c.font=`700 10px ${FONT}`;c.textAlign='right';c.textBaseline='bottom';c.fillStyle='rgba(19,38,59,.85)';
   c.fillText(NET.osm.some(o=>o.D.meta&&o.D.meta.fictional)?'架空のテスト用データ（実在の地図ではない）':NET.osm.length?'© OpenStreetMap contributors':'道路はおおよそ（実在の道路データではない）',w-6,h-4);
   // 縮尺（実際の距離）
-  const bar=100/z;c.fillStyle='rgba(19,38,59,.85)';c.fillRect(8,h-12,100,3);c.textAlign='left';c.fillText(realM(bar),8,h-15);}
+  const sb=GEO.scaleBar({z},110);c.fillStyle='rgba(19,38,59,.85)';c.fillRect(8,h-12,sb.px,3);c.textAlign='left';c.fillText(sb.label,8,h-15);if(NAVV.gshhs){c.fillStyle='#7a3fb0';c.fillText('紫の点線：GSHHS/GSHHG の海岸線（実在・粗い概形）',8,14);}}
 function bindNav(cvs){const redraw=()=>drawNav(cvs);
   cvs.onpointerdown=e=>{navDrag={x:e.clientX,y:e.clientY,cx:NAVV.cx,cy:NAVV.cy};try{cvs.setPointerCapture(e.pointerId);}catch(_){}};
   cvs.onpointermove=e=>{if(!navDrag)return;NAVV.cx=navDrag.cx-(e.clientX-navDrag.x)/NAVV.z;NAVV.cy=navDrag.cy-(e.clientY-navDrag.y)/NAVV.z;redraw();};
   cvs.onpointerup=cvs.onpointercancel=()=>{navDrag=null;};
   cvs.onwheel=e=>{e.preventDefault();NAVV.z=clamp(NAVV.z*(e.deltaY<0?1.25:.8),.02,3);redraw();};
   $('nzIn').onclick=()=>{NAVV.z=clamp(NAVV.z*1.5,.02,3);redraw();};$('nzOut').onclick=()=>{NAVV.z=clamp(NAVV.z/1.5,.02,3);redraw();};$('nzMe').onclick=()=>{NAVV.cx=S.x;NAVV.cy=S.y;redraw();};redraw();}
+// 地図データの状況（取得済み・おおよそ・推定・未取得）
+function layerStatusHtml(){const ST={real:['実在','ok'],approx:['おおよそ（ゲーム用）','ap'],estimate:['推定（ゲーム用）','ap'],missing:['未取得','ng']};
+  return`<details class="lyr"><summary>地図データの状況</summary><ul>${MAPD.summary().filter(l=>l.id!=='player').map(l=>{const[t,c]=ST[l.status];const real=MAPD.real(l.id).length;
+    return`<li><b>${esc(l.label)}</b><em class="${c}">${t}</em>${real?`<span>実在 ${real}件（${[...new Set(MAPD.real(l.id).map(f=>MD.SRC_LABEL[f.src]))].join('・')}）</span>`:''}${l.count-real?`<span>ゲーム用 ${l.count-real}件</span>`:''}</li>`;}).join('')}</ul>
+    <p class="sub">${GEOD.manifest?`提供データ：GSHHS/GSHHG（Wessel &amp; Smith、LGPL）の海岸線・陸地の概形（中解像度）。未取得：${Object.keys(GEOD.manifest.not_downloaded||{}).map(k=>({roads:'道路',buildings:'建物',parking:'駐車場',fishing_zones:'釣り可能区域'}[k]||k)).join('・')}。`:''}ゲームの湘南の地形は手描きのおおよその形（GSHHS より細かいため置き換えていない）。範囲の外（大磯の西・鎌倉の東）は GSHHS の陸を遠景に使用。</p></details>`;}
 function renderNav(sb){const rg=regionAt(S.x,S.y);const ds=S.veh.dest;
   let h=`<div class="seg"><button data-mv="go">行き先</button><button data-mv="spots">釣り場一覧</button><button data-mv="nav" class="on">地図・ルート</button></div>
   <div class="navBox"><canvas id="navCv"></canvas><div class="navZ"><button id="nzIn" aria-label="拡大">＋</button><button id="nzOut" aria-label="縮小">−</button><button id="nzMe" aria-label="現在地">◎</button></div></div>
   <p class="sub">${NET.osm.some(o=>o.D.meta&&o.D.meta.fictional)?'動作確認用の架空のデータを表示中（#osmsample）。実在の地図ではありません。':NET.osm.length?'地図データ © OpenStreetMap contributors（ODbL）。':'この地域はまだ実在の地図データ（OpenStreetMap）を取り込んでいません。道路はおおよその位置、白い「P」は推定の駐車スペース（ゲーム用。実在の施設ではない）。'}
-  <span class="key"><i style="background:#e04a3b"></i>車 <i style="background:#f1b746"></i>自転車 <i style="background:#13263b"></i>徒歩（点線）</span></p>`;
+  <span class="key"><i style="background:#e04a3b"></i>車 <i style="background:#f1b746"></i>自転車 <i style="background:#13263b"></i>徒歩（点線）</span></p>
+  <label class="chk"><input type="checkbox" id="gshhsChk" ${NAVV.gshhs?'checked':''}> 実在の海岸線（GSHHS・粗い概形）を重ねる</label>${layerStatusHtml()}`;
   if(ds){h+=`<h3 class="hd">目的地：${esc(ds.name)}</h3><div class="list">`;
     for(const p of plans(ds)){const on=NAVR&&NAVR.mode===p.mode&&!p.fail;
       h+=`<button class="item${on?' on':''}" data-route="${p.mode}"${p.fail?' disabled':''}><div class="tx"><b>${esc(p.label)}</b><span>${p.fail?esc(p.fail):`約${fmtDur(p.time)}・${realM(p.len)}（実際の距離の目安）`+(p.lot?`<br>駐車：${esc(p.lot.name)}${p.lot.est?'（推定）':''}→ 歩き ${realM(p.legs[1].len)}`:p.mode==='bike'?`<br>最後の${realM(p.legs[1].len)}は歩き`:'')}</span></div></button>`;}
@@ -1686,7 +1728,7 @@ function renderNav(sb){const rg=regionAt(S.x,S.y);const ds=S.veh.dest;
   const pk=S.veh.owned.filter(o=>S.veh.parked[o.uid]&&(S.veh.parked[o.uid].region||'yokohama')===rg);
   if(pk.length){h+='<h3 class="hd">停めた乗り物</h3><div class="list">';for(const o of pk){const p=S.veh.parked[o.uid];const lot=p.lotId&&lotById(p.lotId);
     h+=`<button class="item" data-back="${o.uid}"><div class="tx"><b>${esc(VH.specOf(o).name)}</b><span>${lot?esc(lot.name):'路上・広場'}・ここから約${realM(Math.hypot(p.x-S.x,p.y-S.y))}</span></div><span class="pr">戻る道</span></button>`;}h+='</div>';}
-  sb.innerHTML=h;bindNav($('navCv'));
+  sb.innerHTML=h;bindNav($('navCv'));$('gshhsChk').onchange=e=>{NAVV.gshhs=e.target.checked;drawNav($('navCv'));};
   sb.querySelectorAll('[data-mv]').forEach(b=>b.onclick=()=>{mapView=b.dataset.mv;renderTab();});
   sb.querySelectorAll('[data-route]').forEach(b=>b.onclick=()=>{NAVR=plans(ds).find(p=>p.mode===b.dataset.route);renderTab();});
   sb.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{const o=VH.owned(S,+b.dataset.back),p=S.veh.parked[o.uid];setDest({x:p.x,y:p.y,name:VH.specOf(o).name+'（停めた所）'});NAVR=plans(S.veh.dest)[0];renderTab();});

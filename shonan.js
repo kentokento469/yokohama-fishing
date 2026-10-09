@@ -9,9 +9,11 @@ const DATA=root&&root.HamaShonanData||(typeof require==='function'?require('./da
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 
 /* ===== 位置：緯度経度 → ゲーム座標（m、距離は約1/3） ===== */
-const SC=3,LON_E=139.56,LAT_N=35.345,X_E=2400,Y_N=8300,M_LON=90826,M_LAT=110950;
-function toGame(lat,lon){return[X_E+(lon-LON_E)*M_LON/SC,Y_N+(LAT_N-lat)*M_LAT/SC];}
-const BOUNDS={x0:-6000,x1:2700,y0:8300,y1:10700};
+// 変換は共通の座標システム geo.js（原点・向き・縮尺はそこで固定）
+const GEO=root&&root.HamaGeo||(typeof require==='function'?require('./geo.js'):null);
+const SC=GEO.SC,R0=GEO.SHONAN,M_LON=R0.mLon,M_LAT=R0.mLat;
+function toGame(lat,lon){return GEO.toGame(lat,lon,R0);}
+const BOUNDS=R0.bounds;
 function inShonan(x,y){return x>=BOUNDS.x0&&x<=BOUNDS.x1&&y>=BOUNDS.y0-100&&y<=BOUNDS.y1;}
 
 /* 海岸線（西→東、おおよその緯度経度）。陸は北側 */
