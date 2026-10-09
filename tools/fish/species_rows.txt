@@ -1,0 +1,98 @@
+# 魚種の原データ（1行1種）。tools/fish/build_species.mjs が data/fish/species.json と species.js を作る。
+# 列：id|和名|学名|分類(f魚類 c頭足類 k甲殻類)|グループ|生息(下記)|水深m|底質|季節(月-月、!は季節外は出ない、allは通年)|時間帯|潮|適水温℃|釣り方|ゲームの体長cm|最大cm|重さ係数a(g=a×cm³)|突進m/s|警戒心0-1|引き0-1.6|ファイト|レア度|円/kg|泳層|AI型|見た目(形/縦横比/背/腹/模様)|特徴
+# 生息：b=横浜（東京湾奥の施設・岸壁） p=漁港 w=堤防 i=磯 s=砂浜 e=河口・汽水 u=渓流 m=中流 l=下流・平野の川 k=湖・池。数字は相対的な多さ（0〜5）
+# 時間帯：day 日中 / night 夜 / dd 朝夕マズメ / dn 夕方〜夜 / dawn 早朝 / any
+# 潮：move 動く潮 / high 満ち・上げ / low 引き・下げ / any
+# ファイト：run 走る / dive 根に突っ込む / shake エラ洗い・ジャンプ / heavy 重く粘る / circle 叩く・回る / jet ジェット噴射 / stick 底に張り付く / twist ねじる / weak 小さい
+# レア度：c ふつう / u やや少ない / r 珍しい / vr とても珍しい / l 幻
+# 数値（体長以外の能力・価格）はゲーム用の推定。学名・分布は一般的な資料にもとづくおおよそ。
+buri|ブリ|Seriola quinqueradiata|f|mig|b1p1w2i2s1|0-100|any|10-1|dd|move|14-24|lure|75-95|120|.0125|9|.4|1.15|run|r|1200|mid|blue|fish/.24/#2f5a78/#eef1f1/line|出世魚の最終段階。秋〜冬に大群で沿岸に回り、ショアジギングの憧れの的。
+gomasaba|ゴマサバ|Scomber australasicus|f|mig|b1p3w3i2s1|0-50|any|5-11|dd|move|17-26|sabiki,lure|22-40|50|.0095|5|.3|1.05|run|c|300|upper|blue|fish/.22/#2e6b7c/#e8eef0/dots|腹に黒い小さな点が並ぶサバ。マサバより暖かい海を好む。
+kanpachi|カンパチ|Seriola dumerili|f|mig|w1i2s1|0-150|rock|8-11|dd|move|20-28|lure|30-50|150|.013|9|.45|1.25|dive|u|1500|mid|blue|fish/.28/#8a7a55/#efe9dc/line|頭に「八」の字の帯。夏の終わりに若魚（ショゴ）が相模湾の岸に寄る。
+hiramasa|ヒラマサ|Seriola lalandi|f|mig|w1i2|0-100|rock|5-11|dd|move|17-24|lure|50-80|150|.011|10|.55|1.3|dive|r|2000|mid|blue|fish/.22/#3a6b7d/#eef1ee/line|ブリに似るが体が細長く、黄色い帯がはっきり。磯の根に突っ込む強烈な引き。
+sawara|サワラ|Scomberomorus niphonius|f|mig|b1p1w2s2|0-40|any|9-12|dd|move|14-23|lure|50-80|110|.0062|9|.45|.95|run|u|1300|upper|blue|fish/.15/#4a6f8f/#eef1f3/dots|細長い体と鋭い歯。秋に小魚を追って岸近くへ。小さいものはサゴシ。
+katsuo|カツオ|Katsuwonus pelamis|f|mig|w1i1|0-50|any|5-9!|dd|move|19-26|lure|40-55|100|.015|11|.5|1.35|run|vr|1500|upper|blue|fish/.27/#24365c/#dfe5ea/stripe|黒潮に乗る外洋の魚。岸から釣れることはまれ。腹の縦縞が目印。
+hirasouda|ヒラソウダ|Auxis thazard|f|mig|p1w2i2s1|0-50|any|8-11!|dd|move|20-27|lure|30-45|60|.014|9|.35|1.2|run|u|600|upper|blue|fish/.26/#2b4a73/#e7edf0/scribble|体が平たいソウダガツオ。秋の相模湾で群れが岸に寄ると堤防が賑わう。
+marusouda|マルソウダ|Auxis rochei|f|mig|p1w2i2s1|0-50|any|8-11!|dd|move|20-27|lure|30-40|55|.014|9|.35|1.15|run|u|300|upper|blue|fish/.25/#2b4a73/#e7edf0/scribble|体の断面が丸いソウダガツオ。血合いが多く、鮮度が落ちやすい。
+shiira|シイラ|Coryphaena hippurus|f|mig|w1s1|0-30|any|6-10!|day|move|21-29|lure|60-100|150|.0075|9|.35|1.25|shake|r|500|top|blue|fish/.24/#2f8a6a/#e8d24a/dots|夏の黒潮の魚。黄緑に輝く体で何度もジャンプする。
+maruaji|マルアジ|Decapterus maruadsi|f|mig|p2w2s1|0-60|any|6-11|dd|move|18-27|sabiki|20-35|40|.011|5|.3|1|run|u|500|mid|blue|fish/.2/#4f6f7f/#eceeea/line|マアジより細長く、尾の付け根に小さな離れビレ。相模湾に多い。
+shimaaji|シマアジ|Pseudocaranx dentex|f|mig|w1i1|5-100|rock,sand|6-11|dd|move|18-26|lure,isome|30-50|100|.016|8|.55|1.3|run|vr|3500|mid|blue|fish/.32/#6b8090/#f0efe6/line|黄色い帯の高級魚。口が弱く、引きは強い。岸からは珍しい。
+gingame|ギンガメアジ|Caranx sexfasciatus|f|mig|p2w1e2|0-20|any|8-11!|day|any|20-29|lure|15-25|90|.016|7|.45|1.2|run|u|400|mid|blue|fish/.36/#7f8f98/#eceee9/plain|南の海の大型アジ。夏から秋に若魚（メッキ）が港や河口に入る。
+yamatokamasu|ヤマトカマス|Sphyraena japonica|f|mig|b1p2w2s1|0-30|any|8-11|dd|move|16-26|sabiki,lure|20-30|40|.006|5|.35|.8|run|c|400|mid|blue|fish/.13/#7b7a5a/#eeeee4/line|アカカマスより水っぽく、群れで港に入る。干物向き。
+datsu|ダツ|Strongylura anastomella|f|mig|b1p2w2s1|0-5|any|6-10|day|any|18-27|lure|50-80|100|.0035|8|.3|.9|shake|c|100|top|blue|needle/.08/#3f6f6a/#e9efe6/plain|くちばしのように長いあご。水面を飛び跳ね、鋭い歯に注意。
+hirasuzuki|ヒラスズキ|Lateolabrax latus|f|bass|w1i3s1|0-10|rock|10-5|dd|move|14-21|lure|50-80|110|.011|6|.7|1.15|shake|r|1500|mid|general|fish/.26/#55606b/#e8ebec/plain|磯のサラシ（白泡）に潜むスズキの仲間。スズキより体高があり尾が太い。
+madai|マダイ|Pagrus major|f|tai|p1w1i1s1|10-100|rock,sand|4-11|dd|move|15-24|isome,lure|30-50|100|.017|5|.65|1.2|circle|r|2000|lower|general|fish/.34/#d2777a/#f3d9d5/dots|鮮やかな桜色に青い点。首を振る「三段引き」で知られる魚の王様。
+chidai|チダイ|Evynnis tumifrons|f|tai|w2i1s1|10-100|sand,rock|6-10|day|move|16-25|isome|15-25|40|.018|4|.45|1.05|circle|u|1000|lower|general|fish/.36/#d67f80/#f6e1dc/dots|マダイに似るが、えらぶたの縁が赤い。初夏に岸近くへ寄る。
+hedai|ヘダイ|Rhabdosargus sarba|f|tai|b2p2w1e2|0-20|rock,sand|5-11|day|any|18-28|isome|20-35|50|.02|4|.6|1.1|circle|u|800|lower|general|fish/.4/#8f9aa4/#eef0ee/line|銀色の体に淡い黄色の筋。クロダイと同じような岸壁や河口にいる。
+kuromejina|クロメジナ|Girella leonina|f|tai|w1i3|0-20|rock|11-4|dd|move|15-23|isome|25-45|70|.018|5|.65|1.25|dive|u|700|mid|general|fish/.38/#2b3238/#4a545a/plain|メジナより黒く、えらぶたの縁が黒い。外洋に面した磯で大きく育つ。
+ishidai|イシダイ|Oplegnathus fasciatus|f|tai|w1i3|0-30|rock|5-11|day|move|17-25|isome|25-50|80|.02|5|.6|1.45|dive|r|2500|lower|bottom|fish/.42/#d7d6c9/#ecebe2/bars|7本の黒い横縞。硬い歯で貝やウニをかみ砕く磯の王者。
+ishigakidai|イシガキダイ|Oplegnathus punctatus|f|tai|i2|0-30|rock|6-11|day|move|18-26|isome|25-50|80|.02|5|.6|1.45|dive|r|2500|lower|bottom|fish/.42/#b8b5a8/#e9e7dc/dots|石垣のような黒い斑点。イシダイより暖かい海を好む。
+kurosoi|クロソイ|Sebastes schlegelii|f|rock|b2p2w2|0-30|rock|11-4|night|any|10-18|isome,worm|20-35|60|.016|4|.5|1.05|dive|u|1000|bottom|bottom:ambush|fish/.32/#3a3f42/#6b7071/mottle|夜に岸壁の際で小魚を待ち伏せる黒っぽい根魚。冬に釣れる。
+kijihata|キジハタ|Epinephelus akaara|f|rock|p1w1i1|0-30|rock|6-10|dn|any|18-27|worm,isome|20-35|60|.015|4|.55|1.15|dive|r|3500|bottom|bottom:ambush|fish/.32/#9b6b45/#e9c48d/dots|オレンジの斑点のハタ（アコウ）。関東では数が少ない高級魚。
+akahata|アカハタ|Epinephelus fasciatus|f|rock|w1i2|0-40|rock|6-11|day|any|19-27|worm,isome|20-30|40|.016|4|.5|1.1|dive|u|1500|bottom|bottom:ambush|fish/.3/#c8443a/#f0b8a6/bars|赤い体に横縞のハタ。磯のロックフィッシュで人気。
+oomonhata|オオモンハタ|Epinephelus areolatus|f|rock|w1i1s1|5-50|rock,sand|6-11|day|any|20-28|lure,worm|25-40|50|.015|5|.45|1.15|dive|r|2500|lower|bottom:ambush|fish/.3/#9c8a6e/#e7dccb/dots|茶色の斑点のハタ。ハタの中ではルアーを追って浮き上がる。
+mahata|マハタ|Hyporthodus septemfasciatus|f|rock|w1i1|10-100|rock|6-10|day|any|17-25|worm,isome|25-45|150|.016|4|.55|1.35|dive|vr|4000|bottom|bottom:ambush|fish/.34/#6b6a64/#c9c6b9/bars|7本の横縞のハタ。大きく育つ高級魚で、岸からはまれ。
+kue|クエ|Epinephelus bruneus|f|rock|i1|5-100|rock|6-10|night|any|18-26|isome|40-70|130|.017|4|.6|1.6|dive|l|6000|bottom|bottom:ambush|fish/.34/#6a5a48/#b8aa92/mottle|幻の高級魚。岩穴の主で、掛かっても根に潜られることが多い。
+hoobou|ホウボウ|Chelidonichthys spinosus|f|sand|b1w1s2|10-100|sand,mud|10-3|day|any|10-20|isome,worm|20-35|45|.01|3|.4|.8|weak|u|1500|bottom|bottom|fish/.24/#c4564a/#f2dccb/plain|青緑の大きな胸ビレと脚のような指で海底を歩く。
+umazura|ウマヅラハギ|Thamnaconus modestus|f|sand|b1p2w2i1|0-50|rock,weed|7-12|day|any|15-25|isome|20-30|40|.016|3|.5|.9|circle|c|800|mid|general|fish/.36/#5f6f7a/#a7b2b5/mottle|顔の長いカワハギの仲間。おちょぼ口でエサだけかすめ取る。
+nibe|ニベ|Nibea mitsukurii|f|sand|e1s3|0-40|sand|5-10|dn|move|16-26|isome|30-50|60|.011|4|.5|1|circle|u|600|bottom|bottom|fish/.25/#9c9a8a/#ecebe3/dots|シログチ（イシモチ）に似て黒い斜めの点列。砂浜の夜釣りで「グーグー」鳴く。
+ishigarei|イシガレイ|Platichthys bicoloratus|f|sand|b2s1e2|0-30|sand,mud|11-3|day|any|8-18|isome|25-40|50|.013|2|.35|.95|heavy|u|900|bottom|bottom|flat/.5/#6b6550/#efeee7/dots|目のある側に石のような硬い粒。冬の東京湾や河口のカレイ。
+shimaisaki|シマイサキ|Rhynchopelates oxyrhynchus|f|misc|b2p1e3|0-10|mud,sand|6-10|day|any|18-28|isome|15-25|30|.016|3|.35|.8|weak|c|300|lower|general|fish/.33/#b5b0a0/#ecebe6/stripe|黒い縦縞の汽水の魚。釣り上げると浮き袋で「グーグー」鳴く。
+menada|メナダ|Planiliza haematocheilus|f|misc|b2p1e3|0-10|mud|10-4|day|any|8-26|isome|30-60|100|.011|5|.6|1.05|shake|u|200|upper|general|fish/.22/#5d6b72/#e9edec/line|ボラに似るが口が赤みを帯びる。冬の河口に多い。
+kotohiki|コトヒキ|Terapon jarbua|f|misc|p1s1e2|0-10|sand|7-10|day|any|20-29|isome,lure|15-25|35|.016|4|.3|.8|weak|u|200|mid|general|fish/.32/#b9b7a6/#efeee8/stripe|弓なりの黒い縞。夏の河口や砂浜に現れ、釣ると「グーグー」鳴く。
+urohaze|ウロハゼ|Glossogobius olivaceus|f|misc|b1e3|0-5|mud|7-11|day|any|18-28|isome|12-20|25|.011|2|.3|.6|weak|u|500|bottom|bottom|fish/.18/#6a6a5a/#c5c2b0/mottle|マハゼより頭が大きく、体が黒っぽい汽水のハゼ。
+hiiragi|ヒイラギ|Nuchequula nuchalis|f|misc|b3p2e2|0-20|mud|6-11|day|any|18-28|sabiki,isome|7-12|15|.022|2|.2|.5|weak|c|100|mid|general|fish/.48/#9fa8ad/#eef0f0/plain|ぬめりの強い平たい小魚。東京湾のサビキの外道の常連。
+nezumigochi|ネズミゴチ|Repomucenus curvicornis|f|sand|b2s3|0-30|sand|5-10|day|any|16-27|isome|12-20|25|.008|2|.25|.5|weak|c|800|bottom|bottom|fish/.16/#9a8b6b/#ece6d3/mottle|キス釣りの外道「メゴチ」。ぬめりが強いが天ぷらは美味。
+tokagees|トカゲエソ|Saurida elongata|f|sand|b1w1s2|0-50|sand|5-11|day|any|16-27|lure,isome|25-40|50|.007|5|.3|.8|shake|c|100|bottom|bottom:ambush|fish/.16/#8a7f68/#ece7dc/mottle|トカゲのような頭と鋭い歯。砂底でキスやメゴチを待ち伏せる。
+dochizame|ドチザメ|Triakis scyllium|f|misc|b2p1s1e1|0-30|mud,sand|4-10|night|any|14-26|isome|60-100|150|.0045|4|.2|1.3|heavy|u|50|bottom|bottom|fish/.14/#8a8a7c/#e8e6dc/dots|東京湾に多い小型のサメ。おとなしく、夜のぶっこみ釣りで掛かる。
+nekozame|ネコザメ|Heterodontus japonicus|f|misc|w1i1|0-40|rock|3-7|night|any|13-22|isome|50-90|120|.006|3|.2|1.2|heavy|r|50|bottom|bottom|fish/.2/#8c7f6c/#d9d0bf/bars|サザエを砕く歯を持つ磯のサメ。目の上が猫の耳のように盛り上がる。
+haokoze|ハオコゼ|Hypodytes rubripinnis|f|rock|b2p2w2i2|0-20|rock,weed|5-11|day|any|15-27|isome,sabiki|6-10|15|.015|1|.2|.3|weak|c|0|bottom|bottom|fish/.32/#8a6a5a/#d8b9a0/mottle|背ビレに毒のトゲを持つ小さな根魚。素手で触らない。
+aigo|アイゴ|Siganus fuscescens|f|misc|b1p2w2i2|0-20|rock,weed|7-11|day|any|18-28|isome,sabiki|20-35|40|.016|4|.5|1.15|circle|c|300|mid|general|fish/.36/#7d7b5c/#d8d4b4/dots|ヒレのトゲに毒がある。海藻を食べ、引きは強い。
+nizadai|ニザダイ|Prionurus scalprum|f|misc|w2i2|0-20|rock|6-11|day|any|17-26|isome|30-45|50|.02|4|.5|1.2|circle|u|200|mid|general|fish/.42/#4d5056/#7c8086/dots|尾の付け根に黒い骨板が並ぶ。磯で群れて海藻をはむ。
+kagokaki|カゴカキダイ|Microcanthus strigatus|f|misc|p1w1i2|0-15|rock|6-11|day|any|18-27|isome,sabiki|10-15|20|.025|2|.3|.5|weak|u|100|mid|general|fish/.55/#e8d24a/#f3e8a0/stripe|黄色に黒い縦縞の小魚。夏の磯や港で群れる。
+suzumedai|スズメダイ|Chromis notata|f|misc|p1w2i3|0-20|rock|5-11|day|any|15-26|sabiki|8-12|16|.02|2|.2|.4|weak|c|100|mid|general|fish/.42/#4b4f4a/#8b8f88/plain|磯の群れの小魚。背ビレの後ろに白い点。
+kyusen|キュウセン|Parajulis poecilepterus|f|misc|b1w2i1s2|0-20|sand,rock|5-10|day|any|17-27|isome|15-25|30|.009|3|.3|.6|weak|c|600|lower|general|fish/.22/#7fb07a/#e8e3c0/stripe|ベラの代表。オスは緑色。夜は砂に潜って眠る。
+sasanohabera|ホシササノハベラ|Pseudolabrus sieboldi|f|misc|p1w2i3|0-30|rock,weed|4-11|day|any|15-26|isome|15-22|25|.011|3|.3|.6|weak|c|200|mid|general|fish/.25/#b45a45/#ead2c0/line|赤茶色のベラ。磯釣りのエサ取りの常連。
+kobudai|コブダイ|Semicossyphus reticulatus|f|misc|w1i1|5-30|rock|11-4|day|any|13-22|isome|50-80|100|.017|4|.5|1.45|dive|r|400|lower|general|fish/.36/#9c5a54/#e1b5a8/plain|大きなオスは額がこぶのように張り出す大型のベラ。
+isaki|イサキ|Parapristipoma trilineatum|f|misc|w1i2|5-50|rock|5-8|dn|move|17-25|sabiki,isome|20-35|45|.013|4|.45|1.05|circle|u|1500|mid|general|fish/.28/#6c6e5e/#d9d6c6/stripe|初夏が旬の磯の魚。若魚は縦縞模様（ウリボウ）。
+isuzumi|イスズミ|Kyphosus vaigiensis|f|misc|w1i2|0-20|rock|6-11|day|any|18-27|isome|30-50|70|.019|5|.55|1.35|dive|u|100|mid|general|fish/.36/#62696c/#a9b0b1/line|メジナ釣りの外道。強烈に根へ走るが磯臭い。
+takanohadai|タカノハダイ|Goniistius zonatus|f|misc|w1i3|0-20|rock|all|day|any|14-25|isome|25-35|45|.016|3|.4|.85|dive|c|200|bottom|general|fish/.36/#9b8f80/#e9e3d8/bars|斜めの縞と白い点の尾。相模湾の磯で一年中見られる。
+budai|ブダイ|Calotomus japonicus|f|misc|w1i2|0-20|rock,weed|10-3|day|any|13-22|isome|30-45|50|.016|4|.45|1.05|dive|u|400|lower|general|fish/.33/#a8574a/#d9a090/mottle|海藻を食べる磯の魚。冬が旬で、伊豆・相模湾では食用。
+utsubo|ウツボ|Gymnothorax kidako|f|rock|p1w2i2|0-30|rock|5-11|night|any|17-27|isome|50-80|100|.0018|3|.3|1.3|twist|c|300|bottom|bottom:ambush|eel/.08/#6b5b38/#c9b57e/mottle|岩の穴の主。鋭い歯を持ち、掛かると体をねじって抵抗する。
+mutsu|ムツ|Scombrops boops|f|mig|p1w1|0-200|rock|10-3|night|any|10-18|lure,isome|20-35|80|.012|5|.4|1.05|run|r|1200|mid|general|fish/.24/#3a434c/#9aa5ad/plain|大きな目と鋭い歯。若魚が冬の夜の港に入ることがある。
+shousaifugu|ショウサイフグ|Takifugu snyderi|f|sand|b1w1s2|0-30|sand|5-11|day|any|15-26|isome|20-30|35|.025|2|.3|.6|weak|u|0|bottom|bottom|fish/.42/#a99a6a/#f2f0e6/dots|砂地のフグ。毒があるので素人は調理しない。
+higanfugu|ヒガンフグ|Takifugu pardalis|f|rock|p1w2i2|0-20|rock|3-6|day|any|12-22|isome|20-30|35|.028|2|.3|.6|weak|u|0|bottom|bottom|fish/.44/#8b7a50/#e8e2cf/mottle|春の彼岸ごろ磯に寄るフグ。毒がある。
+komonfugu|コモンフグ|Takifugu poecilonotus|f|rock|b1p2w2i1|0-20|rock,sand|4-11|day|any|15-25|isome|15-25|30|.028|2|.3|.5|weak|c|0|lower|bottom|fish/.44/#7b7a5c/#ecebe2/dots|白い小さな斑点のフグ。エサ取り名人で毒がある。
+hakofugu|ハコフグ|Ostracion immaculatum|f|misc|w1i2|0-20|rock|6-10|day|any|18-27|isome|15-25|30|.035|1|.2|.4|weak|u|0|mid|general|fish/.6/#7a7a50/#e3dd9c/dots|硬い骨板の箱のような体。皮膚から毒を出すので持ち帰らない。
+surumeika|スルメイカ|Todarodes pacificus|c|ceph|p1w1|0-200|any|6-10|night|any|10-20|egi|20-30|40|.03|6|.4|.9|jet|r|1200|mid|squid:hug|squid/.3/#a35a3a/#e8c9b8/dots|胴が細長い外洋のイカ。夜、灯りに集まった群れが港に入ることがある。
+yariika|ヤリイカ|Heterololigo bleekeri|c|ceph|p1w2|0-100|any|12-3|night|any|10-17|egi|20-35|45|.02|6|.45|.85|jet|u|2500|mid|squid:hug|squid/.24/#c9a29a/#f1e3df/dots|槍のようにとがった胴。冬の夜の堤防で釣れる。
+kensakiika|ケンサキイカ|Uroteuthis edulis|c|ceph|w1|0-100|any|6-9|night|any|18-26|egi|15-30|40|.022|6|.45|.9|jet|r|3000|mid|squid:hug|squid/.26/#b46a5a/#f1d9cf/dots|夏の夜のイカ。甘みが強く高級（マイカ・アカイカ）。
+iidako|イイダコ|Amphioctopus fangsiao|c|ceph|b3p1|0-20|mud,sand|9-12|day|any|14-24|egi|8-15|25|.035|1|.3|.4|stick|c|1500|bottom|bottom:hold|octo/.5/#8a7a6a/#d8cbbd/mottle|東京湾の砂泥の小さなタコ。冬に胴に飯（卵）を抱える。
+tenagaebi|テナガエビ|Macrobrachium nipponense|k|crus|e2l3k1|0-3|mud,rock|6-9|any|any|18-28|isome|6-10|12|.012|1|.3|.2|weak|c|3000|bottom|bottom|fish/.2/#7a6a50/#c9b998/bars|長いハサミの川エビ。梅雨どきに河口や下流の岸の石の間で釣れる。
+ayu|アユ|Plecoglossus altivelis|f|fresh|u2m3|0-2|rock|6-10!|day|any|15-23|lure|15-25|30|.01|5|.5|.9|run|c|3000|mid|general|fish/.2/#6f7a5a/#e9e6c8/plain|石のコケを食べる清流の魚。縄張りを守る習性を使う友釣りが有名。
+yamame|ヤマメ|Oncorhynchus masou masou|f|fresh|u3m1|0-3|rock|3-9!|dd|any|8-18|isome,lure|15-25|35|.011|5|.8|.95|shake|u|3000|mid|general|fish/.22/#6b7a62/#eae6dc/dots|体の側面に小判形の斑紋（パーマーク）。渓流の女王。
+iwana|イワナ|Salvelinus leucomaenis|f|fresh|u3|0-3|rock|3-9!|dd|any|6-15|isome,lure|18-30|50|.011|4|.8|.95|dive|u|3000|bottom|general|fish/.22/#4f5a4f/#d9cfa8/dots|最上流に棲む白い斑点のマス。警戒心がとても強い。
+nijimasu|ニジマス|Oncorhynchus mykiss|f|fresh|u1m2k3|0-10|any|all|dd|any|10-20|isome,lure|25-45|70|.012|6|.5|1.15|shake|c|1500|mid|general|fish/.23/#5f7a6a/#ecd9d0/dots|体側に虹色の帯。管理釣り場や湖で放流され、よく跳ねる。
+ugui|ウグイ|Pseudaspius hakonensis|f|fresh|u1m3l2k1e1|0-5|any|all|day|any|8-24|isome|15-30|45|.011|4|.5|.85|run|c|100|mid|general|fish/.22/#6a7066/#e9e9e0/line|川の上流から河口までどこにでもいる。春は朱色の婚姻色が出る。
+oikawa|オイカワ|Opsariichthys platypus|f|fresh|m3l2|0-2|sand|5-10|day|any|15-27|isome,lure|10-15|18|.01|3|.4|.5|weak|c|200|upper|general|fish/.24/#7a8e8a/#efefe8/bars|平瀬の小魚。夏のオスは青と赤の婚姻色になる（ヤマベ）。
+kawamutsu|カワムツ|Nipponocypris temminckii|f|fresh|u1m3l1|0-2|rock|5-10|day|any|15-26|isome|10-15|20|.011|3|.4|.5|weak|c|100|upper|general|fish/.23/#6a7158/#e9e3c9/line|体の中央に黒い縦帯。木陰の淵に群れる。
+koi|コイ|Cyprinus carpio|f|fresh|m1l3k3e1|0-10|mud|4-11|any|any|15-28|isome|40-70|110|.016|4|.7|1.35|heavy|c|50|bottom|bottom|fish/.3/#6b5e3a/#d8c896/plain|口元に2対のひげ。大きく育ち、重く粘る引きをする。
+ginbuna|ギンブナ|Carassius langsdorfii|f|fresh|m1l3k3|0-5|mud|3-11|day|any|12-26|isome|15-25|35|.022|3|.5|.8|circle|c|50|bottom|bottom|fish/.4/#77715a/#d9d5c2/plain|ひげのないフナ。釣りは「フナに始まりフナに終わる」と言われる。
+herabuna|ゲンゴロウブナ|Carassius cuvieri|f|fresh|l1k3|0-5|mud|3-11|day|any|12-26|isome|25-40|50|.022|3|.6|.95|circle|u|50|mid|general|fish/.45/#8a8a74/#e3e1d2/plain|体高の高いフナ（ヘラブナ）。ウキ釣りの専門の釣りがある。
+namazu|ナマズ|Silurus asotus|f|fresh|m1l3k2|0-5|mud|5-9|night|any|18-28|lure,isome|40-60|70|.009|3|.4|1.15|heavy|u|300|bottom|bottom:ambush|fish/.2/#4a4a3a/#b0aa90/mottle|大きな口と2対のひげ。夜、水面のルアーにも飛びつく。
+unagi|ニホンウナギ|Anguilla japonica|f|fresh|m1l2e2|0-10|mud|5-10|night|any|18-28|isome|40-70|100|.0012|3|.5|1.1|twist|r|3000|bottom|bottom:ambush|eel/.07/#3f4a3a/#d9d6c0/plain|海で生まれ川で育つ。絶滅危惧種なので小さいものは放す配慮を。
+largemouth|オオクチバス|Micropterus salmoides|f|fresh|m1l2k3|0-10|weed|4-11|dd|any|15-28|lure,worm|25-45|60|.015|5|.6|1.15|shake|c|0|mid|general|fish/.3/#5c6b3e/#e3e2c7/line|ブラックバス。特定外来生物で、生きたままの移動・持ち帰りは禁止。
+smallmouth|コクチバス|Micropterus dolomieu|f|fresh|m2k2|0-10|rock|4-11|dd|any|12-26|lure,worm|25-40|50|.015|5|.6|1.2|shake|u|0|mid|general|fish/.3/#7a6a40/#e2dcc2/bars|流れのある川にも棲むバス。特定外来生物。
+bluegill|ブルーギル|Lepomis macrochirus|f|fresh|l1k3|0-5|weed|5-10|day|any|18-28|isome,worm|10-18|25|.025|3|.4|.6|circle|c|0|mid|general|fish/.5/#5c6a5e/#d9c48a/bars|えらぶたに青黒い耳たぶ。特定外来生物。
+wakasagi|ワカサギ|Hypomesus nipponensis|f|fresh|k3|0-20|any|10-3|day|any|4-16|sabiki|8-12|15|.006|2|.3|.3|weak|c|2000|mid|general|fish/.16/#9ab0aa/#eef2ee/line|冬の湖の氷上釣りやドーム船で釣る小魚。
+motsugo|モツゴ|Pseudorasbora parva|f|fresh|l2k3|0-2|mud|4-11|day|any|12-28|isome|5-8|11|.012|1|.3|.3|weak|c|50|mid|general|fish/.22/#8a8a72/#ddd9c8/line|おちょぼ口の小魚（クチボソ）。池や水路にいる。
+kamatsuka|カマツカ|Pseudogobio esocinus|f|fresh|m3l2|0-2|sand|5-10|day|any|12-26|isome|12-18|22|.008|2|.3|.4|weak|c|300|bottom|bottom|fish/.18/#9a8a6a/#e8e0cc/mottle|砂底にいる細長い魚。驚くと砂に潜る。
+nigoi|ニゴイ|Hemibarbus barbus|f|fresh|m2l3k1|0-5|sand|4-11|day|any|12-26|isome,lure|30-50|60|.011|4|.5|1.05|run|c|50|bottom|bottom|fish/.2/#8a8a7a/#e6e4da/plain|コイに似るが細長く、ひげは1対。大きな川の中・下流に多い。
+hasu|ハス|Opsariichthys uncirostris|f|fresh|l1k2|0-5|sand|6-9|day|any|18-27|lure|20-30|35|.009|6|.4|.8|run|u|50|upper|general|fish/.2/#6a7a80/#eceeed/plain|への字に曲がった口で小魚を追う。関東には琵琶湖から移入。
+maruta|マルタ|Pseudaspius brandtii maruta|f|fresh|l2e2|0-5|sand,rock|3-4!|day|any|8-16|lure,isome|35-50|60|.01|5|.5|1.05|run|u|50|mid|general|fish/.22/#5a6a5a/#e8e8e0/line|春に海から多摩川などをさかのぼるウグイの仲間。オレンジの婚姻色の帯。
+kamuruchi|カムルチー|Channa argus|f|fresh|l1k2|0-3|weed|6-9|day|any|20-30|lure|50-80|100|.009|4|.5|1.3|heavy|u|0|top|general|fish/.18/#5a5040/#c8bb98/mottle|ライギョ。水草の茂る池でカエルのルアーに食いつく。
+channelcat|チャネルキャットフィッシュ|Ictalurus punctatus|f|fresh|l2k2|0-10|mud|4-11|night|any|15-28|isome|40-70|100|.01|4|.4|1.3|heavy|c|0|bottom|bottom|fish/.2/#6a7480/#e2e4e6/dots|アメリカナマズ。霞ヶ浦・利根川で増えた特定外来生物。
+himemasu|ヒメマス|Oncorhynchus nerka|f|fresh|k2|5-30|any|4-9|dawn|any|6-15|lure,isome|25-35|45|.011|5|.5|.95|run|u|3000|mid|general|fish/.22/#5a7a8a/#e8ecec/plain|湖に閉じ込められたベニザケ。芦ノ湖・中禅寺湖などで釣れる。
+browntrout|ブラウントラウト|Salmo trutta|f|fresh|m1k1|0-20|rock|4-9|dd|any|8-18|lure|25-50|80|.012|6|.7|1.2|shake|r|1500|mid|general|fish/.23/#7a6a4a/#e8d9b8/dots|黒と赤の斑点のマス。中禅寺湖などで大きく育つ外来種。
+numachichi|ヌマチチブ|Tridentiger brevispinis|f|fresh|l2k2e1|0-3|rock,mud|5-10|day|any|12-28|isome|6-10|12|.012|1|.2|.3|weak|c|100|bottom|bottom|fish/.2/#4a4a40/#a8a690/mottle|川や湖の石の間にいる黒っぽいハゼ。エサ取りの名人。
+bitterling|タイリクバラタナゴ|Rhodeus ocellatus ocellatus|f|fresh|l1k2|0-2|mud,weed|4-10|day|any|14-28|isome|4-6|8|.02|1|.3|.2|weak|c|50|mid|general|fish/.4/#8a8aa0/#e6dce6/plain|二枚貝に卵を産む小さなタナゴ。春のオスはばら色に染まる。外来種。

@@ -201,7 +201,9 @@ function rangeMatch(id,depth,D){const[a,b]=layerRange(LAYER[id]||'mid',D);const 
    bottom: 底の魚（底付近をゆっくり通ると反応）、general: それ以外 */
 const BLUE=['kataku','iwashi','konoshiro','sappa','aji','saba','sayori','kamasu','inada','warasa','tachiuo'];
 const SQUID=['sumiika','aoriika'];
-function styleOf(id){if(BLUE.includes(id))return'blue';if(SQUID.includes(id))return'squid';const l=LAYER[id];return l==='bottom'||l==='lower'?'bottom':'general';}
+// 追加の魚種（data/fish/species.js）の型はここに登録する
+const STYLE_OVR={};
+function styleOf(id){if(STYLE_OVR[id])return STYLE_OVR[id];if(BLUE.includes(id))return'blue';if(SQUID.includes(id))return'squid';const l=LAYER[id];return l==='bottom'||l==='lower'?'bottom':'general';}
 /* カタログの性能値による補正（どれも「確率を0にしない」係数）
    - 適正巻き速度（optimalRetrieve）の中ならナチュラル、外れると不自然で見切られやすい
    - 対象魚タグ（targetSpecies）は得意な魚に少し効く
@@ -243,6 +245,6 @@ function lureBiteRate(L,base,cand){let sumW=0;for(const[,w]of cand)sumW+=w;if(su
 function weedRate(L){return L.onBottom&&L.bottomType==='weed'&&!L.weeded?(L.reel>.05?.12:.05):0;}
 function snagRate(L){if(!(L.onBottom&&L.bottomType==='rock'))return 0;return TUNE.snagRockPerSec*(L.reel>.05?TUNE.snagDragMul:1)*(L.snagMul||1);}
 
-const API={bottomAt,onSlope,WEATHER_LABEL,weatherOf,SST,waterTemp,turbidity,currentAt,lightOf,underwaterVis,TEMP_PREF,tempFactor,BOTTOM_PREF,bottomFactor,weatherFactor,cautionMul,lateral,weedRate,rigFromItem,baitClassOf,gearAppeal,RIGS,SPOT_ENV,LAYER,TUNE,isLureBait,waterDepth,bottomType,envAt,makeLure,stepLure,jerk,twitch,lureState,lureSpeed,styleOf,actionAppeal,layerRange,rangeMatch,presentWeights,lureBiteRate,snagRate};
+const API={STYLE_OVR,bottomAt,onSlope,WEATHER_LABEL,weatherOf,SST,waterTemp,turbidity,currentAt,lightOf,underwaterVis,TEMP_PREF,tempFactor,BOTTOM_PREF,bottomFactor,weatherFactor,cautionMul,lateral,weedRate,rigFromItem,baitClassOf,gearAppeal,RIGS,SPOT_ENV,LAYER,TUNE,isLureBait,waterDepth,bottomType,envAt,makeLure,stepLure,jerk,twitch,lureState,lureSpeed,styleOf,actionAppeal,layerRange,rangeMatch,presentWeights,lureBiteRate,snagRate};
 if(typeof module!=='undefined'&&module.exports)module.exports=API;else root.HamaSim=API;
 })(typeof self!=='undefined'?self:this);

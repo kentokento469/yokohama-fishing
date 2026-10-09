@@ -71,7 +71,22 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
 @keyframes pop{from{transform:scale(.75);opacity:0}}
 .kick{font-weight:900;color:#1b7d82;font-size:14px;letter-spacing:.06em}
 .card h2{font-family:var(--display);font-weight:400;font-size:24px;margin:4px 0 0;text-wrap:balance}
-#resCv{width:100%;height:120px;display:block;margin-top:4px}
+#resCv{width:100%;height:100%;display:block}
+.res2{width:min(94vw,520px);max-height:94vh;overflow:auto;padding:14px 14px 14px}
+.resImg{position:relative;width:100%;aspect-ratio:16/9;border-radius:14px;overflow:hidden;margin-top:6px;background:radial-gradient(ellipse at 50% 40%,#f7f4ea,#dcd6c4)}
+.resImg img,.resImg canvas{width:100%;height:100%;object-fit:contain;display:block}
+.resStats b#resW,.resStats b#resSize{font-family:var(--display);font-weight:400;font-size:26px;color:var(--ink);line-height:1.3}
+.seg.dexSeg button{flex:1 0 22%;padding:7px 4px}
+.resImgNote{font-size:10px;color:var(--mute);text-align:right;margin-top:2px;min-height:12px}
+.resSci{font-style:italic;font-size:12px;color:var(--mute)}
+.resStats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}.resStats div{background:#fff;border-radius:12px;padding:6px}.resStats b{display:block;font-family:var(--display);font-weight:400;font-size:26px;font-variant-numeric:tabular-nums}.resStats span{font-size:11px;color:var(--mute)}
+.resMeta{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:12px;text-align:left;margin:4px 0 6px}.resMeta dt{color:var(--mute)}.resMeta dd{margin:0;font-weight:700}
+.res2.fx-new{box-shadow:0 0 0 3px #49c1c4,0 10px 0 rgba(8,20,36,.45)}.res2.fx-big{box-shadow:0 0 0 3px #e07a3b,0 10px 0 rgba(8,20,36,.45)}
+.res2.fx-rare{box-shadow:0 0 0 4px #f1b746,0 0 26px #f1b746,0 10px 0 rgba(8,20,36,.45);animation:pop .26s cubic-bezier(.3,1.6,.6,1),glow 1.6s ease-in-out infinite alternate}
+@keyframes glow{to{box-shadow:0 0 0 4px #ffd977,0 0 40px #ffd977,0 10px 0 rgba(8,20,36,.45)}}
+.res2.fx-rare .kick,.res2.fx-big .kick{font-size:18px;color:#b4561c}
+.dexD{background:#fff;border:2px solid #7cc9cb;border-radius:14px;padding:10px;margin-bottom:10px}.dexD .resImg{margin:0 0 6px}.dexD h3{margin:2px 0;font-size:17px}.dexD dl{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:12px;margin:6px 0}.dexD dt{color:var(--mute)}.dexD dd{margin:0}
+.dx img{width:100%;height:56px;object-fit:contain;display:block}.dx.lock{opacity:.75}.dx .rar{color:#b4561c;font-weight:900}
 #resSize{font-family:var(--display);font-size:30px;font-variant-numeric:tabular-nums}
 #resSize small{font-size:15px}
 #resW{font-size:13px;font-weight:700;color:var(--mute);font-variant-numeric:tabular-nums}
@@ -200,12 +215,14 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
 </div>
 
 <div id="result" class="overlay" hidden>
-  <div class="card">
+  <div class="card res2" id="resCard">
     <div class="kick" id="resKick">釣れた！</div>
-    <canvas id="resCv"></canvas>
+    <div class="resImg" id="resImg"><canvas id="resCv"></canvas></div>
+    <div class="resImgNote" id="resImgNote"></div>
     <h2 id="resName">—</h2>
-    <div id="resSize">—</div>
-    <div id="resW">—</div>
+    <div class="resSci" id="resSci"></div>
+    <div class="resStats"><div><b id="resSize">—</b><span>体長</span></div><div><b id="resW">—</b><span>重さ</span></div></div>
+    <dl class="resMeta" id="resMeta"></dl>
     <div id="resBadges"></div>
     <p id="resDesc"></p>
     <div class="row"><button id="resRel" class="btnB">リリース</button><button id="resKeep" class="btnA">持ち帰る</button></div>
@@ -258,6 +275,8 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
 <script src="tackle.js"></script>
 <script src="fight.js"></script>
 <script src="sound.js"></script>
+<script src="data/fish/species.js"></script>
+<script src="data/fish/images.js"></script>
 <script src="geo.js"></script>
 <script src="data/shonan-spots.js"></script>
 <script src="shonan.js"></script>
@@ -356,6 +375,23 @@ const FISH={
 };
 // ワーム（ジグヘッド）で釣れる魚
 for(const id of['kibire','aji','seabass','hirame','magochi','kasago','murasoi','mebaru','ainame','kurodai','haze'])FISH[id].bait.push('worm');
+/* ===== 魚種のマスター（data/fish/species.json → species.js）=====
+   既存36種には学名・生息・ファイトなどの情報（sp）を足すだけ。新しい魚種は FISH・適水温・底質・泳層・魚のAIに登録する。 */
+const FDATA=window.HamaFishData||{species:[]};const SPEC={};
+const RARITY_W={common:1,uncommon:.45,rare:.12,very_rare:.035,legendary:.01};
+const RARITY_LABEL={common:'ふつう',uncommon:'やや少ない',rare:'珍しい',very_rare:'とても珍しい',legendary:'幻'};
+for(const s of FDATA.species){SPEC[s.id]=s;let f=FISH[s.id];
+  if(!f){const k=s.look;f=FISH[s.id]={n:s.ja,L:[s.size.min,s.size.max],a:s.a,kg:s.price,bait:s.methods.slice(),tm:s.time,mo:s.months.peak,
+      sh:Object.assign({a:k.aspect,bk:k.back,bl:k.belly,pat:k.pattern},k.shape!=='fish'?{shape:k.shape}:{}),d:s.desc,added:true,ff:s.power};
+    if(s.traits.blue)f.blue=1;if(s.traits.rock)f.rock=1;if(s.flags.poison)f.poison=1;if(s.flags.venom)f.venom=1;if(s.unit)f.unit=s.unit;
+    if(s.flags.specified_invasive)f.noKeep='特定外来生物（生きたままの持ち帰り・移動は禁止）';
+    if(s.temp)SIM.TEMP_PREF[s.id]=s.temp;if(s.bottom.length)SIM.BOTTOM_PREF[s.id]=s.bottom;SIM.LAYER[s.id]=s.layer;
+    if(s.ai.style==='blue'||s.ai.style==='squid')SIM.STYLE_OVR[s.id]=s.ai.style;
+    FAI.OVR[s.id]=Object.assign({base:s.ai.style,burst:Math.max(1,s.speed*.4),caution:s.wary},s.ai.beh?{beh:s.ai.beh}:{});
+    if(s.size.max<=25&&s.ai.style==='blue')FG.SOFT_MOUTH.push(s.id);}
+  f.sp=s;}
+// 潮との関係：move 動く潮で活発 / high 上げ潮 / low 下げ潮
+function tideFactor(t,td){const a=Math.min(1,Math.abs(td.s));return t==='move'?.6+.8*a:t==='high'?(td.s>0?1.25:.8):t==='low'?(td.s<0?1.2:.85):1;}
 const FISH_IDS=Object.keys(FISH);
 const BOTTOM_LABEL={sand:'砂地',mud:'泥底',rock:'岩・テトラ',weed:'海藻帯'};
 const TM_LABEL={day:'日中',night:'夜',dd:'朝夕マズメ',dn:'夕方〜夜',dawn:'早朝',any:'時間を問わない'};
@@ -976,7 +1012,10 @@ function candidates(){const h=hourF(),sp=F.spot,out=[];let sum=0;const mon=gameD
   // 湘南：その釣り場の釣り方に合う仕掛けか（合わなければ半分）、ナブラには回遊魚の群れ（イナダ・サバ）が入る、
   // 砂浜は波が立つとヒラメ・シーバス（サラシ）、高すぎるとキスが渋い、河口は濁るとシーバスとキビレ
   const g=sp.sh,ws=Object.assign({},sp.w);if(g&&inN){ws.inada=(ws.inada||0)+8;ws.saba=(ws.saba||0)+8;ws.warasa=(ws.warasa||0)+1;}
-  for(const id in ws){const f=FISH[id];if(!f.bait.includes(S.bait))continue;let w=ws[id]*tmul(f.tm,h)*(f.mo[mon]?1:.12)*SIM.tempFactor(id,E.T)*SIM.bottomFactor(id,bot)*SIM.weatherFactor(id,E.w,E.turb,E.cur);
+  // 追加の魚種：釣り場の種類（横浜は東京湾の岸壁、湘南は砂浜・河口・磯・漁港・堤防）ごとの多さ × レア度。浅すぎる所には来にくい
+  const hk=g?{beach:'beach',river:'estuary',iso:'iso',port:'port',breakwater:'breakwater'}[g.type]:'bay',Dw=SIM.waterDepth(sp.id,dist,tet),td=tideAt(h,tideInfo());
+  for(const s of FDATA.species){if(s.existing||ws[s.id])continue;const hv=s.hab[hk];if(!hv)continue;ws[s.id]=hv*1.5*RARITY_W[s.rarity]*(Dw<s.depth[0]?.3:1);}
+  for(const id in ws){const f=FISH[id];if(!f.bait.includes(S.bait))continue;if(f.added&&f.sp.months.strict&&!f.mo[mon])continue;let w=ws[id]*(f.added?tideFactor(f.sp.tide,td):1)*tmul(f.tm,h)*(f.mo[mon]?1:.12)*SIM.tempFactor(id,E.T)*SIM.bottomFactor(id,bot)*SIM.weatherFactor(id,E.w,E.turb,E.cur);
     if(g){w*=SH.methodFit(g,S.bait);if(g.type==='beach'){if((id==='hirame'||id==='seabass')&&E.wave>=.6&&E.wave<=1.6)w*=1.35;if(id==='kisu'&&E.wave>1.2)w*=.6;}
       if(g.type==='river'&&E.turb>.6&&(id==='seabass'||id==='kibire'))w*=1.4;}
     if(inN&&f.blue)w*=6;if(tet&&f.rock)w*=2.5;if(f.near)w*=dist<14?1.8:.55;if(f.far)w*=.3+far*1.2;if((id==='inada'||id==='warasa')&&!inN)w*=.3;out.push([id,w]);sum+=w;}
@@ -1019,7 +1058,7 @@ function hook(){const rod=rodOf(),reel=reelOf(),lure=lureWaitOrBite(),L=F.lure;
   F.reelHold=false;F.st='fight';F.t=0;F.hold=false;F.short=false;F.lineKg=TK.lineKg(reel);
   F.fg=FG.createFight({P:F.P,d0:F.d0,lineKg:F.lineKg,liftKg:TK.rodLiftKg(rod),reelK:reel.retrieveCmPerTurn/70,flex:rod.flexibility,
     dragPrec:reel.dragPrecision*((reel.playerEffect&&reel.playerEffect.dragStabilityMultiplier)||1),drag:dragKg(),capacityM:reel.capacityM,
-    q:r.q,id:F.fish,wkg:F.wkg,needNet:!!(F.spot&&F.spot.hours),rng:rnd});
+    q:r.q,id:F.fish,style:FISH[F.fish].sp&&FISH[F.fish].sp.fight,wkg:F.wkg,needNet:!!(F.spot&&F.spot.hours),rng:rnd});
   F.dist=F.d0;F.ten=.3;F.surge=0;$('fight').hidden=false;updDragUI();
   SND.play('hook');toast(r.q>.8?'掛かった！ 長押しで巻く・赤くなったら離す':'掛かった！（針掛かりが浅い… 慎重に）');}
 $('dragDn').onclick=()=>setDrag(-.2);$('dragUp').onclick=()=>setDrag(.2);
@@ -1107,13 +1146,64 @@ function updateNabura(dt){
 function priceOf(id,kg){const f=FISH[id];if(f.poison)return 0;return Math.max(10,Math.round(f.kg*kg/10)*10);}
 function wtxt(kg){return kg<1?`${Math.round(kg*1000)} g`:`${kg.toFixed(2)} kg`;}
 let pending=null;
-function showResult(){const id=F.fish,f=FISH[id],sz=F.size,kg=F.wkg;const d=S.dex[id]||{c:0,max:0,kg:0};const isNew=!d.c,isRec=!isNew&&sz>d.max;d.c++;d.max=Math.max(d.max,sz);d.kg=Math.max(d.kg||0,kg);S.dex[id]=d;pending={id,sz,kg,price:priceOf(id,kg)};
-  $('resKick').textContent=F.nabura?'ナブラ撃ち成功！':'釣れた！';$('resName').textContent=f.n;$('resSize').innerHTML=`${f.unit?`<small>${f.unit} </small>`:''}${sz.toFixed(1)}<small> cm</small>`;$('resW').textContent=`重さ ${wtxt(kg)}`;
-  let b='';if(isNew)b+='<span class="badge">図鑑に登録</span> ';if(isRec)b+='<span class="badge">自己記録更新</span> ';if(f.poison)b+='<span class="badge red">持ち帰り不可</span> ';if(f.venom)b+='<span class="badge red">毒のトゲに注意</span>';
+
+/* ===== 魚図鑑：全魚種（data/fish/species.json）。釣った魚と未釣獲を区別し、写真（あれば）・特徴・生息・釣獲記録を出す ===== */
+let dexF='all',dexSel=null;
+const DEX_F={all:['全部',()=>true],got:['釣った',id=>S.dex[id]],yet:['まだ',id=>!S.dex[id]],sea:['海',id=>{const s=SPEC[id];return s&&s.cls==='fish'&&(s.hab.bay||s.hab.port||s.hab.breakwater||s.hab.iso||s.hab.beach);}],
+  est:['河口',id=>SPEC[id]&&SPEC[id].hab.estuary>0],fresh:['淡水',id=>SPEC[id]&&!SPEC[id].catchable],ceph:['イカ・タコ等',id=>SPEC[id]&&SPEC[id].cls!=='fish']};
+const HAB_LABEL={bay:'東京湾の岸壁',port:'漁港',breakwater:'堤防',iso:'磯',beach:'砂浜',estuary:'河口・汽水',upstream:'渓流',midstream:'川の中流',lower:'川の下流',lake:'湖・池'};
+const FIGHT_LABEL={run:'走る（青物の疾走）',dive:'根に突っ込む',shake:'首振り・ジャンプ',heavy:'重く粘る',circle:'叩く・円を描く',jet:'ジェット噴射',stick:'底に張り付く',twist:'体をねじる',weak:'小さく暴れる'};
+const TIDE_LABEL={move:'潮が動くとき',high:'上げ潮',low:'下げ潮',any:'潮を選ばない'};
+function monTxt(mo){const r=[];for(let m=1;m<=12;m++)if(mo[m]&&!mo[m===1?12:m-1])r.push(m);return r.map(m0=>{let m=m0;while(mo[m%12+1]&&m%12+1!==m0)m=m%12+1;return m0===m?`${m0}月`:`${m0}〜${m}月`;}).join('・')||'通年';}
+function renderDex(sb){const ids=FISH_IDS.filter(DEX_F[dexF][1]);const got=FISH_IDS.filter(id=>S.dex[id]).length,mon=gameDate().getMonth()+1;
+  let h=`<p class="sub">${got} / ${FISH_IDS.length} 種（海・河口で釣れる ${FISH_IDS.filter(id=>!SPEC[id]||SPEC[id].catchable).length} 種）。未発見の魚はヒントだけ。いまは${mon}月。</p>
+  <div class="seg dexSeg">${Object.entries(DEX_F).map(([k,[n]])=>`<button data-df="${k}" class="${dexF===k?'on':''}">${n}</button>`).join('')}</div>`;
+  if(dexSel&&FISH[dexSel])h+=dexDetail(dexSel);
+  h+='<div class="dex">';
+  for(const id of ids){const f=FISH[id],d=S.dex[id],sp=SPEC[id];const rs=sp?{common:'',uncommon:'★',rare:'★★',very_rare:'★★★',legendary:'★★★★'}[sp.rarity]:'';
+    h+=`<button class="dx${d?'':' lock'}" data-dx="${id}">${d&&FIMG[id]?fishPic(id,'thumb'):`<canvas data-f="${id}" data-k="${d?1:0}"></canvas>`}<b>${d?esc(f.n):'？？？'} <span class="rar">${rs}</span></b>
+      <span>${d?`最大 ${d.max.toFixed(1)}cm・${wtxt(d.kg||0)}・${d.c}匹`:sp&&!sp.catchable?'淡水（釣り場は未実装）':`${f.bait.map(b=>BAIT[b].n).join('/')}・${TM_LABEL[f.tm]}`}</span><span>旬 ${seasonTxt(f)}${f.mo[mon]?'（いま）':''}</span></button>`;}
+  sb.innerHTML=h+'</div>';sb.querySelectorAll('canvas[data-f]').forEach(c=>drawFishCanvas(c,c.dataset.f,c.dataset.k!=='1'));
+  sb.querySelectorAll('[data-df]').forEach(b=>b.onclick=()=>{dexF=b.dataset.df;renderTab();});
+  sb.querySelectorAll('[data-dx]').forEach(b=>b.onclick=()=>{dexSel=dexSel===b.dataset.dx?null:b.dataset.dx;renderTab();sb.scrollTop=0;});
+  const dc=sb.querySelector('.dexD canvas');if(dc)drawFishCanvas(dc,dc.dataset.f,dc.dataset.k!=='1');}
+function dexDetail(id){const f=FISH[id],d=S.dex[id],sp=SPEC[id];const known=!!d;
+  const where=SPOTS.filter(s=>{if(s.w[id])return true;if(!sp||sp.existing)return false;const k=s.sh?{beach:'beach',river:'estuary',iso:'iso',port:'port',breakwater:'breakwater'}[s.sh.type]:'bay';return sp.hab[k]>0;}).map(s=>s.n);
+  let h=`<div class="dexD"><div class="resImg">${known&&FIMG[id]?fishPic(id,'full'):`<canvas data-f="${id}" data-k="${known?1:0}"></canvas>`}</div><div class="resImgNote">${known?picCredit(id):'未釣獲'}</div>
+    <h3>${known?esc(f.n):'？？？'}</h3>${sp&&known?`<div class="resSci">${esc(sp.sci)}</div>`:''}<p class="sub">${known?esc(f.d):'釣ると特徴がわかる'}</p><dl>`;
+  const row=(k,v)=>{h+=`<dt>${k}</dt><dd>${v}</dd>`;};
+  if(sp){row('分類',{fish:'魚類',cephalopod:'頭足類（イカ・タコ）',crustacean:'甲殻類'}[sp.cls]);row('生息',Object.entries(sp.hab).filter(([k,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([k])=>HAB_LABEL[k]).join('・'));
+    row('季節',`${monTxt(f.mo)}${sp.months.strict?'（それ以外は来ない）':''}`);row('時間帯',TM_LABEL[f.tm]);row('潮',TIDE_LABEL[sp.tide]);row('釣り方',f.bait.map(b=>BAIT[b].n).join('・'));
+    if(known){row('水深',`${sp.depth[0]}〜${sp.depth[1]}m`);row('底質',sp.bottom.length?sp.bottom.map(b=>BOTTOM_LABEL[b]||b).join('・'):'選ばない');if(sp.temp)row('適水温',`${sp.temp[0]}〜${sp.temp[1]}℃`);
+      row('大きさ',`ふつう ${sp.size.min}〜${sp.size.max}cm・最大 約${sp.size.record}cm`);row('引き',FIGHT_LABEL[sp.fight]);row('警戒心','●'.repeat(Math.round(sp.wary*5))||'低い');row('レア度',RARITY_LABEL[sp.rarity]);}
+    if(!sp.catchable)row('ゲーム','淡水の釣り場はまだありません（川・湖を追加すると釣れる）');}
+  row('釣れる場所',where.length?esc(where.slice(0,6).join('・'))+(where.length>6?` ほか${where.length-6}か所`:''):'—');
+  if(d){row('釣った数',`${d.c}匹`);const b=d.best||{cm:d.max,kg:d.kg};row('自己ベスト',`${b.cm.toFixed(1)}cm・${wtxt(b.kg||0)}${b.spot?`（${esc(b.spot)}・${b.date} ${b.time}・${esc(b.bait)}）`:''}`);if(d.first)row('はじめて',`${d.first.date}・${esc(d.first.spot)}`);}
+  if(f.noKeep)row('注意',esc(f.noKeep));else if(f.poison)row('注意','毒があるので持ち帰らない');else if(f.venom)row('注意','毒のトゲがある');
+  return h+'</dl><p class="sub" style="font-size:10px">学名・分布は一般的な資料にもとづくおおよそ。能力値はゲーム用の推定。</p></div>';}
+/* ===== 釣果の表示：写真（data/fish/images.js にある魚種）または仮の図、名前・学名・体長・重さ・場所・日時・仕掛け・自己ベスト。初物・大物・レアの演出 ===== */
+const FIMG=window.HamaFishImages||{};
+function fishPic(id,kind){const m=FIMG[id];if(!m)return'';if(kind==='thumb')return`<img loading="lazy" decoding="async" src="${m.thumb}" alt="">`;
+  return`<picture>${m.avif?`<source srcset="${m.avif}" type="image/avif">`:''}<img decoding="async" src="${m.full}" alt="${esc(FISH[id].n)}"></picture>`;}
+function picCredit(id){const m=FIMG[id];return m?`写真：${esc(m.artist||'不明')}／${esc(m.license||'')}（${esc(m.source||'')}・${esc(m.modified||'')}）`:'写真素材なし（仮の図。実物の写真ではありません）';}
+function showResult(){const id=F.fish,f=FISH[id],sp=f.sp,sz=F.size,kg=F.wkg;const d=S.dex[id]||{c:0,max:0,kg:0};const isNew=!d.c,prev=d.best||(d.max?{cm:d.max,kg:d.kg}:null),isRec=!isNew&&sz>d.max;
+  const dt=gameDate(),rec={cm:sz,kg:Math.round(kg*1000)/1000,spot:F.spot?F.spot.n:'',date:`${dt.getFullYear()}/${dt.getMonth()+1}/${dt.getDate()}`,time:fmtTime(S.min),bait:baitName()};
+  d.c++;d.max=Math.max(d.max,sz);d.kg=Math.max(d.kg||0,kg);if(isNew)d.first=rec;if(isNew||isRec)d.best=rec;S.dex[id]=d;S.log=(S.log||[]).concat([Object.assign({id},rec)]).slice(-50);
+  pending={id,sz,kg,price:priceOf(id,kg)};
+  const rare=sp&&['rare','very_rare','legendary'].includes(sp.rarity),big=sz>=f.L[0]+(f.L[1]-f.L[0])*.85||(sp&&sz>=sp.size.record*.7);
+  const card=$('resCard');card.className='card res2'+(rare?' fx-rare':big?' fx-big':isNew?' fx-new':'');
+  $('resKick').textContent=sp&&sp.rarity==='legendary'?'幻の魚！':rare?'レア魚！':big?'大物！':isNew?'はじめて釣った！':F.nabura?'ナブラ撃ち成功！':'釣れた！';
+  $('resName').textContent=f.n;$('resSci').textContent=sp?sp.sci:'';
+  $('resSize').innerHTML=`${f.unit?`<small>${f.unit} </small>`:''}${sz.toFixed(1)}<small> cm</small>`;$('resW').textContent=wtxt(kg);
+  $('resMeta').innerHTML=`<dt>場所</dt><dd>${esc(rec.spot)}</dd><dt>日時</dt><dd>${rec.date} ${rec.time}</dd><dt>仕掛け</dt><dd>${esc(rec.bait)}</dd>`+
+    `<dt>自己ベスト</dt><dd>${isNew?'はじめての1匹':isRec?`更新！（これまで ${prev.cm.toFixed(1)}cm）`:`${d.max.toFixed(1)}cm`}・${d.c}匹目</dd>`+(sp?`<dt>レア度</dt><dd>${RARITY_LABEL[sp.rarity]}</dd>`:'');
+  let b='';if(isNew)b+='<span class="badge">図鑑に登録</span> ';if(isRec)b+='<span class="badge">自己記録更新</span> ';if(f.poison)b+='<span class="badge red">持ち帰り不可（毒）</span> ';if(f.venom)b+='<span class="badge red">毒のトゲに注意</span> ';if(f.noKeep)b+=`<span class="badge red">${esc(f.noKeep)}</span>`;
   $('resBadges').innerHTML=b;$('resDesc').textContent=f.d;const kb=$('resKeep');
-  if(f.poison){kb.hidden=true;$('resRel').textContent='海へ返す';}else{kb.hidden=false;kb.textContent=`持ち帰る ¥${pending.price.toLocaleString()}`;$('resRel').textContent='リリース';}
-  $('result').hidden=false;drawFishCanvas($('resCv'),id,false);save();}
-function keep(k){if(!pending)return;if(k&&!FISH[pending.id].poison){S.money+=pending.price;SND.play('coin');let cm='';if(S.veh.cooler){const cap=COOLER_CAP[S.veh.cooler]||8,add=Math.min(pending.kg||0,cap-(S.veh.fishKg||0));if(add>0){S.veh.fishKg=(S.veh.fishKg||0)+add;cm=`・クーラー ${S.veh.fishKg.toFixed(1)}/${cap}kg`;}else cm='・クーラーがいっぱい';}toast(`+¥${pending.price.toLocaleString()}`+cm);}else toast('海へ返した');pending=null;$('result').hidden=true;save();updMoney();}
+  if(f.poison||f.noKeep){kb.hidden=true;$('resRel').textContent='海へ返す';}else{kb.hidden=false;kb.textContent=`持ち帰る ¥${pending.price.toLocaleString()}`;$('resRel').textContent='リリース';}
+  const box=$('resImg');if(FIMG[id]){box.innerHTML=fishPic(id,'full');}else{box.innerHTML='<canvas id="resCv"></canvas>';}
+  $('resImgNote').textContent=picCredit(id);
+  $('result').hidden=false;if(!FIMG[id])drawFishCanvas($('resCv'),id,false);save();}
+function keep(k){if(!pending)return;if(k&&!FISH[pending.id].poison){S.money+=pending.price;SND.play('coin');let cm='';if(S.veh.cooler){const cap=COOLER_CAP[S.veh.cooler]||8,add=Math.min(pending.kg||0,cap-(S.veh.fishKg||0));if(add>0){S.veh.fishKg=(S.veh.fishKg||0)+add;cm=`・クーラー ${S.veh.fishKg.toFixed(1)}/${cap}kg`;}else cm='・クーラーがいっぱい';}toast(`+¥${pending.price.toLocaleString()}`+cm);}else toast('海へ返した');pending=null;$('result').hidden=true;$('resImg').innerHTML='';save();updMoney();}
 $('resKeep').onclick=()=>keep(true);$('resRel').onclick=()=>keep(false);
 function openSight(){const s=nearSight;if(!s)return;$('sgName').textContent=s.n;$('sgDesc').textContent=s.d;
   if(!S.stamps[s.id]){S.stamps[s.id]=1;S.money+=200;$('sgBadge').innerHTML=`<span class="badge">スタンプ獲得 ＋¥200（${Object.keys(S.stamps).length}/${SIGHTS.length}）</span>`;updMoney();save();}
@@ -1217,12 +1307,7 @@ function renderTab(){
     sb.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>travel(+b.dataset.go));
     sb.querySelectorAll('[data-mv]').forEach(b=>b.onclick=()=>{mapView=b.dataset.mv;renderTab();});
     $('restBtn').onclick=()=>{advance(60);busWait={};toast(`${fmtTime(S.min)}になった`);renderTab();};
-  }else if(tab==='dex'){
-    const got=FISH_IDS.filter(id=>S.dex[id]).length;const mon=gameDate().getMonth()+1;
-    h=`<p class="sub">${got} / ${FISH_IDS.length} 種。未発見の魚には仕掛け・時間帯・旬のヒントが出ます。いまは${mon}月。</p><div class="dex">`;
-    FISH_IDS.forEach(id=>{const f=FISH[id],d=S.dex[id];const yk=SPOTS.filter(s=>s.region==='yokohama'&&s.w[id]).map(s=>s.n.replace(/海づり施設|水際線緑地|水際線プロムナード|臨海緑地/,'')),sn=SPOTS.filter(s=>s.region==='shonan'&&s.w[id]).length;const where=[yk.join('・'),sn?`湘南${sn}か所`:''].filter(Boolean).join('・');
-      h+=`<div class="dx"><canvas data-f="${id}" data-k="${d?1:0}"></canvas><b>${d?f.n:'？？？'}</b><span>${d?`最大 ${d.max.toFixed(1)}cm・${wtxt(d.kg||0)}・${d.c}匹`:`${f.bait.map(b=>BAIT[b].n).join('/')}・${TM_LABEL[f.tm]}`}</span><span>旬 ${seasonTxt(f)}${f.mo[mon]?'（いま）':''}・${where}</span></div>`;});
-    sb.innerHTML=h+'</div>';sb.querySelectorAll('canvas[data-f]').forEach(c=>drawFishCanvas(c,c.dataset.f,c.dataset.k!=='1'));
+  }else if(tab==='dex'){renderDex(sb);return;
   }else if(tab==='stamp'){
     h=`<p class="sub">${Object.keys(S.stamps).length} / ${SIGHTS.length} か所。名所に近づくと「見る」ボタンが出ます。初回はお小遣い ＋¥200。</p><div class="list">`;
     SIGHTS.forEach(s=>{const ok=S.stamps[s.id];h+=`<div class="item${ok?'':' dim'}"><div class="tx"><b>${ok?'● ':'○ '}${s.n}</b><span>${ok?s.d:'まだ訪れていません'}</span></div></div>`;});

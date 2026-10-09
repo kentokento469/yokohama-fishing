@@ -1,0 +1,38 @@
+# 既存36種（index.html の FISH）に足す情報。体長・重さ係数・価格・釣り方・時間帯・旬・見た目・説明は既存の値をそのまま使う。
+# 列：id|学名|分類|グループ|生息|水深m|底質|潮|突進m/s|警戒心|引き|ファイト|レア度|最大cm
+kataku|Engraulis japonica|f|mig|b3p3w2s1|0-30|any|move|3|.2|.6|weak|c|18
+iwashi|Sardinops melanostictus|f|mig|b3p3w3s1|0-50|any|move|3|.2|.7|weak|c|25
+konoshiro|Konosirus punctatus|f|mig|b3p2e2|0-20|mud|any|3|.3|.8|weak|c|30
+sappa|Sardinella zunasi|f|mig|b3p2e1|0-20|mud|any|3|.2|.6|weak|c|18
+aji|Trachurus japonicus|f|mig|b3p3w3i1s1|0-60|any|move|4|.3|.9|run|c|50
+saba|Scomber japonicus|f|mig|b2p3w3i1s1|0-60|any|move|5|.3|1.05|run|c|50
+sayori|Hyporhamphus sajori|f|mig|b2p2w2|0-3|any|any|4|.4|.6|shake|c|40
+kamasu|Sphyraena pinguis|f|mig|b1p2w2s1|0-30|any|move|5|.35|.85|run|c|50
+inada|Seriola quinqueradiata|f|mig|b1p1w2i2s2|0-60|any|move|8|.35|1.1|run|u|60
+warasa|Seriola quinqueradiata|f|mig|b1w2i2s1|0-80|any|move|9|.4|1.15|run|r|80
+seabass|Lateolabrax japonicus|f|bass|b3p2w2i1s2e3|0-20|any|move|6|.6|1.05|shake|c|100
+tachiuo|Trichiurus japonicus|f|mig|b2p2w1|0-100|any|move|5|.45|.85|shake|u|140
+haze|Acanthogobius flavimanus|f|sand|b3e3|0-5|mud,sand|any|2|.25|.5|weak|c|25
+kisu|Sillago japonica|f|sand|b1s3w1|0-20|sand|move|3|.4|.6|weak|c|30
+ishimochi|Pennahia argentata|f|sand|b2s2e1|0-50|sand,mud|move|3|.35|.75|circle|c|40
+makogarei|Pseudopleuronectes yokohamae|f|sand|b3s1e1|0-30|sand,mud|any|2|.35|.85|heavy|u|50
+hirame|Paralichthys olivaceus|f|sand|b1w1s3|0-50|sand|move|5|.5|1.05|shake|u|100
+magochi|Platycephalus sp.|f|sand|b1s2e2|0-30|sand,mud|any|4|.45|.95|shake|u|70
+kasago|Sebastiscus marmoratus|f|rock|b2p3w3i3|0-40|rock,weed|any|3|.3|.85|dive|c|35
+murasoi|Sebastes pachycephalus|f|rock|b1p2w2i3|0-20|rock|any|3|.35|.85|dive|c|35
+mebaru|Sebastes inermis (complex)|f|rock|b2p2w3i2|0-20|rock,weed|move|3|.55|.8|dive|c|35
+ainame|Hexagrammos otakii|f|rock|b2p2w2i2|0-30|rock,weed|any|3|.45|.9|dive|u|60
+kurodai|Acanthopagrus schlegelii|f|tai|b3p2w2i1e2|0-20|rock,weed|high|4|.75|1.1|circle|c|70
+kibire|Acanthopagrus latus|f|tai|b1e3|0-10|sand,mud|high|4|.65|1.05|circle|u|50
+mejina|Girella punctata|f|tai|b1p1w2i3|0-20|rock,weed|move|4|.6|1.05|dive|c|60
+umitanago|Ditrema temminckii|f|misc|b2p2w2i1|0-15|rock,weed|any|2|.4|.6|weak|c|30
+kawahagi|Stephanolepis cirrhifer|f|sand|b2p2w2i1|0-50|rock,weed|any|2|.5|.8|circle|c|35
+bora|Mugil cephalus|f|misc|b3p2e3|0-10|mud|any|5|.6|1|shake|c|80
+anago|Conger myriaster|f|sand|b3p2w1|0-50|mud,sand|any|2|.35|.9|twist|c|90
+gonzui|Plotosus japonicus|f|misc|b2p2w2|0-20|rock,sand|any|2|.2|.6|weak|c|20
+kusafugu|Takifugu alboplumbeus|f|misc|b3p3w2s1e2|0-10|sand|any|2|.2|.4|weak|c|25
+soushi|Aluterus scriptus|f|misc|b1w1|0-30|rock|any|3|.4|.8|circle|r|100
+akaei|Hemitrygon akajei|f|misc|b2s1e1|0-50|sand,mud|any|3|.2|1.3|heavy|u|200
+sumiika|Sepia esculenta|c|ceph|b2w1s1|0-30|sand|move|4|.4|.7|jet|u|40
+aoriika|Sepioteuthis lessoniana (complex)|c|ceph|b1p1w2i2|0-30|weed,rock|move|5|.5|.9|jet|u|50
+madako|Octopus sinensis|c|ceph|b2p2w2i1|0-30|rock|any|1|.3|1|stick|c|60
