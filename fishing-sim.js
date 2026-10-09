@@ -1,7 +1,8 @@
 /* 横浜みなと釣り旅 — 水中の物理と環境（描画に依存しない。ブラウザでも Node でも動く）
    単位：距離・深さ m、時間 秒、速度 m/s、重さ g。深さは水面から下向きを正とする。
    段階1：釣り場の水深・底質、仕掛け／ルアーの深度と沈下、魚の泳層との一致度。
-   段階2：ロッド操作（巻き速度・ジャーク・トゥイッチ・フリーフォール・テンションフォール）とルアーの縦横の動き。 */
+   段階2：ロッド操作（巻き速度・ジャーク・トゥイッチ・フリーフォール・テンションフォール）とルアーの縦横の動き。
+   段階3：ルアーの種類ごとの動き（浮く・止まる・リップで潜る・水面・ジグのフォール姿勢）と、カタログの性能値の反映。 */
 (function(root){
 'use strict';
 
@@ -20,8 +21,29 @@ const RIGS={
     maxDiveDepth:null,retrieveSpeedRange:[.2,1.2],actionType:'egi',dragCoefficient:1.1,color:'orange',
     lift:.5,loadSink:.6,jerkUp:7,jerkPull:.7,twitchUp:2,twitchPull:.25}
 };
-const LURE_BAITS=['lure','egi'];
+const LURE_BAITS=['lure','egi','worm'];
 const isLureBait=b=>LURE_BAITS.includes(b);
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+
+/* ===== カタログのルアー・ジグ（data/tackle-data.js）から動きの性質を作る =====
+   move: sink=重さで沈む / lip=リップで潜る（止めると浮く・止まる・沈む） / top=水面
+   dive: リップ付きが巻いて到達する深さ、rise: 止めたときの浮上速度、flutter: フォール中のヒラヒラ（0〜1） */
+const LURE_CLASS={egi:'egi',soft_shad:'worm'};
+function baitClassOf(item){return item.cat==='jig'?'lure':LURE_CLASS[item.style]||'lure';}
+function rigFromItem(it){const w=it.weightG,light=clamp(1-w/60,0,1);
+  const r={n:it.name,item:it,kind:'sink',move:'sink',type:it.style,weightG:w,sizeCm:it.lengthMm/10,buoyancy:it.buoyancy,actionType:it.actionType,
+    sinkRate:it.sinkRateMps||0,tau:.3+.35*light,optMin:it.optimalRetrieveMinMps,optMax:it.optimalRetrieveMaxMps,
+    rangeMin:it.minEffectiveDepthM,rangeMax:it.maxEffectiveDepthM,lift:.3,loadSink:.45,jerkUp:5,jerkPull:.8,twitchUp:1.8,twitchPull:.25,flutter:0,dive:null,rise:0};
+  if(it.cat==='jig'){r.flutter=(it.fallFlutter||50)/100;r.jerkUp=3+(it.jerkResponse||50)/100*5;r.lift=.15+.25*light;r.loadSink=.4;return r;}
+  switch(it.style){
+    case'floating_minnow':case'crankbait':case'shad':case'sinking_minnow':
+      r.move='lip';r.dive=it.maxEffectiveDepthM;r.rise=it.buoyancy==='floating'?.22:0;r.jerkUp=-.9;r.twitchUp=-.4;r.jerkPull=.6;r.twitchPull=.2;break;
+    case'popper':case'pencil':r.move='top';r.jerkPull=.5;r.twitchPull=.2;break;
+    case'vibration':r.lift=.45;r.jerkUp=4.5;break;
+    case'spinner':r.lift=.8;r.jerkUp=3;break;
+    case'soft_shad':r.lift=.35;r.jerkUp=4;r.twitchUp=1.5;break;
+    case'egi':r.lift=.5;r.loadSink=.6;r.jerkUp=7;r.jerkPull=.7;r.twitchUp=2;break;}
+  return r;}
 
 /* ===== 釣り場ごとの水深と底質（ゲーム上の目安） =====
    d0: 足元の水深、dMax: 沖の水深、slope: 足元から沖の水深になるまでの距離（かけ上がりの幅）、bottom: 底質 */
@@ -46,13 +68,17 @@ function envAt(spotId,dist,tetra){return{waterDepth:waterDepth(spotId,dist,tetra
    opt: {dist: 着水点までの距離, tipH: 水面から竿先までの高さ}
    env.depthAt(dist) があれば、ルアーが手前に寄るにつれて水深も変わる */
 const IMPULSE_TAU=.22;
-function makeLure(bait,env,opt){const r=RIGS[bait]||RIGS.isome;opt=opt||{};
+function makeLure(bait,env,opt){opt=opt||{};const r=opt.item?rigFromItem(opt.item):RIGS[bait]||Object.assign({move:'sink'},RIGS.isome);if(!r.move)r.move='sink';
   return{bait,kind:r.kind,rig:r,depth:0,vy:0,vh:0,iv:0,ih:0,side:0,vs:0,onBottom:false,touched:false,bottomT:0,t:0,
-    dist:opt.dist||20,tipH:opt.tipH||4,home:false,sinceAction:99,lastAction:null,mode:'fall',reel:0,
+    dist:opt.dist||20,tipH:opt.tipH||4,home:false,sinceAction:99,lastAction:null,mode:'fall',reel:0,events:[],touchT:99,walkDir:1,
     sinkRate:r.sinkRate||0,tau:r.tau||.5,tana:r.tana||0,depthAt:env.depthAt||null,waterDepth:env.waterDepth,bottomType:env.bottomType};}
 // ロッド操作：ジャーク（大きくしゃくる）とトゥイッチ（小さく鋭く）
-function jerk(L){if(L.kind!=='sink'||L.home)return;const r=L.rig;L.iv-=r.jerkUp;L.ih+=r.jerkPull/IMPULSE_TAU;L.vs+=(Math.random()<.5?-1:1)*1.6;L.onBottom=false;L.sinceAction=0;L.lastAction='jerk';}
-function twitch(L){if(L.kind!=='sink'||L.home)return;const r=L.rig;L.iv-=r.twitchUp;L.ih+=r.twitchPull/IMPULSE_TAU;L.vs+=(Math.random()<.5?-1:1)*1.1;L.onBottom=false;L.sinceAction=0;L.lastAction='twitch';}
+function jerk(L){if(L.kind!=='sink'||L.home)return;const r=L.rig;L.iv-=r.move==='top'?0:r.jerkUp;L.ih+=r.jerkPull/IMPULSE_TAU;
+  if(r.move==='top'){L.walkDir=-L.walkDir;L.vs+=L.walkDir*2.2;L.events.push({type:r.type==='popper'?'pop':'splash',power:1});}else L.vs+=(Math.random()<.5?-1:1)*(r.move==='lip'?2.4:1.6);
+  if(r.jerkUp>0)L.onBottom=false;L.sinceAction=0;L.lastAction='jerk';}
+function twitch(L){if(L.kind!=='sink'||L.home)return;const r=L.rig;L.iv-=r.move==='top'?0:r.twitchUp;L.ih+=r.twitchPull/IMPULSE_TAU;
+  if(r.move==='top'){L.walkDir=-L.walkDir;L.vs+=L.walkDir*1.5;L.events.push({type:r.type==='popper'?'pop':'walk',power:.6});}else L.vs+=(Math.random()<.5?-1:1)*(r.move==='lip'?1.8:1.1);
+  if(r.twitchUp>0)L.onBottom=false;L.sinceAction=0;L.lastAction='twitch';}
 /* dt 秒だけ進める。ctrl: {hold: 押しているか, reel: 巻き速度 m/s}
    押していない＝糸を緩めたフリーフォール、押して速度0＝糸を張ったテンションフォール、押して速度あり＝巻き。
    速度は目標値へ指数関数で近づけ、1ステップ内は目標一定として厳密に積分する（フレームレートにほぼ依存しない） */
@@ -63,9 +89,16 @@ function stepLure(L,dt,ctrl){if(dt<=0)return L;L.t+=dt;L.sinceAction+=dt;
   // 竿先へ向かう糸の向き（ux: 手前向き成分、uy: 上向き成分）
   const len=Math.hypot(L.dist,L.depth+L.tipH)||1,ux=L.dist/len,uy=(L.depth+L.tipH)/len;
   let vyT,vhT;
-  if(hold&&reel>0){vyT=L.sinkRate*(r.loadSink||.6)-reel*(uy+(r.lift||0));vhT=reel*ux;L.mode='retrieve';}
+  if(r.move==='top'){vyT=0;vhT=hold?reel*ux:0;L.mode=hold&&reel>0?'retrieve':'float';}
+  else if(r.move==='lip'){
+    // リップ付き：巻くと速さに応じた深さまで潜る。止めると浮く（フローティング）・その場で止まる（サスペンド）・沈む（シンキング）
+    if(hold&&reel>0){const tg=r.dive*clamp(reel/Math.max(.2,(r.optMin+r.optMax)/2),0,1.15);vyT=clamp((tg-L.depth)*1.6,-1.2,1.2);if(L.depth>tg&&L.sinkRate>0)vyT=Math.max(vyT,-.4);vhT=reel*ux;L.mode='retrieve';}
+    else{vyT=r.rise>0?-r.rise:L.sinkRate;vhT=0;L.mode=r.rise>0?'rise':L.sinkRate>0?'fall':'suspend';}}
+  else if(hold&&reel>0){vyT=L.sinkRate*(r.loadSink||.6)-reel*(uy+(r.lift||0));vhT=reel*ux;L.mode='retrieve';}
   else if(hold){vyT=L.sinkRate*(r.loadSink||.6);vhT=Math.max(0,vyT)*.6*ux;L.mode='tfall';}
   else{vyT=L.sinkRate;vhT=0;L.mode='fall';}
+  // ジグのフォール：ヒラヒラ（flutter）が強いほど左右に揺れながら落ちる
+  if(r.flutter&&!L.onBottom&&L.mode==='fall'&&L.depth>.3)L.vs+=Math.sin(L.t*7)*r.flutter*3*dt;
   if(L.sinceAction<.6)L.mode=L.lastAction;
   // ジャーク・トゥイッチの勢い（すぐ減衰する）
   const ki=Math.exp(-dt/IMPULSE_TAU);const ivAvg=L.iv*IMPULSE_TAU*(1-ki)/dt,ihAvg=L.ih*IMPULSE_TAU*(1-ki)/dt;L.iv*=ki;L.ih*=ki;
@@ -75,7 +108,9 @@ function stepLure(L,dt,ctrl){if(dt<=0)return L;L.t+=dt;L.sinceAction+=dt;
   L.dist-=vhT*dt+(L.vh-vhT)*L.tau*(1-k)+ihAvg*dt;L.vh=vhT+(L.vh-vhT)*k;
   if(L.dist<0)L.dist=0;
   if(L.depth<=0){L.depth=0;if(L.vy<0)L.vy=0;}
-  if(L.depth>=D){L.depth=D;L.vy=0;L.onBottom=true;L.touched=true;L.bottomT=0;L.mode='bottom';}
+  if(r.move==='top'){L.depth=0;L.vy=0;}
+  L.touchT+=dt;
+  if(L.depth>=D){L.depth=D;L.vy=0;L.onBottom=true;L.touched=true;L.bottomT=0;L.mode='bottom';L.touchT=0;L.events.push({type:'bottom',power:1});}
   sideStep(L,dt);homeCheck(L);return L;}
 // 左右のブレ（ダート）。見た目と魚へのアピール用
 function sideStep(L,dt){const k=Math.exp(-dt/.35);L.side+=L.vs*.35*(1-k);L.vs*=k;L.side*=Math.exp(-dt/2.5);}
@@ -111,7 +146,24 @@ function rangeMatch(id,depth,D){const[a,b]=layerRange(LAYER[id]||'mid',D);const 
 const BLUE=['kataku','iwashi','konoshiro','sappa','aji','saba','sayori','kamasu','inada','warasa','tachiuo'];
 const SQUID=['sumiika','aoriika'];
 function styleOf(id){if(BLUE.includes(id))return'blue';if(SQUID.includes(id))return'squid';const l=LAYER[id];return l==='bottom'||l==='lower'?'bottom':'general';}
-function actionAppeal(id,L){if(L.kind==='float')return 1;const st=styleOf(id);const spd=L.vh+L.ih;
+/* カタログの性能値による補正（どれも「確率を0にしない」係数）
+   - 適正巻き速度（optimalRetrieve）の中ならナチュラル、外れると不自然で見切られやすい
+   - 対象魚タグ（targetSpecies）は得意な魚に少し効く
+   - サイズ：小魚は小さいルアー、大型魚は大きめのルアーを好む
+   - フォール中のヒラヒラ（ジグの fallFlutter）、波動・フラッシュ（actionIntensity）、水面の音（ポッパー・ペンシル） */
+const TAG_FISH={'ブリ':['inada','warasa'],'シーバス':['seabass'],'ヒラメ':['hirame','magochi'],'アジ':['aji'],'メバル':['mebaru'],'カサゴ':['kasago','murasoi','ainame'],'アオリイカ':['aoriika','sumiika'],'カマス':['kamasu']};
+const SMALL_FISH=['kataku','iwashi','sappa','konoshiro','aji','mebaru','kasago','murasoi','sayori','haze','kisu','umitanago'];
+const BIG_FISH=['seabass','inada','warasa','hirame','magochi','tachiuo','aoriika','kurodai'];
+function gearAppeal(id,L){const r=L.rig;if(!r||!r.item)return 1;const it=r.item;let a=1;
+  if(L.mode==='retrieve'){const v=L.reel;a*=v>=r.optMin&&v<=r.optMax?1.15:v<r.optMin*.6||v>r.optMax*1.5?.55:.8;}
+  if(it.targetSpecies.some(t=>(TAG_FISH[t]||[]).includes(id)))a*=1.3;
+  const cm=r.sizeCm;if(SMALL_FISH.includes(id))a*=cm<=7?1.2:cm>12?.6:1;else if(BIG_FISH.includes(id))a*=cm>=9?1.15:cm<5?.7:1;
+  if(r.flutter&&L.mode==='fall'&&!L.onBottom)a*=1+.6*r.flutter;
+  if(it.actionIntensity&&L.mode==='retrieve')a*=1+it.actionIntensity/300;
+  if(r.move==='top'&&L.sinceAction<2)a*=styleOf(id)==='blue'||id==='seabass'?1.6:1.1;
+  return a;}
+function actionAppeal(id,L){if(L.kind==='float')return 1;return motionAppeal(id,L)*gearAppeal(id,L);}
+function motionAppeal(id,L){const st=styleOf(id);const spd=L.vh+L.ih;
   const falling=!L.onBottom&&L.vy>.05;const react=falling&&L.sinceAction<2.5;const nearBottom=L.waterDepth-L.depth<1.5;
   switch(st){
     case'blue':{let a=.45+.75*Math.min(1,spd/1.5);if(L.sinceAction<1.5)a*=1.6;return a;}
@@ -131,6 +183,6 @@ function lureBiteRate(L,base,cand){let sumW=0;for(const[,w]of cand)sumW+=w;if(su
 // 根掛かり：岩の底に触れている間だけ。引きずると掛かりやすい
 function snagRate(L){if(!(L.onBottom&&L.bottomType==='rock'))return 0;return TUNE.snagRockPerSec*(L.reel>.05?TUNE.snagDragMul:1);}
 
-const API={RIGS,SPOT_ENV,LAYER,TUNE,isLureBait,waterDepth,bottomType,envAt,makeLure,stepLure,jerk,twitch,lureState,lureSpeed,styleOf,actionAppeal,layerRange,rangeMatch,presentWeights,lureBiteRate,snagRate};
+const API={rigFromItem,baitClassOf,gearAppeal,RIGS,SPOT_ENV,LAYER,TUNE,isLureBait,waterDepth,bottomType,envAt,makeLure,stepLure,jerk,twitch,lureState,lureSpeed,styleOf,actionAppeal,layerRange,rangeMatch,presentWeights,lureBiteRate,snagRate};
 if(typeof module!=='undefined'&&module.exports)module.exports=API;else root.HamaSim=API;
 })(typeof self!=='undefined'?self:this);

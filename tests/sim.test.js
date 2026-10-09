@@ -93,3 +93,44 @@ test('青物は速い巻きに、イカはしゃくった後のフォールに�
 test('岩の底を引きずると、止めているより根掛かりしやすい',()=>{
   const L=SIM.makeLure('lure',{waterDepth:5,bottomType:'rock'},{dist:30});runC(L,6,1/60,{hold:false});const rest=SIM.snagRate(L);
   L.reel=.5;assert.ok(SIM.snagRate(L)>rest);});
+
+/* ===== 段階3：ルアーの種類ごとの動き（カタログの実データで確認） ===== */
+const TACKLE=require('../data/tackle-data.js');
+const item=(style,i=0)=>TACKLE.filter(t=>t.style===style)[i];
+const mk=(style,depth=0,i=0)=>{const it=item(style,i);const L=SIM.makeLure(SIM.baitClassOf(it),{waterDepth:20,bottomType:'sand'},{dist:40,tipH:4,item:it});L.depth=depth;return L;};
+
+test('カタログ：ルアー100件・ジグ100件、IDの重複なし、価格は正',()=>{
+  assert.equal(TACKLE.filter(t=>t.cat==='lure').length,100);assert.equal(TACKLE.filter(t=>t.cat==='jig').length,100);
+  assert.equal(new Set(TACKLE.map(t=>t.id)).size,200);assert.ok(TACKLE.every(t=>t.priceYen>0&&t.weightG>0));});
+
+test('フローティングミノー：止めると浮き、巻くと潜行深度あたりまで潜る',()=>{
+  const it=item('floating_minnow',9);const a=runC(mk('floating_minnow',1,9),3,1/60,{hold:false});assert.ok(a.depth<1-.5,`浮上 ${a.depth}`);
+  const b=runC(mk('floating_minnow',0,9),6,1/60,{hold:true,reel:(it.optimalRetrieveMinMps+it.optimalRetrieveMaxMps)/2});
+  assert.ok(b.depth>it.maxEffectiveDepthM*.7&&b.depth<=it.maxEffectiveDepthM*1.2,`潜行 ${b.depth} / ${it.maxEffectiveDepthM}`);});
+
+test('サスペンド（シャッド）：止めるとその深さに留まる',()=>{const L=runC(mk('shad',2),4,1/60,{hold:false});assert.ok(Math.abs(L.depth-2)<.05);});
+
+test('シンキングミノーとバイブレーションは止めると沈む',()=>{
+  for(const st of['sinking_minnow','vibration']){const L=runC(mk(st,1),3,1/60,{hold:false});assert.ok(L.depth>1.5,`${st} ${L.depth}`);}});
+
+test('トップウォーター：常に水面、操作でしぶきのイベントが出る',()=>{
+  for(const st of['popper','pencil']){const L=mk(st,0);SIM.twitch(L);runC(L,2,1/60,{hold:true,reel:.5});assert.equal(L.depth,0);assert.ok(L.events.length>0);}
+  assert.equal(mk('popper').events.length,0);});
+
+test('ジグ：重いほど速く沈み、ヒラヒラ型はフォールで左右に揺れる',()=>{
+  const jigs=TACKLE.filter(t=>t.cat==='jig'&&t.weightG<=60);const light=jigs.reduce((a,b)=>a.sinkRateMps<b.sinkRateMps?a:b),heavy=jigs.reduce((a,b)=>a.sinkRateMps>b.sinkRateMps?a:b);
+  const env={waterDepth:40,bottomType:'sand'};const a=runC(SIM.makeLure('lure',env,{item:light}),3,1/60),b=runC(SIM.makeLure('lure',env,{item:heavy}),3,1/60);assert.ok(b.depth>a.depth);
+  const leaf=SIM.makeLure('lure',env,{item:item('leaf_flutter')});let maxSide=0;for(let i=0;i<180;i++){SIM.stepLure(leaf,1/60);maxSide=Math.max(maxSide,Math.abs(leaf.side));}assert.ok(maxSide>.05,`side ${maxSide}`);});
+
+test('ジャークの反応（jerkResponse）が高いジグほど大きく跳ねる',()=>{
+  const jigs=TACKLE.filter(t=>t.cat==='jig'&&t.weightG===40);const lo=jigs.reduce((a,b)=>a.jerkResponse<b.jerkResponse?a:b),hi=jigs.reduce((a,b)=>a.jerkResponse>b.jerkResponse?a:b);
+  assert.ok(SIM.rigFromItem(hi).jerkUp>SIM.rigFromItem(lo).jerkUp);});
+
+test('エギとワームは専用の釣り方の分類になる',()=>{assert.equal(SIM.baitClassOf(item('egi')),'egi');assert.equal(SIM.baitClassOf(item('soft_shad')),'worm');assert.equal(SIM.baitClassOf(item('popper')),'lure');assert.equal(SIM.baitClassOf(TACKLE.find(t=>t.cat==='jig')),'lure');});
+
+test('適正巻き速度の外は不自然で反応が落ち、対象魚タグとサイズが効く',()=>{
+  const it=item('floating_minnow',5);const fit=runC(mk('floating_minnow',0,5),1,1/60,{hold:true,reel:(it.optimalRetrieveMinMps+it.optimalRetrieveMaxMps)/2});
+  const fast=runC(mk('floating_minnow',0,5),1,1/60,{hold:true,reel:it.optimalRetrieveMaxMps*2});
+  assert.ok(SIM.gearAppeal('seabass',fit)>SIM.gearAppeal('seabass',fast)*1.5);
+  const micro=SIM.makeLure('lure',env10,{item:item('micro_jig')}),big=SIM.makeLure('lure',env10,{item:TACKLE.find(t=>t.cat==='jig'&&t.lengthMm>=150)});
+  assert.ok(SIM.gearAppeal('aji',micro)>SIM.gearAppeal('aji',big));});
