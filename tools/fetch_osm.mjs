@@ -48,3 +48,7 @@ for(const area of target==='all'?cfg.order:[target]){if(!cfg.areas[area]){consol
   else{console.log(`${cfg.areas[area].name} を取得中…`);try{raw=JSON.parse(download(query(cfg.areas[area].bbox)));}catch(e){console.error(`取得に失敗しました（${e.message.split('\n')[0]}）。ネットワークの許可（overpass-api.de）を確認するか、--from-file で手元のファイルを変換してください。ゲームは近似の地図のまま起動します。`);process.exit(2);}
     fs.writeFileSync(rawPath,JSON.stringify(raw));}
   convert(area,raw);}
+writeIndex();
+// data/osm/index.js：取り込み済みの地域のファイルを index.html から読み込むための一覧（ないファイルは読まない）
+function writeIndex(){const have=cfg.order.filter(a=>fs.existsSync(path.join(root,`data/osm/${a}.js`)));
+  fs.writeFileSync(path.join(root,'data/osm/index.js'),`/* 自動生成：tools/fetch_osm.mjs。取り込み済みの地域：${have.join(', ')||'なし'} */\n(function(){var A=${JSON.stringify(have)};if(typeof document==='undefined')return;for(var i=0;i<A.length;i++)document.write('<script src="data/osm/'+A[i]+'.js"><\\/script>');})();\n`);}

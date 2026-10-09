@@ -3,7 +3,9 @@
 - 取得：`node tools/fetch_osm.mjs hiratsuka`（平塚）、`node tools/fetch_osm.mjs all`（全地域）。範囲は `areas.json`。
 - 手元で取得した Overpass の JSON を変換するだけ：`node tools/fetch_osm.mjs hiratsuka --from-file ファイル`
 - 出力：`<地域>.raw.json`（取得したそのまま）と `<地域>.js`（ゲーム用に変換したもの。`window.HamaOSM[地域]`）。
-- ゲームは `<地域>.js` があれば読み込み、なければ従来の近似の地図（`shonan.js`）で起動する。
+- 取得・変換のたびに `index.js`（取り込み済みの地域の一覧）も書き直す。index.html は `data/osm/index.js` 経由で、ある地域のファイルだけを読み込む（起動時にダウンロードはしない。オフラインでも動く）。
+- ゲームは `<地域>.js` があればその範囲の道路・駐車場・駐輪場・建物を使い、なければ従来の近似の地図（`shonan.js`）と代わりの道路網（`nav.js`）で起動する。
+- 動作確認：URL の末尾に `#osmsample` を付けると、架空のテスト用データ（`tests/fixtures/osm-sample.json`）を OSM の地域として表示する。画面に「架空のテスト用データ」と出る。
 
 ## ライセンス
 - データは © OpenStreetMap contributors、ODbL 1.0（https://www.openstreetmap.org/copyright）。

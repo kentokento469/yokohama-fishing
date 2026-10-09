@@ -71,10 +71,11 @@ function consume(o,sp,dist,S){const km=dist*SC/1000;if(km<=0)return;
 function crash(o,v){const sp=specOf(o);const d=Math.max(0,Math.abs(v)-2)*(sp.kind==='car'?1.5:.8);o.dur=Math.max(0,o.dur-d);return d;}
 function restStamina(S,dtMin){S.veh.stamina=Math.min(100,S.veh.stamina+dtMin*2);}
 
-function refuelCost(o){const sp=specOf(o);return sp.kind==='car'?Math.ceil((sp.tankL-o.fuel)*FUEL_YEN/10)*10:sp.batteryKm?(o.batt<100?sp.chargeYen:0):0;}
+// 端数（0.5L・0.5ポイント未満）は数えない
+function refuelCost(o){const sp=specOf(o);return sp.kind==='car'?(sp.tankL-o.fuel<.5?0:Math.ceil((sp.tankL-o.fuel)*FUEL_YEN/10)*10):sp.batteryKm?(o.batt<99.5?sp.chargeYen:0):0;}
 function refuel(S,o){const sp=specOf(o),c=refuelCost(o);if(c<=0)return{ok:false,reason:sp.kind==='car'?'満タンです':'電池は満タンです'};if(S.money<c)return{ok:false,reason:'お金が足りません'};
   S.money-=c;if(sp.kind==='car')o.fuel=sp.tankL;else o.batt=100;return{ok:true,cost:c};}
-function repairCost(o){const sp=specOf(o);return Math.ceil((sp.durMax-o.dur)*sp.repairPerPt/10)*10;}
+function repairCost(o){const sp=specOf(o);const d=sp.durMax-o.dur;return d<.5?0:Math.ceil(d*sp.repairPerPt/10)*10;}
 function repair(S,o){const c=repairCost(o);if(c<=0)return{ok:false,reason:'修理の必要はありません'};if(S.money<c)return{ok:false,reason:'お金が足りません'};S.money-=c;o.dur=specOf(o).durMax;return{ok:true,cost:c};}
 
 /* 駐車・駐輪：車は駐車場の中だけ。自転車はどこでも（駐輪場なら盗難・撤去の心配なし、という扱いは今後の拡張） */
