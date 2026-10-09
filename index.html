@@ -204,17 +204,17 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
   <div class="tin">
     <div class="eyebrow">YOKOHAMA HARBOR FISHING WALK</div>
     <h1>横浜<em>みなと</em><br>釣り旅</h1>
-    <p class="lead">本牧・磯子・大黒の海づり施設から、みなとみらいや中華街の名所まで。車と人が行き交う港町を自分の足で歩いて、潮と季節を読み、ハマの魚を釣り上げよう。</p>
+    <p class="lead">本牧・磯子・大黒の海づり施設から、みなとみらいや中華街の名所まで。電車に乗れば湘南（鎌倉〜大磯）のサーフ・河口・磯・漁港へ。車と人が行き交う街を自分の足で歩いて、潮と季節を読み、海の魚を釣り上げよう。</p>
     <div class="facts">
-      <div><b>6</b><span>実在の釣り場</span></div>
-      <div><b>35</b><span>東京湾の魚</span></div>
-      <div><b>10</b><span>名所スタンプ</span></div>
+      <div><b id="factSpots">6</b><span>実在の釣り場</span></div>
+      <div><b id="factFish">35</b><span>魚の種類</span></div>
+      <div><b id="factSights">10</b><span>名所スタンプ</span></div>
     </div>
     <div class="tbtns">
       <button id="newBtn">はじめから</button>
       <button id="contBtn" hidden>つづきから</button>
     </div>
-    <p class="fine">操作：左のスティックで歩く（大きく倒すと走る）、画面をドラッグで視点を回す、右の大きなボタンで釣り。パソコンは矢印キー／WASDで移動、マウスドラッグで視点、スペースで釣り、Eで名所、Mでメニュー。<br>街並みは実際の海岸線・道路・名所の配置をもとに、距離を約3分の1に縮めて再現したものです。建物は自動生成で、実物の形とは異なります。釣り場の営業時間や魚の種類はゲーム上の目安なので、出かけるときは各施設の最新情報を確認してください。横浜市では海づり施設などを除き、ふ頭・防波堤での釣りは禁止されています。</p>
+    <p class="fine">操作：左のスティックで歩く（大きく倒すと走る）、画面をドラッグで視点を回す、右の大きなボタンで釣り。パソコンは矢印キー／WASDで移動、マウスドラッグで視点、スペースで釣り、Eで名所、Mでメニュー。<br>街並みは実際の海岸線・道路・名所の配置をもとに、距離を約3分の1に縮めて再現したものです。建物は自動生成で、実物の形とは異なります。釣り場の営業時間や魚の種類はゲーム上の目安なので、出かけるときは各施設の最新情報を確認してください。横浜市では海づり施設などを除き、ふ頭・防波堤での釣りは禁止されています。湘南の釣り場の区分・利用時間・禁止事項もゲーム用の目安です。規制は変わるため、現地の最新の表示と管理者の案内を優先してください。</p>
   </div>
 </div>
 
@@ -225,12 +225,15 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
 <script src="tackle.js"></script>
 <script src="fight.js"></script>
 <script src="sound.js"></script>
+<script src="data/shonan-spots.js"></script>
+<script src="shonan.js"></script>
 <script>
 (()=>{
 'use strict';
 const $=id=>document.getElementById(id);
-if(!window.THREE||!window.HamaSim||!window.HamaFishAI||!window.HamaFight||!window.HamaTackle||!window.HamaTackleData){document.body.insertAdjacentHTML('beforeend','<div id="fail">3D表示の読み込みに失敗しました。<br>ページを再読み込みしてください。</div>');return;}
+if(!window.THREE||!window.HamaSim||!window.HamaShonan||!window.HamaFishAI||!window.HamaFight||!window.HamaTackle||!window.HamaTackleData){document.body.insertAdjacentHTML('beforeend','<div id="fail">3D表示の読み込みに失敗しました。<br>ページを再読み込みしてください。</div>');return;}
 const SND=window.HamaSound||{init(){},play(){},ambient(){},reel(){},drag(){},update(){},setOn(){},on:false};
+const SH=window.HamaShonan;
 const T=THREE,V3=T.Vector3,SIM=window.HamaSim,FAI=window.HamaFishAI,FG=window.HamaFight,TK=window.HamaTackle,TACKLE=window.HamaTackleData,TBYID=new Map(TACKLE.map(t=>[t.id,t]));
 const FONT='"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",sans-serif';
 const clamp=(v,a,b)=>v<a?a:v>b?b:v, lerp=(a,b,t)=>a+(b-a)*t, rnd=Math.random;
@@ -260,7 +263,7 @@ const YAMASHITA=S2([[812,902],[872,932],[932,962],[968,990]]);
 const BEACH=S2([[985,2385],[950,2420],[936,2460],[950,2508],[922,2556]]);
 const TETRA_LINES=[[[2963,268],[2948,482]],[[2592,6320],[2604,6508]],[[3280,6690],[3340,7050]]];
 function pip(p,x,y){let c=false;for(let i=0,j=p.length-1;i<p.length;j=i++){const xi=p[i][0],yi=p[i][1],xj=p[j][0],yj=p[j][1];if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))c=!c;}return c;}
-function isLand(x,y){return pip(LAND,x,y)||pip(DAIKOKU,x,y)||Math.hypot(x-ISLE.x,y-ISLE.y)<ISLE.r;}
+function isLand(x,y){return pip(LAND,x,y)||pip(DAIKOKU,x,y)||Math.hypot(x-ISLE.x,y-ISLE.y)<ISLE.r||SH.isLand(x,y);}
 function rectAt(x,y){for(const r of RECTS)if(x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h)return r;return null;}
 function isWater(x,y){return !isLand(x,y)&&!rectAt(x,y);}
 function segDist(px,py,ax,ay,bx,by){const dx=bx-ax,dy=by-ay,l=dx*dx+dy*dy;let t=l?((px-ax)*dx+(py-ay)*dy)/l:0;t=clamp(t,0,1);return Math.hypot(px-(ax+dx*t),py-(ay+dy*t));}
@@ -342,6 +345,14 @@ const STATIONS=[
  {n:'金沢・海の公園',x:2790,y:7300},{n:'大黒海づり施設',x:3990,y:2420,far:1}
 ];
 const AREAS=S2([[500,110],[520,300],[680,500],[740,880],[930,1110],[1000,1440],[760,1660],[770,1880],[740,2120],[790,2360],[1300,680],[1230,1250],[1070,2470]]).map((p,i)=>[['鶴見','横浜駅','みなとみらい','関内','山手','本牧','根岸','磯子','杉田','金沢','大黒ふ頭','本牧ふ頭','八景島'][i],p[0],p[1]]);
+/* ===== 湘南エリア（鎌倉〜大磯）：shonan.js・data/shonan-spots.js から取り込む。横浜マップの南（y=8300〜）に置き、電車で行き来する ===== */
+for(const sp of SPOTS)sp.region='yokohama';for(const s of SIGHTS)s.region='yokohama';for(const s of STATIONS)s.region='yokohama';
+STATIONS.find(s=>s.n==='横浜駅').jr=true;
+for(const g of SH.GSPOTS){SPOTS.push({id:g.id,n:g.name,x:g.x,y:g.y,dir:Math.PI/2,hours:null,w:SH.fishWeights(g),region:'shonan',zone:20,sh:g});SIM.SPOT_ENV[g.id]=SH.gameParams(g);}
+for(const s of SH.SIGHTS)SIGHTS.push(s);for(const s of SH.STATIONS)STATIONS.push(s);
+for(const[n,a,o]of[['鎌倉',35.318,139.548],['長谷・稲村ヶ崎',35.310,139.528],['腰越・江の島',35.309,139.488],['藤沢',35.336,139.485],['鵠沼・辻堂',35.322,139.455],['茅ヶ崎',35.324,139.405],['平塚',35.322,139.350],['大磯',35.306,139.312]]){const[x,y]=SH.toGame(a,o);AREAS.push([n,x,y]);}
+for(const r of SH.STRUCTS)RECTS.push({x:r.x,y:r.y,w:r.w,h:r.h,k:r.bridge?'bridge':'pier',top:2.6,name:r.n});
+function regionAt(x,y){return SH.inShonan(x,y)?'shonan':'yokohama';}
 
 /* ===== 状態 ===== */
 const SAVE_KEY='hama-tsuri-v2';
@@ -366,7 +377,10 @@ function tmul(tm,h){const night=h>=19||h<4.5,dawn=h>=4.5&&h<7.5,dusk=h>=16&&h<19
   switch(tm){case'day':return night?.35:1;case'night':return night?2:(dawn||dusk)?1.2:.4;case'dd':return(dawn||dusk)?2.4:night?.8:.7;case'dn':return dusk?2.5:night?1.6:.15;case'dawn':return dawn?3:h<10?1:.25;default:return 1;}}
 function seasonTxt(f){if(f.mo===ALL)return'通年';const m=[];for(let i=1;i<=12;i++)if(f.mo[i])m.push(i);let s=m[0],e=m[m.length-1];for(let i=1;i<m.length;i++)if(m[i]!==m[i-1]+1){s=m[i];e=m[i-1];break;}return`${s}〜${e}月`;}
 function fmtTime(m){m=Math.floor(m);return Math.floor(m/60)+':'+String(m%60).padStart(2,'0');}
-function spotOpen(sp){if(!sp.hours)return true;const h=hourF();return h>=sp.hours[0]&&h<sp.hours[1];}
+function spotOpen(sp){return spotState(sp).ok;}
+// 釣りできるか（湘南は shonan.js の判定：開放区分・利用時間・夏の遊泳区域・高波・禁止された釣り方）
+function spotState(sp,bait){if(sp.sh){const E=envNow(sp);return SH.canFish(sp.sh,{month:gameDate().getMonth()+1,hour:hourF(),wave:E.wave,bait});}
+  if(!sp.hours)return{ok:true};const h=hourF();return h>=sp.hours[0]&&h<sp.hours[1]?{ok:true}:{ok:false,reason:`営業時間外です（${sp.hours[0]}:00〜${sp.hours[1]}:00）`};}
 function advance(m){S.min+=m;while(S.min>=1440){S.min-=1440;S.day++;}}
 function keyLerp(keys,h){for(let i=1;i<keys.length;i++){if(h<=keys[i][0]){const a=keys[i-1],b=keys[i],k=(h-a[0])/(b[0]-a[0]);return typeof a[1]==='number'?lerp(a[1],b[1],k):a[1].map((v,j)=>lerp(v,b[1][j],k));}}return keys[keys.length-1][1];}
 const SKYTOP=[[0,[6,12,30]],[4.5,[16,26,56]],[5.4,[90,110,160]],[6.6,[70,130,200]],[16,[66,128,200]],[17.3,[80,90,150]],[18.3,[30,34,74]],[19.3,[8,14,34]],[24,[6,12,30]]];
@@ -451,8 +465,8 @@ const CG=40,cgrid=new Map();
 function addCol(x0,z0,x1,z1,h){const o={x0:Math.min(x0,x1),z0:Math.min(z0,z1),x1:Math.max(x0,x1),z1:Math.max(z0,z1),h:h||20};
   for(let gx=Math.floor(o.x0/CG);gx<=Math.floor(o.x1/CG);gx++)for(let gz=Math.floor(o.z0/CG);gz<=Math.floor(o.z1/CG);gz++){const k=gx+','+gz;let a=cgrid.get(k);if(!a){a=[];cgrid.set(k,a);}a.push(o);}}
 function colAt(x,z,pad){const a=cgrid.get(Math.floor(x/CG)+','+Math.floor(z/CG));if(!a)return null;for(const o of a)if(x>o.x0-pad&&x<o.x1+pad&&z>o.z0-pad&&z<o.z1+pad)return o;return null;}
-function walk(x,y){if(x<20||y<20||x>4780||y>7780)return false;let ok=false;
-  if(pip(LAND,x,y)||pip(DAIKOKU,x,y))ok=true;else if(Math.hypot(x-ISLE.x,y-ISLE.y)<ISLE.r-2)ok=true;else if(rectAt(x,y))ok=true;
+function walk(x,y){const sh=SH.inShonan(x,y);if(!sh&&(x<20||y<20||x>4780||y>7780))return false;let ok=false;
+  if(sh?SH.isLand(x,y):pip(LAND,x,y)||pip(DAIKOKU,x,y))ok=true;else if(Math.hypot(x-ISLE.x,y-ISLE.y)<ISLE.r-2)ok=true;else if(rectAt(x,y))ok=true;
   return ok&&!colAt(x,y,.35);}
 function groundY(x,y){const r=rectAt(x,y);return r?r.top:GROUND;}
 
@@ -478,7 +492,7 @@ const groundTex=canvasTex(128,128,(c,w,h)=>{c.fillStyle='#cfc9b6';c.fillRect(0,0
 const grassTex=canvasTex(128,128,(c,w,h)=>{c.fillStyle='#86b46a';c.fillRect(0,0,w,h);const R=mulberry(10);for(let i=0;i<1500;i++){c.fillStyle=R()<.5?'rgba(60,110,50,.25)':'rgba(170,210,120,.2)';c.fillRect(R()*w,R()*h,1.5,3);}});
 const seaNorm=canvasTex(256,256,(c,w,h)=>{const img=c.createImageData(w,h);const H=(x,y)=>{const u=x/w*6.283,v=y/h*6.283;return Math.sin(u*3+Math.sin(v*2)*1.2)+.8*Math.sin(v*4+u*1)+.4*Math.sin((u+v)*7)+.25*Math.sin(u*11-v*5);};
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){const dx=H(x+1,y)-H(x-1,y),dy=H(x,y+1)-H(x,y-1);const nx=-dx*1.6,ny=-dy*1.6,nz=1;const l=Math.hypot(nx,ny,nz);const i=(y*w+x)*4;img.data[i]=(nx/l*.5+.5)*255;img.data[i+1]=(ny/l*.5+.5)*255;img.data[i+2]=(nz/l*.5+.5)*255;img.data[i+3]=255;}c.putImageData(img,0,0);});
-seaNorm.repeat.set(900,900);
+seaNorm.repeat.set(1440,1350);
 // 世界座標で窓を貼るためのシェーダー差し替え
 function worldUV(mat,S,y0){mat.onBeforeCompile=sh=>{sh.uniforms.uvS={value:S};sh.uniforms.uvY={value:y0||GROUND};
   sh.vertexShader='uniform float uvS;uniform float uvY;\n'+sh.vertexShader.replace('#include <uv_vertex>',`
@@ -503,9 +517,9 @@ const EMISSIVE=[winMats.glass,winMats.apt,winMats.house];
 
 /* ===== 海と陸 ===== */
 const seaMat=new T.MeshPhongMaterial({color:0x2a7aa3,specular:0x9fb8c8,shininess:90,normalMap:seaNorm,normalScale:new T.Vector2(.5,.5)});
-const sea=new T.Mesh(new T.PlaneGeometry(20000,22000),seaMat);sea.rotation.x=-Math.PI/2;sea.position.set(2400,0,3900);sea.receiveShadow=true;scene.add(sea);
+const sea=new T.Mesh(new T.PlaneGeometry(32000,30000),seaMat);sea.rotation.x=-Math.PI/2;sea.position.set(-1000,0,6000);sea.receiveShadow=true;scene.add(sea);
 const isleS=new T.Shape();isleS.absarc(ISLE.x,ISLE.y,ISLE.r,0,Math.PI*2,false);
-const landGeo=new T.ExtrudeGeometry([shp(LAND),shp(DAIKOKU),isleS],{depth:8,bevelEnabled:false,curveSegments:40});
+const landGeo=new T.ExtrudeGeometry([shp(LAND),shp(DAIKOKU),isleS,shp(SH.LAND),shp(SH.ENOSHIMA)],{depth:8,bevelEnabled:false,curveSegments:40});
 landGeo.rotateX(Math.PI/2);landGeo.translate(0,GROUND,0);
 {const uv=landGeo.attributes.uv,p=landGeo.attributes.position;for(let i=0;i<uv.count;i++)uv.setXY(i,p.getX(i)/12,p.getZ(i)/12);}
 groundTex.repeat.set(1,1);
@@ -532,6 +546,11 @@ ribbon(ROAD,.2,GROUND+.1,whiteLine,9.4);ribbon(ROAD,.2,GROUND+.1,whiteLine,-9.4)
 for(const r of ROADS2){ribbon(r,18,GROUND+.04,paveMat);ribbon(r,12,GROUND+.07,asphMat);dashes(r,0,5,6,.16,GROUND+.1,whiteLine);}
 ribbon(RAIL,9,GROUND+.05,flatMat(0x8d8478));ribbon(RAIL,.15,GROUND+.12,flatMat(0x4a4a4a),-.75);ribbon(RAIL,.15,GROUND+.12,flatMat(0x4a4a4a),.75);ribbon(RAIL,.15,GROUND+.12,flatMat(0x4a4a4a),2.75);ribbon(RAIL,.15,GROUND+.12,flatMat(0x4a4a4a),4.25);
 ribbon(BEACH,70,GROUND+.05,flatMat(0xe8d39b));
+/* 湘南：砂浜（海岸線の陸側）、川、国道134号、JR東海道線・江ノ電 */
+{const sand=flatMat(0xe2cf9c),water=flatMat(0x2f6f8f);ribbon(SH.COAST,24,GROUND+.05,sand,-12);
+  for(const r of SH.RIVERS){ribbon(r.pts,r.half*2+3,GROUND+.06,sand);ribbon(r.pts,r.half*2,GROUND+.09,water);}
+  ribbon(SH.R134,18,GROUND+.04,paveMat);ribbon(SH.R134,12,GROUND+.07,asphMat);dashes(SH.R134,0,5,6,.16,GROUND+.1,whiteLine);
+  for(const rl of[SH.JR,SH.ENODEN]){ribbon(rl,rl===SH.JR?8:5,GROUND+.05,flatMat(0x8d8478));for(const o of[-.75,.75])ribbon(rl,.15,GROUND+.12,flatMat(0x4a4a4a),o);}}
 ribbon(YAMASHITA,55,GROUND+.05,flatMat(0xffffff,{map:grassTex}));ribbon(YAMASHITA,6,GROUND+.08,paveMat,-22);
 {const pond=new T.Shape();pond.absellipse(3024,4650,54,30,0,Math.PI*2,false,.2);scene.add(flatOrder(new T.Mesh(flatGeo([pond],GROUND+.09),flatMat(0x3f7f9c)),GROUND+.09));}
 // 護岸の縁（白いライン）
@@ -558,11 +577,13 @@ const dummy=new T.Object3D(),col=new T.Color();
 const LAMPS=[],POLES=[],STREET_TREES=[];
 function along(pts,step,off,out){let carry=0;for(let i=0;i<pts.length-1;i++){const[ax,ay]=pts[i],[bx,by]=pts[i+1];const L=Math.hypot(bx-ax,by-ay),ux=(bx-ax)/L,uy=(by-ay)/L,nx=-uy,ny=ux;
   for(let s=carry;s<L;s+=step){out.push([ax+ux*s+nx*off,ay+uy*s+ny*off,Math.atan2(uy,ux)]);carry=s+step-L;}}}
-along(ROAD,32,13.5,LAMPS);along(ROAD,32,-13.5,LAMPS);along(YAMASHITA,18,-26,LAMPS);
+along(ROAD,32,13.5,LAMPS);along(ROAD,32,-13.5,LAMPS);along(YAMASHITA,18,-26,LAMPS);along(SH.R134,40,-8,LAMPS);
+// 湘南の国道134号沿いの松林（砂防林）
+along(SH.R134,7,14,STREET_TREES);along(SH.R134,9,20,STREET_TREES);
 for(const r of ROADS2){along(r,30,7.6,POLES);along(r,14,-8,STREET_TREES);}
 along(ROAD,11,12,STREET_TREES);along(ROAD,11,-12,STREET_TREES);
 const keepClear=(x,y)=>STATIONS.some(s=>Math.hypot(s.x-x,s.y-y)<10);
-for(let i=STREET_TREES.length-1;i>=0;i--){const[x,y]=STREET_TREES[i];if(!pip(LAND,x,y)||keepClear(x,y))STREET_TREES.splice(i,1);}
+for(let i=STREET_TREES.length-1;i>=0;i--){const[x,y]=STREET_TREES[i];if(!isLand(x,y)||keepClear(x,y))STREET_TREES.splice(i,1);}
 {const geo=new T.CylinderGeometry(.07,.09,7.5,6).translate(0,3.75,0);const arm=new T.BoxGeometry(1.4,.08,.08).translate(.6,7.4,0);
   const lm=lam(0x4c565e);for(const part of byTile(LAMPS)){const im=new T.InstancedMesh(geo,lm,part.length),im2=new T.InstancedMesh(arm,lm,part.length);
     part.forEach(([x,y,a],i)=>{dummy.position.set(x,groundY(x,y),y);dummy.rotation.set(0,-a+Math.PI/2,0);dummy.scale.setScalar(1);dummy.updateMatrix();im.setMatrixAt(i,dummy.matrix);im2.setMatrixAt(i,dummy.matrix);});
@@ -644,17 +665,25 @@ for(const[x,z]of[[4040,2520],[3990,3725],[3040,5740]]){add(shadowy(box(26,9,16,l
   for(const s of[-18,18])for(let i=0;i<=40;i++){const k=i/40;const tk=k<.5?.25:.75;cab.push(...pt(tk,s,170),...pt(k,s,54));}
   const cg=new T.BufferGeometry();cg.setAttribute('position',new T.Float32BufferAttribute(cab,3));scene.add(new T.LineSegments(cg,new T.LineBasicMaterial({color:0xdfe6ea})));}
 for(const[x,y,h,r]of[[2070,1695,300,60],[2895,3015,90,30],[2280,1884,60,50],[3250,7350,30,50],[1680,960,30,60]]){const s=new T.Sprite(glowMat);s.position.set(x,GROUND+h,y);s.scale.set(r,r,1);scene.add(s);}
-const LANDMARK_KEEP=[[2070,1695,55],[2280,1884,70],[2590,2240,90],[2790,2760,100],[2895,3015,25],[2440,2925,20],[3108,4584,40],[1680,960,120],[2940,5845,90],[2934,3576,70],[1944,1614,40],[2166,1572,40],[2226,1740,35],[1956,1818,35],[1836,1494,35],[2120,1500,30],[2840,5930,50],[3900,3525,20],[3978,3615,20],[3675,2520,20],[3774,2436,20]];
+const LANDMARK_KEEP=[...SH.SIGHTS.map(s=>[s.x,s.y,45]),[2070,1695,55],[2280,1884,70],[2590,2240,90],[2790,2760,100],[2895,3015,25],[2440,2925,20],[3108,4584,40],[1680,960,120],[2940,5845,90],[2934,3576,70],[1944,1614,40],[2166,1572,40],[2226,1740,35],[1956,1818,35],[1836,1494,35],[2120,1500,30],[2840,5930,50],[3900,3525,20],[3978,3615,20],[3675,2520,20],[3774,2436,20]];
 
 /* ===== 街並みのチャンク生成（近くだけ作り、遠くは消す） ===== */
 const CH=220,CRAD=2,chunks=new Map(),colDone=new Set();
 const UNIT=16;
+const SH_JR=STATIONS.filter(s=>s.region==='shonan'&&s.jr),SH_KAMAKURA=SH.toGame(35.3215,139.5530);
 function zoneAt(x,y){const d=(a,b)=>Math.hypot(x-a,y-b);
+  // 湘南：鎌倉の旧市街は低い家と緑、JRの駅前は中くらいのビル、江の島は小さな店、ほかは住宅地
+  if(SH.inShonan(x,y)){if(d(SH_KAMAKURA[0],SH_KAMAKURA[1])<330)return'yamate';for(const st of SH_JR)if(d(st.x,st.y)<170)return'kannai';if(pip(SH.ENOSHIMA,x,y))return'china';return'res';}
   if(d(2520,3000)<150)return'china';if(d(2100,1725)<400)return'mm';if(d(1620,1035)<330)return'station';if(d(2400,2790)<360)return'kannai';if(d(2805,3405)<330)return'yamate';
   for(let k=0;k<INDUSTRY.length;k++)if(pip(INDUSTRY[k],x,y))return'ind';return'res';}
 const ZM={mm:3,station:3,kannai:2,china:1,yamate:1,res:1,ind:4};
 const keepPts=[...SPOTS,...SIGHTS,...STATIONS];
 function okSpot(cx,cy,half){
+  if(SH.inShonan(cx,cy)){if(!SH.isLand(cx,cy)||nearCoast(cx,cy,18+half))return false;
+    // 砂浜・国道134号・松林の帯には建てない。線路・川の上にも建てない
+    if(SH.lineDist(SH.COAST,cx,cy)<62+half||SH.lineDist(SH.JR,cx,cy)<7+half||SH.lineDist(SH.ENODEN,cx,cy)<6+half)return false;
+    if(SH.RIVERS.some(r=>SH.lineDist(r.pts,cx,cy)<r.half+8+half))return false;
+    if(keepPts.some(p=>Math.hypot(p.x-cx,p.y-cy)<14+half))return false;if(LANDMARK_KEEP.some(([a,b,r])=>Math.hypot(a-cx,b-cy)<r+half))return false;return true;}
   if(!(pip(LAND,cx,cy)||pip(DAIKOKU,cx,cy)))return false;
   if(nearCoast(cx,cy,18+half))return false;
   if(lineDist(ROAD,cx,cy)<16+half||lineDist(RAIL,cx,cy)<6+half||ROADS2.some(r=>lineDist(r,cx,cy)<10+half))return false;
@@ -743,9 +772,12 @@ const P=ME.g;P.traverse(o=>{if(o.isMesh)o.castShadow=true;});scene.add(P);
 {const v=new T.Mesh(new T.CapsuleGeometry(.158,.22,4,10),lam(0xd9b44a));v.position.y=.29;v.scale.set(1.27,1,.82);ME.chest.add(v);v.castShadow=true;}
 
 /* 歩行者と車（都会の往来） */
-const ROADLEN=[];let ROADTOT=0;for(let i=0;i<ROAD.length-1;i++){const l=Math.hypot(ROAD[i+1][0]-ROAD[i][0],ROAD[i+1][1]-ROAD[i][1]);ROADLEN.push(l);ROADTOT+=l;}
-function roadAt(s){s=clamp(s,0,ROADTOT-.01);for(let i=0;i<ROADLEN.length;i++){if(s<=ROADLEN[i]){const[ax,ay]=ROAD[i],[bx,by]=ROAD[i+1];const k=s/ROADLEN[i],ux=(bx-ax)/ROADLEN[i],uy=(by-ay)/ROADLEN[i];return[ax+(bx-ax)*k,ay+(by-ay)*k,ux,uy];}s-=ROADLEN[i];}return[...ROAD[ROAD.length-1],0,1];}
-function roadS(x,y){let best=0,bd=1e9,acc=0;for(let i=0;i<ROADLEN.length;i++){const[ax,ay]=ROAD[i],[bx,by]=ROAD[i+1];const dx=bx-ax,dy=by-ay,l2=dx*dx+dy*dy;const t=clamp(((x-ax)*dx+(y-ay)*dy)/l2,0,1);const d=Math.hypot(x-(ax+dx*t),y-(ay+dy*t));if(d<bd){bd=d;best=acc+t*ROADLEN[i];}acc+=ROADLEN[i];}return[best,bd];}
+// 車と歩行者が通る道：横浜は幹線道路、湘南は国道134号（いる地域で切り替える）
+let TR=ROAD,TRP={ped:12},ROADLEN=[],ROADTOT=0,trRegion='';
+function setTrafficRoad(pts,ped){TR=pts;TRP={ped};ROADLEN=[];ROADTOT=0;for(let i=0;i<TR.length-1;i++){const l=Math.hypot(TR[i+1][0]-TR[i][0],TR[i+1][1]-TR[i][1]);ROADLEN.push(l);ROADTOT+=l;}}
+setTrafficRoad(ROAD,12);
+function roadAt(s){s=clamp(s,0,ROADTOT-.01);for(let i=0;i<ROADLEN.length;i++){if(s<=ROADLEN[i]){const[ax,ay]=TR[i],[bx,by]=TR[i+1];const k=s/ROADLEN[i],ux=(bx-ax)/ROADLEN[i],uy=(by-ay)/ROADLEN[i];return[ax+(bx-ax)*k,ay+(by-ay)*k,ux,uy];}s-=ROADLEN[i];}return[...TR[TR.length-1],0,1];}
+function roadS(x,y){let best=0,bd=1e9,acc=0;for(let i=0;i<ROADLEN.length;i++){const[ax,ay]=TR[i],[bx,by]=TR[i+1];const dx=bx-ax,dy=by-ay,l2=dx*dx+dy*dy;const t=clamp(((x-ax)*dx+(y-ay)*dy)/l2,0,1);const d=Math.hypot(x-(ax+dx*t),y-(ay+dy*t));if(d<bd){bd=d;best=acc+t*ROADLEN[i];}acc+=ROADLEN[i];}return[best,bd];}
 const PEDS=[];
 const OUTFITS=[[0x2b2b30,0x2b2b30,0x1b1b1b],[0xe8e4dc,0x3b4a66,0x5a4636],[0x9b2f2f,0x2b2b30,0xf0f0f0],[0x6e8fb4,0xc9b99a,0x6b4a2a],[0x3d5f3a,0x2b2b30,0x2b2b2b],[0xf0d8c0,0x6a5a4a,0xffffff],[0x4a4f7a,0x1f2430,0x111111]];
 for(let i=0;i<16;i++){const o=OUTFITS[i%OUTFITS.length];const hp=makeHuman({top:o[0],bottom:o[1],shoe:o[2],skin:[0xe9c4a3,0xd8ab88,0xf1d2b6][i%3],hair:[0x1a1410,0x3a2a1c,0x5a5a5a][i%3],short:i%4===0});scene.add(hp.g);PEDS.push({P:hp,s:0,side:1,dir:1,v:1.3,ph:rnd()*6,on:false});}
@@ -761,7 +793,7 @@ for(let i=0;i<14;i++){const bus=i%7===3;const g=new T.Group();
 let sPlayer=0,sChk=0;
 function spawnAlong(around,range){return clamp(around+(rnd()-.5)*2*range,1,ROADTOT-1);}
 function updTraffic(dt,t){
-  sChk-=dt;let dRoad=1e9;if(sChk<=0){sChk=.4;const r=roadS(S.x,S.y);sPlayer=r[0];dRoad=r[1];updTraffic.d=dRoad;}
+  sChk-=dt;let dRoad=1e9;if(sChk<=0){sChk=.4;const rg=regionAt(S.x,S.y);if(rg!==trRegion){trRegion=rg;setTrafficRoad(rg==='shonan'?SH.R134:ROAD,rg==='shonan'?8:12);for(const c of CARS){c.on=false;c.g.visible=false;}for(const p of PEDS){p.on=false;p.P.g.visible=false;}}const r=roadS(S.x,S.y);sPlayer=r[0];dRoad=r[1];updTraffic.d=dRoad;}
   const near=(updTraffic.d||0)<400;
   for(const c of CARS){if(!c.on||Math.abs(c.s-sPlayer)>420){if(!near){c.g.visible=false;c.on=false;continue;}c.s=spawnAlong(sPlayer,380);c.dir=rnd()<.5?1:-1;c.lane=rnd()<.5?1:2;c.vt=c.len>6?9:10+rnd()*5;c.v=c.vt;c.on=true;c.g.visible=true;}
     // 前の車・歩行者（プレイヤー）で止まる
@@ -771,7 +803,7 @@ function updTraffic(dt,t){
     c.v+=(vt-c.v)*Math.min(1,dt*(vt<c.v?3:1));c.s+=c.v*c.dir*dt;if(c.s<1||c.s>ROADTOT-1)c.on=false;
     const off=(c.lane*3.4-1.7)*-c.dir;const[x2,y2,ux2,uy2]=roadAt(c.s);const nx=-uy2,ny=ux2;
     c.g.position.set(x2+nx*off,GROUND+.07,y2+ny*off);c.g.rotation.y=-Math.atan2(uy2*c.dir,ux2*c.dir);}
-  for(const p of PEDS){if(!p.on||Math.abs(p.s-sPlayer)>260){if(!near){p.P.g.visible=false;p.on=false;continue;}p.s=spawnAlong(sPlayer,240);p.side=rnd()<.5?1:-1;p.dir=rnd()<.5?1:-1;p.v=1.1+rnd()*.5;p.on=true;p.P.g.visible=true;p.off=12+rnd()*2.5;}
+  for(const p of PEDS){if(!p.on||Math.abs(p.s-sPlayer)>260){if(!near){p.P.g.visible=false;p.on=false;continue;}p.s=spawnAlong(sPlayer,240);p.side=rnd()<.5?1:-1;p.dir=rnd()<.5?1:-1;p.v=1.1+rnd()*.5;p.on=true;p.P.g.visible=true;p.off=TRP.ped+rnd()*2.5;}
     p.s+=p.v*p.dir*dt;p.ph+=dt*p.v*3.3;const[x,y,ux,uy]=roadAt(p.s);const nx=-uy,ny=ux;p.P.g.position.set(x+nx*p.off*p.side,GROUND,y+ny*p.off*p.side);p.P.g.rotation.y=Math.atan2(ux*p.dir,uy*p.dir);animHuman(p.P,p.ph,.75,t);}}
 
 /* ===== 竿・糸・ウキ ===== */
@@ -827,7 +859,7 @@ function loseEq(){const it=eqAny();if(!it||!SIM.isLureBait(S.bait))return'';TK.l
 function stock(){return S.bait==='isome'?S.isome:SIM.isLureBait(S.bait)?(S.eq?TK.owned(S,S.eq):0):1;}
 /* 釣り場の範囲：釣り場の印から40m以内で、すぐ前が海（岸壁の際・桟橋の上）なら投げられる */
 const SPOT_ZONE=40;
-function spotAt(x,y){for(const sp of SPOTS)if(Math.hypot(sp.x-x,sp.y-y)<SPOT_ZONE&&(rectAt(x,y)||nearCoast(x,y,9)))return sp;return null;}
+function spotAt(x,y){if(SH.restrictedAt(x,y))return null;for(const sp of SPOTS)if(Math.hypot(sp.x-x,sp.y-y)<(sp.zone||SPOT_ZONE)&&(rectAt(x,y)||nearCoast(x,y,9)))return sp;return null;}
 // 海のある方向（角度。x=cos, z=sin）。周りを調べて海の点の向きを平均する
 function waterDir(x,y,fb){let vx=0,vy=0;for(const r of[6,12,20])for(let i=0;i<16;i++){const a=i/16*6.283;if(isWater(x+Math.cos(a)*r,y+Math.sin(a)*r)){vx+=Math.cos(a);vy+=Math.sin(a);}}return vx||vy?Math.atan2(vy,vx):fb||0;}
 // カメラが向いている方向（角度）
@@ -837,7 +869,7 @@ function mainDown(){
   if(!$('title').hidden||!$('sheet').hidden||!$('result').hidden||!$('sight').hidden)return;
   switch(F.st){
     case'idle':{const sp=nearSpot;if(!sp)return;
-      if(!spotOpen(sp)){toast(`営業時間外です（${sp.hours[0]}:00〜${sp.hours[1]}:00）`);return;}
+      {const st=spotState(sp,S.bait);if(!st.ok){toast(st.reason);return;}}
       if(stock()<=0){toast(`${baitName()}がありません。釣具店で買えます`);return;}
       if(!TK.reelMatch(rodOf(),reelOf())){toast('ロッドとリールの種類が合っていません（釣具店の「持ち物」で替えられます）');return;}
       if(SIM.isLureBait(S.bait)&&TK.rodFit(eqItem(),rodOf())==='heavy'){toast(`${eqItem().name}（${eqItem().weightG}g）は今の竿には重すぎます`);return;}
@@ -882,7 +914,10 @@ let envC=null,envKey='';
 function envNow(sp){const d=gameDate(),day=Math.floor(d.getTime()/864e5),mon=d.getMonth()+1,k=day+':'+Math.floor(S.min/10)+':'+(sp?sp.id:'');
   if(k===envKey&&envC)return envC;envKey=k;const w=SIM.weatherOf(day,mon),T=SIM.waterTemp(mon,d.getDate(),hourF(),w);
   const ti=tideInfo(),td=tideAt(hourF(),ti),turb=sp?SIM.turbidity(sp.id,w):.35,cur=sp?SIM.currentAt(sp.id,{s:td.s,amp:ti.amp},w):0;
-  return envC={w,T,turb,cur};}
+  // 湘南：波の高さ、河口は川の流れ（沖向き）と雨のあとの濁り
+  let wave=sp&&sp.sh?SH.waveHeight(w,(SH.TYPE_GAME[sp.sh.type]||{}).waveExposure):SH.waveHeight(w,.3),flow=0,tb=turb;
+  if(sp&&sp.sh){flow=SH.riverFlow(sp.sh,w);tb=Math.min(1,turb+SH.riverTurb(sp.sh,w));}
+  return envC={w,T,turb:tb,cur,wave,flow};}
 function turbLabel(t){return t<.3?'澄み':t<.55?'普通':t<.75?'濁り':'強い濁り';}
 function curLabel(c){const a=Math.abs(c);return a<.06?'潮止まり':`${c>0?'右':'左'}へ${a.toFixed(2)}m/s`;}
 // 明るさ（0〜1）：昼夜と天気。夜や雨は暗く、魚がルアーに気づける距離が縮む
@@ -994,7 +1029,7 @@ function showResult(){const id=F.fish,f=FISH[id],sz=F.size,kg=F.wkg;const d=S.de
 function keep(k){if(!pending)return;if(k&&!FISH[pending.id].poison){S.money+=pending.price;SND.play('coin');toast(`+¥${pending.price.toLocaleString()}`);}else toast('海へ返した');pending=null;$('result').hidden=true;save();updMoney();}
 $('resKeep').onclick=()=>keep(true);$('resRel').onclick=()=>keep(false);
 function openSight(){const s=nearSight;if(!s)return;$('sgName').textContent=s.n;$('sgDesc').textContent=s.d;
-  if(!S.stamps[s.id]){S.stamps[s.id]=1;S.money+=200;$('sgBadge').innerHTML=`<span class="badge">スタンプ獲得 ＋¥200（${Object.keys(S.stamps).length}/10）</span>`;updMoney();save();}
+  if(!S.stamps[s.id]){S.stamps[s.id]=1;S.money+=200;$('sgBadge').innerHTML=`<span class="badge">スタンプ獲得 ＋¥200（${Object.keys(S.stamps).length}/${SIGHTS.length}）</span>`;updMoney();save();}
   else $('sgBadge').innerHTML='<span class="badge">スタンプ済み</span>';$('sight').hidden=false;}
 function closeSight(){$('sight').hidden=true;}
 $('sgOk').onclick=closeSight;$('viewBtn').onclick=openSight;
@@ -1041,7 +1076,10 @@ function updUI(){
       else{Tt=F.nabura?'ナブラ直撃！':'アタリを待っています';Sb=`${BAIT[S.bait].n}・${L.kind==='float'?`タナ ${L.depth.toFixed(1)}m`:L.onBottom?`底 ${D.toFixed(1)}m`:`沈下中 ${L.depth.toFixed(1)}m`}・${bt}・${Math.round(F.d0)}m先`;}}
     else if(F.st==='fight'){const rk=F.cand&&F.cand.tet&&FISH[F.fish].rock;Tt='ファイト中';Sb=rk?'テトラに潜られる前に巻き切れ':'テンションが赤になったら指を離す';warn=!!rk;}
     else if(F.st==='bite'){Tt=F.short?'コツッ（小さなアタリ）':F.biteBeh==='hug'?'イカが抱いた！（重みが乗った）':F.biteBeh==='hold'?'タコが乗った！':'アタリ！';Sb=F.short?'掛かりにくい… 合わせるならすぐ':'すぐにボタンをタップ';}
+  }else if(nearSpot&&nearSpot.sh){const sp=nearSpot,g=sp.sh,st=spotState(sp),E=envNow(sp),hr=SH.hoursOf(g,gameDate().getMonth()+1);
+    Tt=`${sp.n}（${SH.TYPE_LABEL[g.type]}）`;Sb=(st.ok?(st.warn||SH.STATUS_LABEL[g.accessStatus]):st.reason)+(hr?`・${SH.fmtH(hr[0])}〜${SH.fmtH(hr[1])}`:'')+`・波 約${E.wave}m・${turbLabel(E.turb)}`+(N&&N.spot===sp?'・沖にナブラ！':'');warn=!st.ok;
   }else if(nearSpot){const sp=nearSpot;Tt=sp.n;Sb=(sp.hours?(spotOpen(sp)?`営業中 ${sp.hours[0]}:00〜${sp.hours[1]}:00`:`営業時間外（${sp.hours[0]}:00〜${sp.hours[1]}:00）`):'岸壁の公園')+(sp.tetra?'・岸際にテトラ帯':'')+(N&&N.spot===sp?'・沖にナブラ！':'')+(()=>{const E=envNow(sp);return`・${turbLabel(E.turb)}・潮 ${curLabel(E.cur)}`;})();warn=!spotOpen(sp);}
+  if(!Tt&&F.st==='idle'){const rz=SH.restrictedAt(S.x,S.y);if(rz){Tt=rz.name;Sb=rz.status+'（ゲームでは釣りできない）';warn=true;}}
   const ik=Tt+Sb+warn;if(info._k!==ik){info._k=ik;info.hidden=!Tt;$('infoT').textContent=Tt;$('infoS').textContent=Sb;info.classList.toggle('warn',warn);}
   if(F.st==='fight'){const lim=F.lineKg,r=F.ten/lim,sl=F.fg&&F.fg.slipping;$('tens').style.width=clamp(r/1.15*100,0,100)+'%';$('tens').dataset.hi=r>.85?'1':'0';
     $('fbR').textContent=`${F.ten.toFixed(1)} / ${lim.toFixed(1)}kg`+(sl?'・ドラグが出ている':'');$('fbD').textContent=`あと ${Math.max(0,Math.ceil(F.dist))}m`;$('distb').style.width=clamp((1-F.dist/F.d0)*100,0,100)+'%';}}
@@ -1061,16 +1099,25 @@ function closeSheet(){$('sheet').hidden=true;}
 $('menuBtn').onclick=openMenu;$('sheetX').onclick=closeSheet;
 $('sheet').addEventListener('pointerdown',e=>{if(e.target.id==='sheet')closeSheet();});
 $('tabs').addEventListener('click',e=>{const b=e.target.closest('button[data-t]');if(!b)return;tab=b.dataset.t;renderTab();});
-function nearestStation(){let best=null,bd=1e9;for(const s of STATIONS){const d=Math.hypot(s.x-S.x,s.y-S.y);if(d<bd){bd=d;best=s;}}return[best,bd];}
-function fare(s){const cur=nearestStation()[0];const d=Math.hypot(s.x-cur.x,s.y-cur.y);return{yen:220+(s.far||cur.far?110:0)+(d>3600?110:0),min:Math.round(8+d/400*1.5)};}
+// いる地域（横浜・湘南）の中でいちばん近い駅・バス停
+function nearestStation(){const rg=regionAt(S.x,S.y);let best=null,bd=1e9;for(const s of STATIONS){if(s.region!==rg)continue;const d=Math.hypot(s.x-S.x,s.y-S.y);if(d<bd){bd=d;best=s;}}return[best,bd];}
+/* 運賃と所要時間（ゲーム上の目安）。横浜の中はバス、湘南の中は電車（JR・江ノ電・小田急）とバス、横浜駅⇔湘南のJRの駅は電車 */
+const LINE_LABEL={jr:'JR',enoden:'江ノ電',odakyu:'小田急',bus:'バス'};
+function fare(s){const cur=nearestStation()[0];const d=Math.hypot(s.x-cur.x,s.y-cur.y);
+  if(cur.region!==s.region){const kx=SH.toGame(35.319,139.55)[0],sx=s.region==='shonan'?s.x:cur.x,km=25+(kx-sx)*SC/1000;return{yen:Math.round((200+km*16)/10)*10,min:Math.round(20+km*1.1),mode:'電車'};}
+  if(s.region==='shonan'){const km=d*SC/1000,bus=s.line==='bus'||cur.line==='bus';return{yen:Math.round((150+km*(bus?40:22))/10)*10,min:Math.round((bus?6:4)+km*(bus?3:2)),mode:bus?'バス':LINE_LABEL[s.line]||'電車'};}
+  return{yen:220+(s.far||cur.far?110:0)+(d>3600?110:0),min:Math.round(8+d/400*1.5),mode:'バス'};}
+// いまの駅・バス停から行ける行き先
+// 湘南のバスは近くの駅・バス停（約3km以内）だけ。電車の駅どうしはどこへでも
+function routesFrom(cur){return STATIONS.map((s,i)=>({s,i})).filter(({s})=>s!==cur&&(s.region===cur.region&&(s.region!=='shonan'||(cur.line!=='bus'&&s.line!=='bus')||Math.hypot(s.x-cur.x,s.y-cur.y)<1000)||(cur.jr&&s.jr&&s.region!==cur.region&&(cur.n==='横浜駅'||s.n==='横浜駅'))));}
 let busWait={};
 function renderTab(){
   for(const b of document.querySelectorAll('#tabs button[data-t]'))b.classList.toggle('on',b.dataset.t===tab);
   const sb=$('sb');let h='';
   if(tab==='map'){const[cur,cd]=nearestStation();const atStop=cd<40;
-    h=`<canvas id="mapCv"></canvas><p class="sub">${atStop?`「${cur.n}」のバス停にいます。乗るバスを選んでください。待ち時間は便によって変わります。`:`バスに乗るには、まずバス停まで歩いてください。一番近いのは「${cur.n}」（約${Math.round(cd)}m）。`}</p><div class="list">`;
-    STATIONS.forEach((s,i)=>{const here=cur===s;const f=fare(s);const sp=SPOTS.find(p=>Math.hypot(p.x-s.x,p.y-s.y)<500);if(busWait[i]==null)busWait[i]=2+Math.floor(rnd()*14);
-      h+=`<button class="item${here?' on':''}${atStop||here?'':' dim'}" data-go="${i}" ${here||!atStop?'disabled':''}><div class="tx"><b>${s.n}</b><span>${here?'いまいるバス停':`次の便まで${busWait[i]}分・乗車約${f.min}分`}${sp?'・釣り場：'+sp.n:''}</span></div><div class="pr">${here?'':'¥'+f.yen}</div></button>`;});
+    h=`<canvas id="mapCv"></canvas><p class="sub">${atStop?`「${cur.n}」にいます。行き先を選んでください。待ち時間は便によって変わります。${cur.n==='横浜駅'?'湘南（鎌倉〜大磯）へはJRで行けます。':''}`:`電車やバスに乗るには、まず駅・バス停まで歩いてください。一番近いのは「${cur.n}」（約${Math.round(cd)}m）。`}</p><div class="list">`;
+    for(const{s,i}of routesFrom(cur)){const f=fare(s);const sp=SPOTS.find(p=>Math.hypot(p.x-s.x,p.y-s.y)<(s.region==='shonan'?250:500));if(busWait[i]==null)busWait[i]=2+Math.floor(rnd()*(f.mode==='バス'?14:10));
+      h+=`<button class="item${atStop?'':' dim'}" data-go="${i}" ${!atStop?'disabled':''}><div class="tx"><b>${s.n}</b><span>${f.mode}・次の便まで${busWait[i]}分・乗車約${f.min}分${sp?'・近くの釣り場：'+sp.n:''}</span></div><div class="pr">¥${f.yen}</div></button>`;}
     h+=`<button class="item" id="restBtn"><div class="tx"><b>ベンチでひと休み</b><span>時間を1時間進める（潮や時間帯を待つ）</span></div><div class="pr">無料</div></button></div>`;
     sb.innerHTML=h;drawMapCv($('mapCv'));
     sb.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>travel(+b.dataset.go));
@@ -1082,7 +1129,7 @@ function renderTab(){
       h+=`<div class="dx"><canvas data-f="${id}" data-k="${d?1:0}"></canvas><b>${d?f.n:'？？？'}</b><span>${d?`最大 ${d.max.toFixed(1)}cm・${wtxt(d.kg||0)}・${d.c}匹`:`${f.bait.map(b=>BAIT[b].n).join('/')}・${TM_LABEL[f.tm]}`}</span><span>旬 ${seasonTxt(f)}${f.mo[mon]?'（いま）':''}・${where}</span></div>`;});
     sb.innerHTML=h+'</div>';sb.querySelectorAll('canvas[data-f]').forEach(c=>drawFishCanvas(c,c.dataset.f,c.dataset.k!=='1'));
   }else if(tab==='stamp'){
-    h=`<p class="sub">${Object.keys(S.stamps).length} / 10 か所。名所に近づくと「見る」ボタンが出ます。初回はお小遣い ＋¥200。</p><div class="list">`;
+    h=`<p class="sub">${Object.keys(S.stamps).length} / ${SIGHTS.length} か所。名所に近づくと「見る」ボタンが出ます。初回はお小遣い ＋¥200。</p><div class="list">`;
     SIGHTS.forEach(s=>{const ok=S.stamps[s.id];h+=`<div class="item${ok?'':' dim'}"><div class="tx"><b>${ok?'● ':'○ '}${s.n}</b><span>${ok?s.d:'まだ訪れていません'}</span></div></div>`;});
     sb.innerHTML=h+'</div>';
   }else if(tab==='shop'){renderShop(sb);
@@ -1171,7 +1218,7 @@ function renderShopList(){const el=$('shopList');if(!el)return;const lv=playerLv
     else{S.dragKg=null;if(!TK.reelMatch(rodOf(),reelOf()))msg+=t.cat==='rod'?'（いまのリールと種類が合わない）':'（いまのロッドと種類が合わない）';}
     toast(msg);save();renderTab();});
   const more=$('shopMore');if(more)more.onclick=()=>{shop.n+=20;renderShopList();};}
-function travel(i){const s=STATIONS[i];const f=fare(s);if(S.money<f.yen){toast('お金が足りません');return;}const w=busWait[i]||5;S.money-=f.yen;advance(w+f.min);busWait={};S.x=s.x;S.y=s.y;N=null;closeSheet();updMoney();updChunks(true);snapCam();toast(`${w}分待って乗車、${s.n}に到着（${fmtTime(S.min)}）`);save();}
+function travel(i){const s=STATIONS[i];const f=fare(s);if(S.money<f.yen){toast('お金が足りません');return;}const w=busWait[i]||5;S.money-=f.yen;advance(w+f.min);busWait={};S.x=s.x;S.y=s.y;N=null;closeSheet();updMoney();updChunks(true);snapCam();toast(`${w}分待って${f.mode}に乗り、${s.n}に到着（${fmtTime(S.min)}）`);save();}
 
 /* ===== 2D地図 ===== */
 function poly2(c,p){c.moveTo(p[0][0],p[0][1]);for(let i=1;i<p.length;i++)c.lineTo(p[i][0],p[i][1]);c.closePath();}
@@ -1183,20 +1230,31 @@ function drawMap2D(c,labels){c.lineJoin='round';c.lineCap='round';
   c.strokeStyle='#a8cc8a';c.lineWidth=55;pline2(c,YAMASHITA);c.stroke();c.strokeStyle='#ecd596';c.lineWidth=70;pline2(c,BEACH);c.stroke();
   c.strokeStyle='#ffffff';c.lineWidth=30;pline2(c,ROAD);c.stroke();c.lineWidth=18;for(const r of ROADS2){pline2(c,r);c.stroke();}
   c.strokeStyle='#9a9088';c.lineWidth=9;pline2(c,RAIL);c.stroke();
+  // 湘南：陸・江の島・砂浜・川・国道134号・線路
+  c.beginPath();poly2(c,SH.LAND);poly2(c,SH.ENOSHIMA);c.fillStyle='#e4dfc8';c.fill();
+  c.strokeStyle='#ecd596';c.lineWidth=60;pline2(c,SH.COAST);c.stroke();
+  for(const r of SH.RIVERS){c.strokeStyle='#2a7aa3';c.lineWidth=r.half*2+8;pline2(c,r.pts);c.stroke();}
+  c.strokeStyle='#ffffff';c.lineWidth=22;pline2(c,SH.R134);c.stroke();c.strokeStyle='#9a9088';c.lineWidth=9;pline2(c,SH.JR);c.stroke();c.lineWidth=7;pline2(c,SH.ENODEN);c.stroke();
   for(const r of RECTS){c.fillStyle='#b8b3a6';c.fillRect(r.x,r.y,Math.max(r.w,12),Math.max(r.h,12));}
   c.strokeStyle='#f4f4f1';c.lineWidth=40;pline2(c,[[3954,2622],[3876,3402]]);c.stroke();
   if(labels){c.textAlign='center';c.textBaseline='middle';c.font=`900 ${44*SC}px ${FONT}`;c.fillStyle='rgba(19,38,59,.6)';for(const[n,x,y]of AREAS)c.fillText(n,x,y);}}
 const MAPC=document.createElement('canvas');MAPC.width=480;MAPC.height=780;
 {const c=MAPC.getContext('2d');c.fillStyle='#2a7aa3';c.fillRect(0,0,480,780);c.scale(.1,.1);drawMap2D(c,false);}
-function drawMapCv(cvs){const w=cvs.clientWidth||320,h=w*1.2;cvs.style.height=h+'px';const d=Math.min(window.devicePixelRatio||1,2);cvs.width=Math.round(w*d);cvs.height=Math.round(h*d);
-  const c=cvs.getContext('2d');const sc=Math.min(w/3300,h/7800);const ox=w/2-3150*sc;
-  c.setTransform(d,0,0,d,0,0);c.fillStyle='#2a7aa3';c.fillRect(0,0,w,h);c.setTransform(d*sc,0,0,d*sc,d*ox,0);drawMap2D(c,true);
-  for(const sp of SPOTS){c.fillStyle='#1b7d82';c.beginPath();c.arc(sp.x,sp.y,66,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=18;c.stroke();}
+// 湘南のミニマップ用（x:-6100〜2800, y:8200〜10700）
+const MAPC2=document.createElement('canvas');MAPC2.width=890;MAPC2.height=250;
+{const c=MAPC2.getContext('2d');c.fillStyle='#2a7aa3';c.fillRect(0,0,890,250);c.scale(.1,.1);c.translate(6100,-8200);drawMap2D(c,false);}
+// いる地域の地図（横浜は縦長、湘南は横長）
+function drawMapCv(cvs){const sh=regionAt(S.x,S.y)==='shonan';const B=sh?{x0:-6100,x1:2800,y0:8300,y1:10300}:{x0:1500,x1:4800,y0:0,y1:7800};
+  const w=cvs.clientWidth||320,h=sh?Math.max(170,w*.55):w*1.2;cvs.style.height=h+'px';const d=Math.min(window.devicePixelRatio||1,2);cvs.width=Math.round(w*d);cvs.height=Math.round(h*d);
+  const c=cvs.getContext('2d');const sc=Math.min(w/(B.x1-B.x0),h/(B.y1-B.y0));const ox=w/2-(B.x0+B.x1)/2*sc,oy=h/2-(B.y0+B.y1)/2*sc;
+  c.setTransform(d,0,0,d,0,0);c.fillStyle='#2a7aa3';c.fillRect(0,0,w,h);c.setTransform(d*sc,0,0,d*sc,d*ox,d*oy);drawMap2D(c,true);
+  if(sh)for(const r of SH.GRESTRICTED){c.fillStyle='rgba(224,74,59,.35)';c.beginPath();c.arc(r.x,r.y,Math.max(r.gr,60),0,7);c.fill();}
+  for(const sp of SPOTS){const ng=sp.sh&&(sp.sh.accessStatus==='unverified'||sp.sh.accessStatus==='protected');c.fillStyle=ng?'#8a8f94':'#1b7d82';c.beginPath();c.arc(sp.x,sp.y,66,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=18;c.stroke();}
   for(const s of STATIONS){c.fillStyle='#2f6fb0';c.fillRect(s.x-36,s.y-36,72,72);c.strokeStyle='#fff';c.lineWidth=12;c.strokeRect(s.x-36,s.y-36,72,72);}
   c.fillStyle='#e04a3b';c.beginPath();c.arc(S.x,S.y,90,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=24;c.stroke();}
 const miniC=$('mini').getContext('2d');let miniT=0;
 function drawMini(){const c=miniC,W=208,R=W/2,z=2.6;c.save();c.clearRect(0,0,W,W);c.beginPath();c.arc(R,R,R,0,7);c.clip();c.fillStyle='#2a7aa3';c.fillRect(0,0,W,W);
-  c.translate(R,R);c.rotate(yaw);c.scale(z,z);c.translate(-S.x*.1,-S.y*.1);c.drawImage(MAPC,0,0);
+  c.translate(R,R);c.rotate(yaw);c.scale(z,z);c.translate(-S.x*.1,-S.y*.1);c.drawImage(MAPC,0,0);c.drawImage(MAPC2,-610,820);
   for(const sp of SPOTS){c.fillStyle='#1b7d82';c.beginPath();c.arc(sp.x*.1,sp.y*.1,3,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=.8;c.stroke();}
   for(const s of STATIONS){c.fillStyle='#2f6fb0';c.fillRect(s.x*.1-1.6,s.y*.1-1.6,3.2,3.2);}
   for(const s of SIGHTS){c.fillStyle=S.stamps[s.id]?'#f6f2e8':'#f1b746';c.beginPath();c.arc(s.x*.1,s.y*.1,2,0,7);c.fill();}
@@ -1430,6 +1488,7 @@ function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;const t=now/
 function start(fromSave){const ld=fromSave&&load();if(ld){TK.migrate(ld,TACKLE);TK.migrateGear(ld,TACKLE);}S=ld?Object.assign(fresh(),ld):fresh();if(!ld)S.base=today0();
   F.st='idle';N=null;$('title').hidden=true;updMoney();lastClock='';updClock();yaw=0;updChunks(true);if(!walk(S.x,S.y)){S.x=2130;S.y=1880;updChunks(true);}snapCam();save();
   if(!ld)setTimeout(()=>toast('まずは釣り場へ。歩くか、青い丸看板のバス停からバスで'),500);}
+$('factSpots').textContent=SPOTS.filter(sp=>!sp.sh||(sp.sh.accessStatus!=='unverified'&&sp.sh.accessStatus!=='protected')).length;$('factFish').textContent=FISH_IDS.length;$('factSights').textContent=SIGHTS.length;
 $('newBtn').onclick=()=>{SND.init();start(false);};$('contBtn').onclick=()=>{SND.init();start(true);};
 // 音：最初のタップで鳴らせるようにする。右上の「音」ボタンで消音
 addEventListener('pointerdown',()=>SND.init(),{once:true});
