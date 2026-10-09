@@ -1,0 +1,1162 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>横浜みなと釣り旅</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+/* Layout: 全画面の3Dビュー。HUDは四隅、操作は画面下の親指ゾーン。メニューは下からのシート。 */
+:root{
+  --navy:#0c2136; --panel:rgba(10,28,48,.84); --line:rgba(255,255,255,.16);
+  --paper:#f6f2e8; --ink:#13263b; --signal:#e04a3b; --brass:#f1b746; --teal:#49c1c4; --mute:#6c7a86;
+  --display:"Dela Gothic One","Hiragino Sans","Noto Sans JP",sans-serif;
+  --body:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",sans-serif;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--navy);color:var(--paper);font-family:var(--body);touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
+#cv{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:5px 11px;font-weight:700;font-size:13px}
+#tl{position:fixed;left:calc(12px + env(safe-area-inset-left,0px));top:calc(10px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:6px;align-items:flex-start;max-width:58vw}
+#clock{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px 10px 6px 12px;display:flex;gap:10px;align-items:center}
+#clk{display:block;font-family:var(--display);font-size:23px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+#tideTx{display:block;font-size:11px;opacity:.85;margin-top:4px;white-space:nowrap}
+#tideCv{width:74px;height:34px;display:block}
+#tr{position:fixed;right:calc(12px + env(safe-area-inset-right,0px));top:calc(10px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+#trRow{display:flex;gap:8px;align-items:center}
+#money{color:var(--brass);font-variant-numeric:tabular-nums;font-size:15px}
+.sq{width:44px;height:44px;border-radius:12px;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center;font-size:12px;font-weight:900;padding:0}
+#mini{width:104px;height:104px;border-radius:50%;border:2px solid rgba(255,255,255,.55);background:#2a7aa3;box-shadow:0 4px 0 rgba(8,20,36,.35);display:block}
+#info{position:fixed;left:50%;transform:translateX(-50%);top:calc(178px + env(safe-area-inset-top,0px));background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:7px 14px 8px;text-align:center;pointer-events:none;max-width:min(88vw,420px)}
+#info b{display:block;font-size:16px;font-weight:900;color:var(--brass)}
+#info span{display:block;font-size:12px;opacity:.9;line-height:1.5}
+#info.warn b{color:#ff9d86}
+#toast{position:fixed;left:50%;top:40%;transform:translate(-50%,8px);background:var(--paper);color:var(--ink);font-weight:900;font-size:16px;padding:10px 16px;border-radius:12px;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;max-width:90vw;text-align:center;line-height:1.45;box-shadow:0 5px 0 rgba(8,20,36,.45)}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+#joy{position:fixed;left:calc(20px + env(safe-area-inset-left,0px));bottom:calc(24px + env(safe-area-inset-bottom,0px));width:128px;height:128px;border-radius:50%;background:rgba(10,28,48,.35);border:2px solid rgba(255,255,255,.3);touch-action:none}
+#knob{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;background:rgba(246,242,232,.88);box-shadow:0 3px 0 rgba(8,20,36,.4);pointer-events:none}
+#acts{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(22px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:flex-end;gap:9px}
+.pill{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:9px 14px;font-weight:700;font-size:13px}
+#viewBtn{background:var(--brass);color:var(--ink);border:none;font-weight:900;box-shadow:0 4px 0 rgba(8,20,36,.45)}
+#mainBtn{--p:0;width:112px;height:112px;border-radius:50%;border:none;touch-action:none;position:relative;color:var(--ink);font-weight:900;font-size:17px;line-height:1.2;
+  background:radial-gradient(circle,var(--paper) 0 49px,transparent 50px),conic-gradient(var(--brass) calc(var(--p)*360deg),rgba(255,255,255,.22) 0);box-shadow:0 6px 0 rgba(8,20,36,.5)}
+#mainBtn:active{transform:translateY(3px);box-shadow:0 3px 0 rgba(8,20,36,.5)}
+#mainBtn[data-s="bite"]{animation:bite .16s infinite alternate;background:radial-gradient(circle,#ffe2a6 0 49px,transparent 50px),var(--signal)}
+#mainBtn[data-s="fight"]{background:radial-gradient(circle,var(--paper) 0 49px,transparent 50px),var(--teal)}
+#mainBtn[data-s="busy"]{opacity:.6}
+#mainTxt{pointer-events:none;display:block;padding:0 10px}
+#mainTxt small{display:block;font-size:11px;font-weight:700;opacity:.7}
+@keyframes bite{to{transform:scale(1.07) rotate(3deg)}}
+#fight{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(160px + env(safe-area-inset-bottom,0px));width:min(80vw,420px);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px 12px 10px;display:grid;gap:5px}
+#fight .lbl{display:flex;justify-content:space-between;font-size:12px;font-weight:700}
+.bar{position:relative;height:13px;border-radius:7px;background:rgba(255,255,255,.16);overflow:hidden}
+#tens{height:100%;width:0;background:var(--teal);border-radius:7px}
+#tens[data-hi="1"]{background:var(--signal)}
+.lim{position:absolute;left:87%;top:0;bottom:0;width:2px;background:rgba(255,255,255,.8)}
+#distb{height:100%;width:0;background:var(--brass);border-radius:7px}
+.overlay{position:fixed;inset:0;display:grid;place-items:center;background:rgba(6,16,30,.5);padding:20px}
+.card{width:min(88vw,360px);background:var(--paper);color:var(--ink);border-radius:20px;padding:18px 18px 16px;text-align:center;box-shadow:0 10px 0 rgba(8,20,36,.45);animation:pop .26s cubic-bezier(.3,1.6,.6,1)}
+@keyframes pop{from{transform:scale(.75);opacity:0}}
+.kick{font-weight:900;color:#1b7d82;font-size:14px;letter-spacing:.06em}
+.card h2{font-family:var(--display);font-weight:400;font-size:24px;margin:4px 0 0;text-wrap:balance}
+#resCv{width:100%;height:120px;display:block;margin-top:4px}
+#resSize{font-family:var(--display);font-size:30px;font-variant-numeric:tabular-nums}
+#resSize small{font-size:15px}
+#resW{font-size:13px;font-weight:700;color:var(--mute);font-variant-numeric:tabular-nums}
+.badge{display:inline-block;margin-top:4px;background:var(--brass);border-radius:999px;padding:3px 12px;font-weight:900;font-size:12px}
+.badge.red{background:var(--signal);color:#fff}
+.card p{font-size:13px;line-height:1.65;opacity:.85;margin:8px 0 12px;text-align:left}
+.row{display:flex;gap:8px}
+.row button,.wide{flex:1;border:none;border-radius:12px;padding:12px 8px;font-size:15px;font-weight:900}
+.btnA{background:var(--ink);color:var(--paper)}
+.btnB{background:#e2ddd0;color:var(--ink)}
+.wide{width:100%}
+#sheet{position:fixed;inset:0;background:rgba(6,16,30,.45);display:flex;align-items:flex-end;justify-content:center}
+.sheetIn{width:min(100%,560px);max-height:82vh;background:var(--paper);color:var(--ink);border-radius:20px 20px 0 0;padding:12px 16px calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px}
+.tabs{display:flex;gap:6px;overflow-x:auto;touch-action:pan-x}
+.tabs button{flex:none;border:none;background:#e6e1d4;color:var(--ink);border-radius:999px;padding:8px 13px;font-weight:900;font-size:13px}
+.tabs button.on{background:var(--ink);color:var(--paper)}
+.tabs .x{margin-left:auto;background:transparent;font-size:20px;padding:4px 10px}
+#sb{overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;min-height:0}
+.sub{margin:0 0 8px;font-size:12px;color:var(--mute);line-height:1.6}
+#mapCv{width:100%;display:block;border-radius:12px;border:2px solid #ddd6c6;margin-bottom:8px}
+.list{display:grid;gap:7px}
+.item{display:flex;gap:10px;align-items:center;background:#fff;border:2px solid #e3dccb;border-radius:12px;padding:9px 11px;text-align:left;color:var(--ink);width:100%}
+.item .tx{flex:1;min-width:0}
+.item b{display:block;font-size:14px;font-weight:900}
+.item span{display:block;font-size:12px;color:var(--mute);line-height:1.5}
+.item .pr{flex:none;font-weight:900;font-variant-numeric:tabular-nums;color:#a5650a;font-size:13px}
+.item.dim{opacity:.55}
+.item.on{border-color:#7cc9cb;background:#eef9f9}
+.dex{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.dx{background:#fff;border:2px solid #e3dccb;border-radius:12px;padding:6px 8px 8px;min-width:0}
+.dx canvas{width:100%;height:56px;display:block}
+.dx b{display:block;font-size:13px;font-weight:900}
+.dx span{display:block;font-size:11px;color:var(--mute);line-height:1.45}
+.help p{margin:0 0 10px;font-size:13px;line-height:1.7}
+.help b{color:#1b7d82}
+#title{position:fixed;inset:0;overflow-y:auto;touch-action:pan-y;background:linear-gradient(180deg,rgba(8,22,40,.2),rgba(8,22,40,.9) 62%)}
+.tin{max-width:500px;margin:0 auto;padding:calc(44px + env(safe-area-inset-top,0px)) 20px calc(28px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
+.eyebrow{font-size:12px;font-weight:900;letter-spacing:.2em;color:var(--teal)}
+.tin h1{font-family:var(--display);font-weight:400;font-size:clamp(38px,11vw,56px);line-height:1.08;margin:0;text-wrap:balance;text-shadow:0 3px 0 rgba(8,20,36,.5)}
+.tin h1 em{font-style:normal;color:var(--brass)}
+.lead{font-size:14px;line-height:1.8;margin:0;opacity:.95}
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.facts div{background:rgba(255,255,255,.08);border:1px solid var(--line);border-radius:10px;padding:8px 9px}
+.facts b{display:block;font-family:var(--display);font-weight:400;font-size:20px;color:var(--brass)}
+.facts span{font-size:11px;opacity:.85;line-height:1.4;display:block}
+.tbtns{display:grid;gap:8px}
+.tbtns button{border:none;border-radius:14px;padding:15px;font-size:17px;font-weight:900}
+#newBtn{background:var(--brass);color:var(--ink)}
+#contBtn{background:rgba(255,255,255,.12);color:var(--paper);border:1px solid var(--line)}
+.fine{font-size:11px;line-height:1.7;opacity:.7;margin:0}
+#fail{position:fixed;inset:0;display:grid;place-items:center;padding:24px;text-align:center;line-height:1.8}
+@media (prefers-reduced-motion:reduce){.card,#mainBtn[data-s="bite"]{animation:none}#toast{transition:none}}
+</style>
+
+<canvas id="cv"></canvas>
+
+<div id="tl">
+  <div id="area" class="chip">みなとみらい</div>
+  <div id="clock"><div><b id="clk">6:30</b><span id="tideTx">—</span></div><canvas id="tideCv" width="148" height="68"></canvas></div>
+</div>
+<div id="tr">
+  <div id="trRow"><div id="money" class="chip">¥1,500</div><button id="menuBtn" class="sq" aria-label="メニューを開く">MENU</button></div>
+  <canvas id="mini" width="208" height="208" aria-label="周辺の地図"></canvas>
+</div>
+<div id="info" hidden><b id="infoT"></b><span id="infoS"></span></div>
+<div id="joy" aria-hidden="true"><div id="knob"></div></div>
+<div id="acts">
+  <button id="viewBtn" class="pill" hidden>名所を見る</button>
+  <button id="baitBtn" class="pill" hidden>仕掛け：サビキ</button>
+  <button id="mainBtn" hidden><span id="mainTxt">投げる</span></button>
+</div>
+<div id="fight" hidden>
+  <div class="lbl"><span>テンション</span><span id="fbR">—</span></div>
+  <div class="bar"><div id="tens"></div><div class="lim"></div></div>
+  <div class="lbl"><span>寄せ</span><span id="fbD">あと 30m</span></div>
+  <div class="bar"><div id="distb"></div></div>
+</div>
+<div id="toast" role="status"></div>
+
+<div id="result" class="overlay" hidden>
+  <div class="card">
+    <div class="kick" id="resKick">釣れた！</div>
+    <canvas id="resCv"></canvas>
+    <h2 id="resName">—</h2>
+    <div id="resSize">—</div>
+    <div id="resW">—</div>
+    <div id="resBadges"></div>
+    <p id="resDesc"></p>
+    <div class="row"><button id="resRel" class="btnB">リリース</button><button id="resKeep" class="btnA">持ち帰る</button></div>
+  </div>
+</div>
+
+<div id="sight" class="overlay" hidden>
+  <div class="card">
+    <div class="kick">ハマの名所スタンプ</div>
+    <h2 id="sgName">—</h2>
+    <div id="sgBadge"></div>
+    <p id="sgDesc"></p>
+    <button id="sgOk" class="wide btnA">閉じる</button>
+  </div>
+</div>
+
+<div id="sheet" hidden>
+  <div class="sheetIn">
+    <div class="tabs" id="tabs">
+      <button data-t="map" class="on">移動</button><button data-t="dex">図鑑</button><button data-t="stamp">スタンプ</button><button data-t="shop">釣具店</button><button data-t="help">遊び方</button>
+      <button class="x" id="sheetX" aria-label="閉じる">✕</button>
+    </div>
+    <div id="sb"></div>
+  </div>
+</div>
+
+<div id="title">
+  <div class="tin">
+    <div class="eyebrow">YOKOHAMA HARBOR FISHING WALK</div>
+    <h1>横浜<em>みなと</em><br>釣り旅</h1>
+    <p class="lead">本牧・磯子・大黒の海づり施設から、みなとみらいや中華街の名所まで。車と人が行き交う港町を自分の足で歩いて、潮と季節を読み、ハマの魚を釣り上げよう。</p>
+    <div class="facts">
+      <div><b>6</b><span>実在の釣り場</span></div>
+      <div><b>35</b><span>東京湾の魚</span></div>
+      <div><b>10</b><span>名所スタンプ</span></div>
+    </div>
+    <div class="tbtns">
+      <button id="newBtn">はじめから</button>
+      <button id="contBtn" hidden>つづきから</button>
+    </div>
+    <p class="fine">操作：左のスティックで歩く（大きく倒すと走る）、画面をドラッグで視点を回す、右の大きなボタンで釣り。パソコンは矢印キー／WASDで移動、マウスドラッグで視点、スペースで釣り、Eで名所、Mでメニュー。<br>街並みは実際の海岸線・道路・名所の配置をもとに、距離を約3分の1に縮めて再現したものです。建物は自動生成で、実物の形とは異なります。釣り場の営業時間や魚の種類はゲーム上の目安なので、出かけるときは各施設の最新情報を確認してください。横浜市では海づり施設などを除き、ふ頭・防波堤での釣りは禁止されています。</p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script>
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id);
+if(!window.THREE){document.body.insertAdjacentHTML('beforeend','<div id="fail">3D表示の読み込みに失敗しました。<br>ページを再読み込みしてください。</div>');return;}
+const T=THREE,V3=T.Vector3;
+const FONT='"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",sans-serif';
+const clamp=(v,a,b)=>v<a?a:v>b?b:v, lerp=(a,b,t)=>a+(b-a)*t, rnd=Math.random;
+function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+function hash(a,b){let h=a*374761393+b*668265263;h=(h^(h>>13))*1274126177;return((h^(h>>16))>>>0)/4294967296;}
+
+/* ===== 地図（実在の位置関係を元に、距離を約1/3に圧縮。単位はメートル） ===== */
+const SC=3;const S2=p=>p.map(([x,y])=>[x*SC,y*SC]);
+const LAND=S2([[0,0],[1000,0],[985,90],[980,160],[900,200],[860,220],[740,250],[640,300],[600,380],[650,420],[700,440],[740,500],[790,540],[830,570],[820,620],[770,650],[730,660],[740,690],[800,690],[850,700],[880,720],[890,770],[840,790],[790,800],[780,830],[790,860],[820,890],[880,920],[940,950],[985,985],[1060,975],[1120,1000],[1130,1100],[1050,1130],[990,1150],[1000,1190],[1060,1210],[1150,1180],[1260,1130],[1340,1180],[1350,1260],[1300,1330],[1220,1390],[1150,1430],[1120,1500],[1080,1560],[1000,1610],[930,1660],[880,1720],[850,1800],[900,1850],[1010,1860],[1030,1990],[920,2030],[870,2060],[860,2110],[865,2170],[900,2210],[1000,2220],[1090,2230],[1110,2350],[1000,2370],[960,2400],[945,2450],[960,2510],[930,2560],[900,2600],[0,2600]]);
+const DAIKOKU=S2([[1150,620],[1380,560],[1450,700],[1460,830],[1300,880],[1200,820]]);
+const ISLE={x:3210,y:7410,r:165};
+const RECTS=[
+  {x:2370,y:2535,w:600,h:90,k:'deck',top:3.2},
+  {x:4059,y:2550,w:12,h:270,k:'pier',top:2.4},
+  {x:4020,y:3750,w:360,h:12,k:'pier',top:2.4},
+  {x:3030,y:5770,w:270,h:10,k:'pier',top:2.4},
+  {x:2840,y:7405,w:215,h:10,k:'bridge',top:2.6}
+];
+const INDUSTRY=[S2([[700,0],[1000,0],[985,90],[980,160],[900,200],[700,200]]),DAIKOKU,
+  S2([[1150,1180],[1260,1130],[1340,1180],[1350,1260],[1300,1330],[1220,1390],[1150,1430],[1120,1300]]),
+  S2([[900,1850],[1010,1860],[1030,1990],[920,2030],[880,1950]]),S2([[1000,2220],[1090,2230],[1110,2350],[1000,2370],[980,2290]])];
+const PARKS=[[2385,1680,96,54,-.6],[2934,3576,78,60,0],[3045,4635,150,102,.2]];
+const ROAD=S2([[540,380],[640,560],[720,760],[790,960],[900,1200],[980,1420],[900,1620],[800,1780],[800,1950],[820,2150],[870,2350],[880,2560]]);
+const RAIL=ROAD.map(([x,y])=>[x-60,y+14]);
+const ROADS2=[S2([[560,360],[680,470],[760,520]]),S2([[720,760],[800,880],[900,990],[990,1120]]),S2([[640,560],[600,700],[640,900],[790,960]])];
+const YAMASHITA=S2([[812,902],[872,932],[932,962],[968,990]]);
+const BEACH=S2([[985,2385],[950,2420],[936,2460],[950,2508],[922,2556]]);
+const TETRA_LINES=[[[2963,268],[2948,482]],[[2592,6320],[2604,6508]],[[3280,6690],[3340,7050]]];
+function pip(p,x,y){let c=false;for(let i=0,j=p.length-1;i<p.length;j=i++){const xi=p[i][0],yi=p[i][1],xj=p[j][0],yj=p[j][1];if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))c=!c;}return c;}
+function isLand(x,y){return pip(LAND,x,y)||pip(DAIKOKU,x,y)||Math.hypot(x-ISLE.x,y-ISLE.y)<ISLE.r;}
+function rectAt(x,y){for(const r of RECTS)if(x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h)return r;return null;}
+function isWater(x,y){return !isLand(x,y)&&!rectAt(x,y);}
+function segDist(px,py,ax,ay,bx,by){const dx=bx-ax,dy=by-ay,l=dx*dx+dy*dy;let t=l?((px-ax)*dx+(py-ay)*dy)/l:0;t=clamp(t,0,1);return Math.hypot(px-(ax+dx*t),py-(ay+dy*t));}
+function lineDist(pts,x,y){let d=1e9;for(let i=0;i<pts.length-1;i++)d=Math.min(d,segDist(x,y,pts[i][0],pts[i][1],pts[i+1][0],pts[i+1][1]));return d;}
+function nearCoast(x,y,r){for(let a=0;a<6.28;a+=.785)if(!isLand(x+Math.cos(a)*r,y+Math.sin(a)*r))return true;return false;}
+function inTetra(x,y){for(const l of TETRA_LINES)if(lineDist(l,x,y)<13&&!isLand(x,y))return true;return false;}
+
+/* ===== 魚（東京湾・横浜で釣れる35種） ===== */
+const MO=(...r)=>{const s=new Array(13).fill(0);for(const[a,b]of r){let m=a;for(let k=0;k<12;k++){s[m]=1;if(m===b)break;m=m%12+1;}}return s;};
+const ALL=MO([1,12]);
+const FISH={
+ kataku:{n:'カタクチイワシ',L:[7,13],a:.009,kg:300,bait:['sabiki'],tm:'day',mo:MO([5,11]),blue:1,sh:{a:.17,bk:'#2f5f86',bl:'#e9eff3',pat:'plain'},d:'下あごが短く、口が大きく裂けた小型のイワシ。しらす干しの多くはこの魚の稚魚。'},
+ iwashi:{n:'マイワシ',L:[12,22],a:.010,kg:400,bait:['sabiki'],tm:'day',mo:MO([4,11]),blue:1,sh:{a:.2,bk:'#2c5b88',bl:'#e9eff3',pat:'dots'},d:'群れで回遊する青魚。サビキ仕掛けに何匹も一度に掛かることがある。'},
+ konoshiro:{n:'コノシロ',L:[15,28],a:.012,kg:300,bait:['sabiki'],tm:'day',mo:MO([9,3]),blue:1,sh:{a:.32,bk:'#45708c',bl:'#eef2f2',pat:'dots'},d:'成長で呼び名が変わる出世魚。小さいものはコハダとして寿司ネタになる。'},
+ sappa:{n:'サッパ',L:[10,18],a:.012,kg:300,bait:['sabiki'],tm:'day',mo:MO([5,11]),blue:1,sh:{a:.34,bk:'#5d7f93',bl:'#eef2f2',pat:'plain'},d:'コノシロの仲間で、体は平たく銀色。岡山ではママカリの名で知られる。'},
+ aji:{n:'マアジ',L:[12,32],a:.011,kg:1200,bait:['sabiki','lure'],tm:'dd',mo:MO([5,11]),blue:1,sh:{a:.25,bk:'#5c7d6a',bl:'#eef0e6',pat:'line'},d:'朝夕のマズメ時に回ってきやすい。体の側面に「ぜいご」と呼ばれる硬いうろこが並ぶ。'},
+ saba:{n:'マサバ',L:[20,38],a:.010,kg:800,bait:['sabiki','lure'],tm:'day',mo:MO([6,11]),blue:1,ff:1.3,sh:{a:.22,bk:'#2f6b7c',bl:'#eef3f3',pat:'wave'},d:'背中の波模様が目印。引きが強く、サビキ仕掛けを絡ませやすい。'},
+ sayori:{n:'サヨリ',L:[18,36],a:.0035,kg:2500,bait:['sabiki'],tm:'day',mo:MO([9,4]),blue:1,sh:{a:.1,bk:'#4f8a8e',bl:'#f1f5f5',pat:'plain',shape:'needle'},d:'下あごが長く突き出た細長い魚。秋から冬にかけて岸近くへ群れで寄ってくる。'},
+ kamasu:{n:'アカカマス',L:[20,36],a:.006,kg:1500,bait:['lure'],tm:'dd',mo:MO([8,11]),blue:1,sh:{a:.14,bk:'#9a8e7c',bl:'#f3efe8',pat:'plain'},d:'鋭い歯をもつ細長い魚。秋に群れで港内へ入り、小型のルアーで狙える。'},
+ inada:{n:'イナダ',L:[35,60],a:.012,kg:900,bait:['lure'],tm:'dawn',mo:MO([7,11]),blue:1,ff:1.4,sh:{a:.22,bk:'#3b6f8f',bl:'#eef2f3',pat:'stripe'},d:'ブリの若魚。鳥山の下で小魚を追い回す、堤防釣りの憧れの青物。'},
+ warasa:{n:'ワラサ',L:[60,80],a:.012,kg:1100,bait:['lure'],tm:'dawn',mo:MO([9,12]),blue:1,ff:1.4,sh:{a:.23,bk:'#2f6286',bl:'#eef2f3',pat:'stripe'},d:'ブリの成長段階のひとつ。関東ではイナダより大きくブリ未満のものをこう呼ぶ。'},
+ seabass:{n:'シーバス',L:[35,90],a:.010,kg:900,bait:['lure'],tm:'night',mo:ALL,sh:{a:.2,bk:'#4f6372',bl:'#eef1f2',pat:'plain'},d:'和名はスズキ。成長で呼び名が変わる出世魚で、横浜港の夜のルアー釣りの主役。'},
+ tachiuo:{n:'タチウオ',L:[60,115],a:.0016,kg:1800,bait:['lure'],tm:'dn',mo:MO([8,12]),blue:1,sh:{a:.08,bk:'#c9d3db',bl:'#f4f7f9',pat:'plain',shape:'ribbon'},d:'銀色の刀のような体。秋の夕方から夜にかけて湾内に入ってくることがある。'},
+ haze:{n:'マハゼ',L:[8,20],a:.010,kg:3000,bait:['isome'],tm:'day',mo:MO([6,11]),near:1,sh:{a:.2,bk:'#a39270',bl:'#efe6d2',pat:'mottle',tail:'round'},d:'砂泥底にすむ。夏から秋に数が釣れ、天ぷらの定番。'},
+ kisu:{n:'シロギス',L:[12,26],a:.009,kg:3500,bait:['isome'],tm:'day',mo:MO([5,10]),far:1,sh:{a:.17,bk:'#d6cbad',bl:'#fbf8ee',pat:'plain'},d:'砂地を好む細身の魚。投げ釣りの代表的なターゲットで、遠投すると出会いやすい。'},
+ ishimochi:{n:'シログチ',L:[15,32],a:.012,kg:800,bait:['isome'],tm:'night',mo:MO([4,11]),sh:{a:.26,bk:'#a6a9ad',bl:'#f1f1ef',pat:'plain'},d:'イシモチとも呼ばれる。釣り上げると浮き袋を震わせて「グーグー」と鳴く。'},
+ makogarei:{n:'マコガレイ',L:[15,40],a:.016,kg:2500,bait:['isome'],tm:'day',mo:MO([11,3]),far:1,ff:.8,sh:{a:.5,bk:'#7a6a52',bl:'#efe6d2',pat:'mottle',shape:'flat'},d:'冬の投げ釣りの代表。目は体の右側にあり、砂泥の底にじっと身をひそめる。'},
+ hirame:{n:'ヒラメ',L:[30,72],a:.014,kg:3500,bait:['lure'],tm:'dawn',mo:MO([10,3]),far:1,ff:.9,sh:{a:.48,bk:'#6b5e48',bl:'#f0ebe0',pat:'mottle',shape:'flat',left:1},d:'目が体の左側にあるのがカレイとの見分け方。小魚を追ってルアーにも食いつく。'},
+ magochi:{n:'マゴチ',L:[30,60],a:.008,kg:3000,bait:['lure'],tm:'day',mo:MO([5,9]),ff:.9,sh:{a:.16,bk:'#7d6c56',bl:'#ece4d4',pat:'mottle'},d:'平たい頭をもつ砂地の待ち伏せ型。夏が旬で「照りゴチ」とも呼ばれる。'},
+ kasago:{n:'カサゴ',L:[10,26],a:.017,kg:2500,bait:['isome'],tm:'night',mo:ALL,rock:1,near:1,sh:{a:.3,bk:'#b8452e',bl:'#f2c6a8',pat:'mottle',tail:'round'},d:'岸壁の際やテトラの隙間にひそむ。掛かると穴に潜ろうとするので、迷わず巻き上げるのがコツ。'},
+ murasoi:{n:'ムラソイ',L:[12,28],a:.017,kg:2000,bait:['isome'],tm:'night',mo:ALL,rock:1,near:1,sh:{a:.3,bk:'#4a3d33',bl:'#8f7f6e',pat:'mottle',tail:'round'},d:'岩やテトラの隙間にすむ根魚。カサゴに似るが、体色が暗くまだら模様になる。'},
+ mebaru:{n:'メバル',L:[12,26],a:.015,kg:2500,bait:['isome','lure'],tm:'night',mo:MO([11,5]),rock:1,near:1,sh:{a:.3,bk:'#3d3a36',bl:'#b9ad98',pat:'bars',eye:1.6},d:'大きな目が特徴。夜の常夜灯まわりやテトラ帯で小魚を待ち伏せする。'},
+ ainame:{n:'アイナメ',L:[15,40],a:.011,kg:2500,bait:['isome'],tm:'day',mo:MO([10,3]),rock:1,near:1,sh:{a:.22,bk:'#7a5a36',bl:'#d9c7a8',pat:'mottle'},d:'岩礁帯の根魚。秋から冬の産卵期には、オスが鮮やかな黄色に色づくことがある。'},
+ kurodai:{n:'クロダイ',L:[25,52],a:.017,kg:900,bait:['isome'],tm:'any',mo:ALL,rock:1,near:1,sh:{a:.38,bk:'#3f4952',bl:'#c9cdd0',pat:'bars'},d:'東京湾の港湾部に多い。警戒心が強く、岸壁やテトラの際をていねいに探って狙う。'},
+ mejina:{n:'メジナ',L:[18,38],a:.017,kg:1000,bait:['isome'],tm:'day',mo:MO([10,3]),rock:1,near:1,sh:{a:.38,bk:'#2f3a40',bl:'#5f6e74',pat:'plain'},d:'磯釣りで人気の魚。関西ではグレと呼ばれるが、関東ではメジナの名が一般的。'},
+ umitanago:{n:'ウミタナゴ',L:[12,25],a:.016,kg:600,bait:['isome'],tm:'day',mo:MO([11,5]),near:1,sh:{a:.4,bk:'#8d7a6a',bl:'#e8ddd2',pat:'plain'},d:'卵ではなく子どもを産む胎生の魚。冬から春の岸壁でよく釣れる。'},
+ kawahagi:{n:'カワハギ',L:[12,28],a:.018,kg:3000,bait:['isome'],tm:'day',mo:MO([6,11]),rock:1,sh:{a:.5,bk:'#8e8a6e',bl:'#d8d4b8',pat:'mottle'},d:'エサ取りの名人と呼ばれ、硬い口でエサだけをかじり取る。肝が絶品。'},
+ bora:{n:'ボラ',L:[30,70],a:.011,kg:200,bait:['isome','sabiki'],tm:'day',mo:ALL,ff:1.3,sh:{a:.22,bk:'#4e5b63',bl:'#e5e8e8',pat:'line'},d:'成長で呼び名が変わる出世魚。港内で群れ、水面を跳ねる姿がよく見られる。引きは強烈。'},
+ anago:{n:'マアナゴ',L:[25,60],a:.0018,kg:2500,bait:['isome'],tm:'night',mo:MO([5,10]),sh:{a:.07,bk:'#6b5b48',bl:'#e6dccb',pat:'dots',shape:'eel'},d:'夜行性で、夜の投げ釣りで狙う。体の側面に白い点が一列に並ぶ。'},
+ gonzui:{n:'ゴンズイ',L:[10,20],a:.008,kg:300,bait:['isome'],tm:'night',mo:MO([6,10]),venom:1,sh:{a:.18,bk:'#3b2f3a',bl:'#6a5a68',pat:'stripe2',tail:'round'},d:'背びれと胸びれのトゲに毒があり、刺されると強く痛む。素手で触らないこと。'},
+ kusafugu:{n:'クサフグ',L:[8,18],a:.02,kg:0,bait:['isome'],tm:'any',mo:MO([4,11]),poison:1,sh:{a:.38,bk:'#5c6f4c',bl:'#f4f3ea',pat:'dots2'},d:'皮や内臓などに強い毒（テトロドトキシン）をもつ。釣れても食べずに海へ返そう。'},
+ soushi:{n:'ソウシハギ',L:[30,70],a:.010,kg:0,bait:['isome'],tm:'any',mo:MO([6,11]),poison:1,sh:{a:.32,bk:'#8a8f6c',bl:'#cbc8a3',pat:'scribble'},d:'青い線と斑点の模様が特徴。内臓に強い毒をもつおそれがあり、横浜市も注意を呼びかけている。'},
+ akaei:{n:'アカエイ',L:[40,100],a:.022,kg:0,bait:['isome'],tm:'night',mo:MO([5,10]),poison:1,ff:1.1,unit:'体盤幅',sh:{a:.8,bk:'#7a5a44',bl:'#e8d2bf',pat:'plain',shape:'ray'},d:'尾に毒のあるトゲをもつ。釣れたら近づきすぎず、糸を切って逃がすのが安全。'},
+ sumiika:{n:'コウイカ',L:[12,25],a:.06,kg:2000,bait:['egi'],tm:'day',mo:MO([3,6],[9,11]),ff:.5,unit:'胴長',sh:{a:.45,bk:'#8a6f5a',bl:'#efe2d6',pat:'mottle',shape:'squid'},d:'体の中に石灰質の甲をもつイカ。墨を大量に吐くことからスミイカとも呼ばれる。'},
+ aoriika:{n:'アオリイカ',L:[15,35],a:.055,kg:3500,bait:['egi'],tm:'dd',mo:MO([9,11]),ff:.6,unit:'胴長',sh:{a:.42,bk:'#b9a58e',bl:'#f4ece2',pat:'plain',shape:'squid'},d:'「イカの王様」と呼ばれる大型のイカ。秋は新子と呼ばれる若いイカがエギによく反応する。'},
+ madako:{n:'マダコ',L:[20,50],a:.015,kg:2000,bait:['egi'],tm:'day',mo:MO([6,9]),near:1,ff:.8,unit:'全長',sh:{a:.6,bk:'#9a6a52',bl:'#e4c3ae',pat:'mottle',shape:'octo'},d:'東京湾は夏のタコ釣りで知られる。エギやタコ用の仕掛けで岸壁の際を探る。'}
+};
+const FISH_IDS=Object.keys(FISH);
+const TM_LABEL={day:'日中',night:'夜',dd:'朝夕マズメ',dn:'夕方〜夜',dawn:'早朝',any:'時間を問わない'};
+const BAIT={sabiki:{n:'サビキ',max:30},isome:{n:'青イソメ',max:75},lure:{n:'メタルジグ',max:70},egi:{n:'エギ',max:45}};
+const RODS=[{n:'入門サビキセット',line:'ナイロン2号',lim:3.5,price:0},{n:'堤防万能ロッド',line:'ナイロン3号',lim:5.5,price:3000},{n:'シーバスロッド',line:'PE1号',lim:8,price:9000},{n:'ショアジギングロッド',line:'PE2号',lim:12,price:18000}];
+const SPOTS=[
+ {id:'suehiro',n:'末広水際線プロムナード',x:2942,y:360,dir:0,hours:null,w:{kataku:15,iwashi:15,konoshiro:10,sappa:15,haze:15,seabass:12,kurodai:8,bora:12,mebaru:6,kasago:6,murasoi:4,ishimochi:4,anago:4,gonzui:4,kusafugu:6,akaei:2,sumiika:2,madako:2,umitanago:3}},
+ {id:'daikoku',n:'大黒海づり施設',x:4065,y:2812,dir:Math.PI/2,hours:[6,19],w:{aji:25,iwashi:20,kataku:10,saba:18,konoshiro:6,sayori:6,kamasu:6,kasago:8,mebaru:7,tachiuo:6,inada:4,warasa:1,seabass:6,kurodai:4,kawahagi:4,makogarei:3,hirame:1,soushi:2,kusafugu:5,sumiika:3,aoriika:1,madako:3,ishimochi:4}},
+ {id:'honmoku',n:'本牧海づり施設',x:4372,y:3756,dir:0,hours:[6,19],w:{aji:25,iwashi:18,saba:14,kataku:8,sayori:6,kamasu:5,kurodai:6,mejina:4,kasago:9,mebaru:7,ainame:3,ishimochi:6,inada:5,warasa:2,tachiuo:4,seabass:6,kawahagi:5,makogarei:4,hirame:2,magochi:2,soushi:3,kusafugu:6,sumiika:4,aoriika:2,madako:4,anago:3}},
+ {id:'isogo',n:'磯子海づり施設',x:3292,y:5775,dir:0,hours:[6,19],w:{iwashi:22,sappa:18,aji:18,kataku:10,konoshiro:8,ishimochi:8,kurodai:7,haze:8,kasago:7,umitanago:4,kawahagi:3,makogarei:4,seabass:6,bora:6,soushi:2,kusafugu:6,gonzui:4,anago:3,sumiika:3,madako:3,akaei:1}},
+ {id:'sugita',n:'杉田臨海緑地',x:2582,y:6430,dir:0,hours:null,w:{sappa:22,haze:18,iwashi:18,kataku:8,kurodai:8,seabass:8,mebaru:6,kasago:6,murasoi:4,bora:8,umitanago:4,kusafugu:6,gonzui:4,anago:3,madako:2}},
+ {id:'kanazawa',n:'金沢水際線緑地',x:3295,y:6870,dir:0,hours:null,w:{haze:18,kisu:16,iwashi:14,seabass:9,kurodai:7,mebaru:6,kasago:5,makogarei:5,magochi:4,hirame:2,bora:8,kusafugu:7,akaei:2,sumiika:4,ainame:3}}
+];
+SPOTS.forEach(sp=>{sp.tetra=TETRA_LINES.some(l=>lineDist(l,sp.x,sp.y)<40);});
+const SIGHTS=[
+ {id:'landmark',n:'横浜ランドマークタワー',x:2070,y:1770,r:60,d:'高さ約296mの超高層ビル。69階の展望フロアからは港を一望でき、空気の澄んだ日には富士山まで見える。'},
+ {id:'cosmo',n:'コスモクロック21',x:2280,y:1930,r:55,d:'みなとみらいの夜景を彩る大観覧車。中央に大きな時計を備え、夜は光の演出が楽しめる。'},
+ {id:'redbrick',n:'横浜赤レンガ倉庫',x:2600,y:2170,r:70,d:'明治末から大正にかけて建てられた国の保税倉庫。2号館は1911年、1号館は1913年の完成で、今は商業・文化施設になっている。'},
+ {id:'osanbashi',n:'大さん橋',x:2850,y:2580,r:70,d:'大型客船が発着する国際客船ターミナル。屋上の「くじらのせなか」は木の甲板と芝生の広場で、24時間開放されている。'},
+ {id:'yamashita',n:'山下公園と氷川丸',x:2670,y:2845,r:55,d:'関東大震災のがれきを埋め立てて1930年に開園した臨海公園。目の前には同じ1930年建造の貨客船・氷川丸が係留されている。'},
+ {id:'marine',n:'横浜マリンタワー',x:2860,y:3000,r:35,d:'山下公園の向かいに立つ港のシンボルタワー。展望フロアから港とベイブリッジを見渡せる。'},
+ {id:'chinatown',n:'横浜中華街',x:2480,y:2985,r:40,d:'いくつもの牌楼（門）に囲まれた街区に、中国料理店や雑貨店がひしめく。食べ歩きも楽しい。'},
+ {id:'minatomieru',n:'港の見える丘公園',x:2934,y:3570,r:55,d:'山手の高台にある公園。展望台からベイブリッジと港の景色を眺められ、バラの庭園も人気。'},
+ {id:'sankeien',n:'三溪園',x:3060,y:4650,r:80,d:'実業家・原三溪がつくった日本庭園。京都や鎌倉などから移築された歴史的建造物が池のまわりに点在する。'},
+ {id:'hakkeijima',n:'八景島シーパラダイス',x:3150,y:7420,r:90,d:'水族館と遊園地がそろう海の上の島。海の公園の近くから橋を渡って歩いて行ける。'}
+];
+const STATIONS=[
+ {n:'鶴見・末広',x:2860,y:400},{n:'横浜駅',x:1700,y:1080},{n:'みなとみらい',x:2130,y:1880},{n:'関内・山下公園',x:2560,y:2900},
+ {n:'本牧海づり施設',x:3980,y:3756},{n:'根岸',x:2460,y:5100},{n:'磯子海づり施設',x:2990,y:5775},{n:'杉田',x:2520,y:6430},
+ {n:'金沢・海の公園',x:2790,y:7300},{n:'大黒海づり施設',x:3990,y:2420,far:1}
+];
+const AREAS=S2([[500,110],[520,300],[680,500],[740,880],[930,1110],[1000,1440],[760,1660],[770,1880],[740,2120],[790,2360],[1300,680],[1230,1250],[1070,2470]]).map((p,i)=>[['鶴見','横浜駅','みなとみらい','関内','山手','本牧','根岸','磯子','杉田','金沢','大黒ふ頭','本牧ふ頭','八景島'][i],p[0],p[1]]);
+
+/* ===== 状態 ===== */
+const SAVE_KEY='hama-tsuri-v2';
+function today0(){const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();}
+function fresh(){return{money:1500,rod:0,bait:'sabiki',isome:10,lure:0,egi:0,dex:{},stamps:{},base:today0(),day:0,min:6*60+30,x:2130,y:1880,tip:{}};}
+let S=fresh();
+function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(e){}}
+function load(){try{const s=localStorage.getItem(SAVE_KEY);return s?JSON.parse(s):null;}catch(e){return null;}}
+const hot=window.claude&&window.claude.hot;
+if(hot&&typeof hot.snapshot==='function'){try{hot.snapshot(()=>({S}));}catch(e){}}
+
+/* ===== 時間・潮・季節 ===== */
+const hourF=()=>S.min/60;
+const gameDate=()=>new Date(S.base+S.day*864e5);
+function moonAge(ms){const ref=Date.UTC(2000,0,6,18,14),syn=29.530588853;let a=((ms-ref)/864e5)%syn;if(a<0)a+=syn;return a;}
+function tideInfo(){const age=moonAge(S.base+S.day*864e5+12*36e5);const k=(Math.floor(age)%30)+1;let name='中潮',amp=.75,boost=1.05;
+  if([1,2,3,15,16,17,30].includes(k)){name='大潮';amp=1;boost=1.2;}else if([8,9,10,22,23,24].includes(k)){name='小潮';amp=.45;boost=.9;}else if(k===11||k===25){name='長潮';amp=.4;boost=.85;}else if(k===12||k===26){name='若潮';amp=.55;boost=.95;}
+  return{name,amp,boost,hw:(5.5+age*.8)%12.42};}
+function tideAt(h,ti){const ph=2*Math.PI*(h-ti.hw)/12.42;return{c:Math.cos(ph),s:-Math.sin(ph),lv:Math.cos(ph)*ti.amp};}
+function tideLabel(t){return t.c>.85?'満潮':t.c<-.85?'干潮':t.s>0?'上げ潮':'下げ潮';}
+function tmul(tm,h){const night=h>=19||h<4.5,dawn=h>=4.5&&h<7.5,dusk=h>=16&&h<19;
+  switch(tm){case'day':return night?.35:1;case'night':return night?2:(dawn||dusk)?1.2:.4;case'dd':return(dawn||dusk)?2.4:night?.8:.7;case'dn':return dusk?2.5:night?1.6:.15;case'dawn':return dawn?3:h<10?1:.25;default:return 1;}}
+function seasonTxt(f){if(f.mo===ALL)return'通年';const m=[];for(let i=1;i<=12;i++)if(f.mo[i])m.push(i);let s=m[0],e=m[m.length-1];for(let i=1;i<m.length;i++)if(m[i]!==m[i-1]+1){s=m[i];e=m[i-1];break;}return`${s}〜${e}月`;}
+function fmtTime(m){m=Math.floor(m);return Math.floor(m/60)+':'+String(m%60).padStart(2,'0');}
+function spotOpen(sp){if(!sp.hours)return true;const h=hourF();return h>=sp.hours[0]&&h<sp.hours[1];}
+function advance(m){S.min+=m;while(S.min>=1440){S.min-=1440;S.day++;}}
+function keyLerp(keys,h){for(let i=1;i<keys.length;i++){if(h<=keys[i][0]){const a=keys[i-1],b=keys[i],k=(h-a[0])/(b[0]-a[0]);return typeof a[1]==='number'?lerp(a[1],b[1],k):a[1].map((v,j)=>lerp(v,b[1][j],k));}}return keys[keys.length-1][1];}
+const SKYTOP=[[0,[6,12,30]],[4.5,[16,26,56]],[5.4,[90,110,160]],[6.6,[70,130,200]],[16,[66,128,200]],[17.3,[80,90,150]],[18.3,[30,34,74]],[19.3,[8,14,34]],[24,[6,12,30]]];
+const SKYHOR=[[0,[16,26,48]],[4.5,[40,48,80]],[5.4,[240,170,130]],[6.6,[196,220,236]],[16,[200,222,238]],[17.3,[248,170,118]],[18.3,[96,80,118]],[19.3,[20,30,56]],[24,[16,26,48]]];
+const SEA=[[0,[8,24,46]],[4.5,[12,34,62]],[5.5,[50,90,128]],[7,[30,92,128]],[16,[30,92,128]],[17.5,[64,80,118]],[18.6,[22,40,76]],[19.6,[8,24,46]],[24,[8,24,46]]];
+const SUN=[[0,0],[5.2,0],[6.6,1.05],[16.4,1.05],[18.1,0],[24,0]];
+const HEMI=[[0,.3],[5,.34],[7,.62],[17,.62],[19,.32],[24,.3]];
+const SUNC=[[0,[255,200,150]],[6,[255,190,140]],[8,[255,246,232]],[15.5,[255,246,232]],[17.5,[255,165,105]],[24,[255,165,105]]];
+const DARK=[[0,1],[4.5,1],[6,.1],[7,0],[16.6,0],[18,.45],[19.5,1],[24,1]];
+
+/* ===== 入力 ===== */
+const K={l:0,r:0,u:0,d:0,sh:0};
+const joy=$('joy'),knob=$('knob');let jid=null,jx=0,jy=0;
+function joyMove(e){const r=joy.getBoundingClientRect();let dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);const R=r.width/2-14,d=Math.hypot(dx,dy);if(d>R){dx*=R/d;dy*=R/d;}knob.style.transform=`translate(${dx}px,${dy}px)`;jx=dx/R;jy=dy/R;}
+joy.addEventListener('pointerdown',e=>{jid=e.pointerId;try{joy.setPointerCapture(jid);}catch(_){}joyMove(e);});
+joy.addEventListener('pointermove',e=>{if(e.pointerId===jid)joyMove(e);});
+const joyEnd=e=>{if(e.pointerId!==jid)return;jid=null;jx=jy=0;knob.style.transform='';};
+joy.addEventListener('pointerup',joyEnd);joy.addEventListener('pointercancel',joyEnd);
+const KEYMAP={ArrowLeft:'l',KeyA:'l',ArrowRight:'r',KeyD:'r',ArrowUp:'u',KeyW:'u',ArrowDown:'d',KeyS:'d',ShiftLeft:'sh',ShiftRight:'sh'};
+addEventListener('keydown',e=>{if(KEYMAP[e.code]){K[KEYMAP[e.code]]=1;e.preventDefault();return;}
+  if(e.repeat)return;
+  if(e.code==='Space'||e.code==='Enter'){if(!$('result').hidden){keep(true);return;}if(!$('sight').hidden){closeSight();return;}if(!$('title').hidden)return;e.preventDefault();mainDown();}
+  else if(e.code==='KeyE'&&!$('viewBtn').hidden)openSight();
+  else if(e.code==='KeyB'&&!$('baitBtn').hidden)cycleBait();
+  else if(e.code==='KeyM'){if($('sheet').hidden)openMenu();else closeSheet();}
+  else if(e.code==='Escape'){closeSheet();}});
+addEventListener('keyup',e=>{if(KEYMAP[e.code])K[KEYMAP[e.code]]=0;if(e.code==='Space'||e.code==='Enter')mainUp();});
+addEventListener('blur',()=>{K.l=K.r=K.u=K.d=K.sh=0;mainUp();});
+const cv=$('cv');let did=null,dlx=0,dly=0,yaw=0,pitch=.3,yawT=null;
+cv.addEventListener('pointerdown',e=>{did=e.pointerId;dlx=e.clientX;dly=e.clientY;try{cv.setPointerCapture(did);}catch(_){}});
+cv.addEventListener('pointermove',e=>{if(e.pointerId!==did)return;yaw-=(e.clientX-dlx)*.006;pitch=clamp(pitch+(e.clientY-dly)*.004,.05,1.2);dlx=e.clientX;dly=e.clientY;yawT=null;});
+const dEnd=e=>{if(e.pointerId===did)did=null;};cv.addEventListener('pointerup',dEnd);cv.addEventListener('pointercancel',dEnd);
+
+/* ===== 3D基盤 ===== */
+const renderer=new T.WebGLRenderer({canvas:cv,antialias:true,logarithmicDepthBuffer:true,powerPreference:'high-performance'});
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
+const scene=new T.Scene();
+const camera=new T.PerspectiveCamera(58,1,.1,9000);
+scene.fog=new T.Fog(0xc4dceb,180,900);
+const hemi=new T.HemisphereLight(0xe6f2ff,0x8a7f6a,.6);scene.add(hemi);
+const sun=new T.DirectionalLight(0xffffff,1);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+Object.assign(sun.shadow.camera,{left:-70,right:70,top:70,bottom:-70,near:1,far:700});sun.shadow.bias=-.0004;sun.shadow.normalBias=.04;
+scene.add(sun);scene.add(sun.target);
+let VW=1,VH=1;
+function resize(){VW=innerWidth;VH=innerHeight;renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.75));renderer.setSize(VW,VH,false);camera.aspect=VW/VH;camera.updateProjectionMatrix();}
+addEventListener('resize',resize);resize();
+const GROUND=2;
+const lam=(c,o)=>new T.MeshLambertMaterial(Object.assign({color:c},o||{}));
+function canvasTex(w,h,fn){const c=document.createElement('canvas');c.width=w;c.height=h;fn(c.getContext('2d'),w,h);const t=new T.CanvasTexture(c);t.anisotropy=8;t.wrapS=t.wrapT=T.RepeatWrapping;return t;}
+function shp(p){const s=new T.Shape();s.moveTo(p[0][0],p[0][1]);for(let i=1;i<p.length;i++)s.lineTo(p[i][0],p[i][1]);s.closePath();return s;}
+function flatGeo(shapes,y){const g=new T.ShapeGeometry(shapes,24);g.rotateX(Math.PI/2);g.translate(0,y,0);return g;}
+function flatMat(c,o){return lam(c,Object.assign({side:T.DoubleSide},o||{}));}
+function add(o,x,y,z){o.position.set(x,y,z);scene.add(o);return o;}
+function box(w,h,d,mat){const g=new T.BoxGeometry(w,h,d);g.translate(0,h/2,0);return new T.Mesh(g,mat);}
+function shadowy(m,c=true,r=true){m.castShadow=c;m.receiveShadow=r;return m;}
+
+/* 空 */
+const skyU={top:{value:new T.Color()},hor:{value:new T.Color()},sunc:{value:new T.Color()},sd:{value:new V3(0,1,0)}};
+const sky=new T.Mesh(new T.SphereGeometry(5000,24,12),new T.ShaderMaterial({uniforms:skyU,side:T.BackSide,depthWrite:false,depthTest:false,fog:false,
+  vertexShader:'varying vec3 vW;void main(){vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz-cameraPosition;gl_Position=projectionMatrix*viewMatrix*w;}',
+  fragmentShader:'uniform vec3 top,hor,sunc,sd;varying vec3 vW;void main(){vec3 d=normalize(vW);float h=max(d.y,0.);vec3 c=mix(hor,top,pow(h,.5));float s=max(dot(d,sd),0.);c+=sunc*(pow(s,900.)*4.+pow(s,10.)*.22);if(d.y<0.)c=hor;gl_FragColor=vec4(c,1.);}'}));
+sky.renderOrder=-10;sky.frustumCulled=false;scene.add(sky);
+
+/* 衝突判定（高さ付き） */
+const CG=40,cgrid=new Map();
+function addCol(x0,z0,x1,z1,h){const o={x0:Math.min(x0,x1),z0:Math.min(z0,z1),x1:Math.max(x0,x1),z1:Math.max(z0,z1),h:h||20};
+  for(let gx=Math.floor(o.x0/CG);gx<=Math.floor(o.x1/CG);gx++)for(let gz=Math.floor(o.z0/CG);gz<=Math.floor(o.z1/CG);gz++){const k=gx+','+gz;let a=cgrid.get(k);if(!a){a=[];cgrid.set(k,a);}a.push(o);}}
+function colAt(x,z,pad){const a=cgrid.get(Math.floor(x/CG)+','+Math.floor(z/CG));if(!a)return null;for(const o of a)if(x>o.x0-pad&&x<o.x1+pad&&z>o.z0-pad&&z<o.z1+pad)return o;return null;}
+function walk(x,y){if(x<20||y<20||x>4780||y>7780)return false;let ok=false;
+  if(pip(LAND,x,y)||pip(DAIKOKU,x,y))ok=true;else if(Math.hypot(x-ISLE.x,y-ISLE.y)<ISLE.r-2)ok=true;else if(rectAt(x,y))ok=true;
+  return ok&&!colAt(x,y,.35);}
+function groundY(x,y){const r=rectAt(x,y);return r?r.top:GROUND;}
+
+/* ===== テクスチャ（窓・壁は世界座標で貼るので、建物の大きさに関係なく窓の大きさが一定） ===== */
+function plainCorner(c,w,h,col){c.fillStyle=col;c.fillRect(w-6,0,6,6);}
+const glassTex=canvasTex(128,128,(c,w,h)=>{const g=c.createLinearGradient(0,0,0,h);g.addColorStop(0,'#9fb7c9');g.addColorStop(1,'#7f98ad');c.fillStyle=g;c.fillRect(0,0,w,h);
+  c.fillStyle='#d9e1e6';for(let y=0;y<h;y+=32)c.fillRect(0,y,w,4);for(let x=0;x<w;x+=16)c.fillRect(x,0,2,h);plainCorner(c,w,h,'#c8d0d6');});
+const glassEm=canvasTex(128,128,(c,w,h)=>{c.fillStyle='#000';c.fillRect(0,0,w,h);const R=mulberry(2);for(let y=0;y<h;y+=32)for(let x=0;x<w;x+=16)if(R()<.55){c.fillStyle=R()<.3?'#cfe6ff':'#fff0c8';c.fillRect(x+2,y+4,14,28);}c.fillStyle='#000';c.fillRect(w-6,0,6,6);});
+const aptTex=canvasTex(128,128,(c,w,h)=>{c.fillStyle='#f2efe8';c.fillRect(0,0,w,h);for(let y=0;y<h;y+=32){c.fillStyle='#d8d3c9';c.fillRect(0,y+26,w,6);for(let x=6;x<w;x+=32){c.fillStyle='#5f7486';c.fillRect(x,y+6,20,16);c.fillStyle='#c9c3b7';c.fillRect(x-2,y+20,24,3);}}plainCorner(c,w,h,'#ece8df');});
+const aptEm=canvasTex(128,128,(c,w,h)=>{c.fillStyle='#000';c.fillRect(0,0,w,h);const R=mulberry(4);for(let y=0;y<h;y+=32)for(let x=6;x<w;x+=32)if(R()<.6){c.fillStyle=R()<.25?'#d6ecff':'#ffd793';c.fillRect(x,y+6,20,16);}c.fillStyle='#000';c.fillRect(w-6,0,6,6);});
+const houseTex=canvasTex(128,128,(c,w,h)=>{c.fillStyle='#f4f1ea';c.fillRect(0,0,w,h);c.fillStyle='#e2ddd2';for(let y=0;y<h;y+=8)c.fillRect(0,y,w,1);
+  c.fillStyle='#5b6e7c';c.fillRect(14,20,30,26);c.fillRect(74,20,30,26);c.fillRect(74,76,30,26);c.fillStyle='#7a5a3e';c.fillRect(18,72,22,40);c.fillStyle='#bdb6a8';c.fillRect(0,h-8,w,8);plainCorner(c,w,h,'#f0ede6');});
+const houseEm=canvasTex(128,128,(c,w,h)=>{c.fillStyle='#000';c.fillRect(0,0,w,h);c.fillStyle='#ffd08a';c.fillRect(14,20,30,26);c.fillRect(74,76,30,26);c.fillStyle='#000';c.fillRect(w-6,0,6,6);});
+const whTex=canvasTex(64,64,(c,w,h)=>{c.fillStyle='#e6e6e2';c.fillRect(0,0,w,h);c.fillStyle='#c9cbc8';for(let x=0;x<w;x+=4)c.fillRect(x,0,1,h);plainCorner(c,w,h,'#dcdcd8');});
+const contTex=canvasTex(64,64,(c,w,h)=>{c.fillStyle='#ffffff';c.fillRect(0,0,w,h);c.fillStyle='#cfcfcf';for(let x=0;x<w;x+=5)c.fillRect(x,0,2,h);c.fillStyle='#b5b5b5';c.fillRect(0,0,w,3);c.fillRect(0,h-3,w,3);plainCorner(c,w,h,'#ffffff');});
+const brickTex=canvasTex(128,64,(c,w,h)=>{c.fillStyle='#b5543c';c.fillRect(0,0,w,h);c.fillStyle='rgba(90,30,20,.25)';for(let y=0;y<h;y+=4)c.fillRect(0,y,w,1);
+  c.fillStyle='#3a2b26';for(let x=8;x<w;x+=16){c.beginPath();c.moveTo(x,46);c.lineTo(x,30);c.arc(x+4,30,4,Math.PI,0);c.lineTo(x+8,46);c.fill();}c.fillStyle='#f3efe6';c.fillRect(0,h-5,w,5);plainCorner(c,w,h,'#6b6560');});
+const brickEm=canvasTex(128,64,(c,w,h)=>{c.fillStyle='#000';c.fillRect(0,0,w,h);c.fillStyle='#ffcf7a';for(let x=8;x<w;x+=16){c.beginPath();c.moveTo(x,46);c.lineTo(x,30);c.arc(x+4,30,4,Math.PI,0);c.lineTo(x+8,46);c.fill();}});
+const glowTex=canvasTex(64,64,(c,w,h)=>{const g=c.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'rgba(255,236,190,1)');g.addColorStop(.3,'rgba(255,205,130,.55)');g.addColorStop(1,'rgba(255,200,120,0)');c.fillStyle=g;c.fillRect(0,0,w,h);});
+const asphaltTex=canvasTex(128,128,(c,w,h)=>{c.fillStyle='#6d7176';c.fillRect(0,0,w,h);const R=mulberry(8);for(let i=0;i<1400;i++){c.fillStyle=`rgba(${R()<.5?255:0},${R()<.5?255:0},${R()<.5?255:0},.05)`;c.fillRect(R()*w,R()*h,1.5,1.5);}});
+const paveTex=canvasTex(64,64,(c,w,h)=>{c.fillStyle='#bdb8ae';c.fillRect(0,0,w,h);c.fillStyle='#a9a49a';for(let i=0;i<w;i+=16){c.fillRect(i,0,1,h);c.fillRect(0,i,w,1);}});
+const groundTex=canvasTex(128,128,(c,w,h)=>{c.fillStyle='#cfc9b6';c.fillRect(0,0,w,h);const R=mulberry(6);for(let i=0;i<900;i++){c.fillStyle=`rgba(90,80,60,${R()*.08})`;c.fillRect(R()*w,R()*h,2,2);}});
+const grassTex=canvasTex(128,128,(c,w,h)=>{c.fillStyle='#86b46a';c.fillRect(0,0,w,h);const R=mulberry(10);for(let i=0;i<1500;i++){c.fillStyle=R()<.5?'rgba(60,110,50,.25)':'rgba(170,210,120,.2)';c.fillRect(R()*w,R()*h,1.5,3);}});
+const seaNorm=canvasTex(256,256,(c,w,h)=>{const img=c.createImageData(w,h);const H=(x,y)=>{const u=x/w*6.283,v=y/h*6.283;return Math.sin(u*3+Math.sin(v*2)*1.2)+.8*Math.sin(v*4+u*1)+.4*Math.sin((u+v)*7)+.25*Math.sin(u*11-v*5);};
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const dx=H(x+1,y)-H(x-1,y),dy=H(x,y+1)-H(x,y-1);const nx=-dx*1.6,ny=-dy*1.6,nz=1;const l=Math.hypot(nx,ny,nz);const i=(y*w+x)*4;img.data[i]=(nx/l*.5+.5)*255;img.data[i+1]=(ny/l*.5+.5)*255;img.data[i+2]=(nz/l*.5+.5)*255;img.data[i+3]=255;}c.putImageData(img,0,0);});
+seaNorm.repeat.set(900,900);
+// 世界座標で窓を貼るためのシェーダー差し替え
+function worldUV(mat,S,y0){mat.onBeforeCompile=sh=>{sh.uniforms.uvS={value:S};sh.uniforms.uvY={value:y0||GROUND};
+  sh.vertexShader='uniform float uvS;uniform float uvY;\n'+sh.vertexShader.replace('#include <uv_vertex>',`
+#ifdef USE_UV
+  mat4 wm_=modelMatrix;
+#ifdef USE_INSTANCING
+  wm_=modelMatrix*instanceMatrix;
+#endif
+  vec4 wp_=wm_*vec4(position,1.0);vec3 wn_=normalize(mat3(wm_)*normal);
+  if(abs(wn_.y)>0.6) vUv=vec2(0.985,0.985);
+  else if(abs(wn_.x)>abs(wn_.z)) vUv=vec2(wp_.z,wp_.y-uvY)/uvS;
+  else vUv=vec2(wp_.x,wp_.y-uvY)/uvS;
+#endif`);};mat.customProgramCacheKey=()=>'wuv'+S+'_'+(y0||GROUND);return mat;}
+const winMats={
+  glass:worldUV(new T.MeshLambertMaterial({map:glassTex,emissiveMap:glassEm,emissive:0xffffff,emissiveIntensity:0}),16),
+  apt:worldUV(new T.MeshLambertMaterial({map:aptTex,emissiveMap:aptEm,emissive:0xffffff,emissiveIntensity:0}),12),
+  house:worldUV(new T.MeshLambertMaterial({map:houseTex,emissiveMap:houseEm,emissive:0xffffff,emissiveIntensity:0}),7),
+  wh:worldUV(new T.MeshLambertMaterial({map:whTex}),6),
+  cont:worldUV(new T.MeshLambertMaterial({map:contTex}),2.6)};
+const roofMat=lam(0xffffff),unitMat=lam(0xa9adb0),trunkMat=lam(0x6e5038),crownMat=lam(0xffffff);
+const EMISSIVE=[winMats.glass,winMats.apt,winMats.house];
+
+/* ===== 海と陸 ===== */
+const seaMat=new T.MeshPhongMaterial({color:0x2a7aa3,specular:0x9fb8c8,shininess:90,normalMap:seaNorm,normalScale:new T.Vector2(.5,.5)});
+const sea=new T.Mesh(new T.PlaneGeometry(20000,22000),seaMat);sea.rotation.x=-Math.PI/2;sea.position.set(2400,0,3900);sea.receiveShadow=true;scene.add(sea);
+const isleS=new T.Shape();isleS.absarc(ISLE.x,ISLE.y,ISLE.r,0,Math.PI*2,false);
+const landGeo=new T.ExtrudeGeometry([shp(LAND),shp(DAIKOKU),isleS],{depth:8,bevelEnabled:false,curveSegments:40});
+landGeo.rotateX(Math.PI/2);landGeo.translate(0,GROUND,0);
+{const uv=landGeo.attributes.uv,p=landGeo.attributes.position;for(let i=0;i<uv.count;i++)uv.setXY(i,p.getX(i)/12,p.getZ(i)/12);}
+groundTex.repeat.set(1,1);
+const land=new T.Mesh(landGeo,[lam(0xffffff,{map:groundTex,side:T.DoubleSide}),lam(0x9a978e,{side:T.DoubleSide})]);land.receiveShadow=true;scene.add(land);
+function uvWorld(g,s){const uv=g.attributes.uv,p=g.attributes.position;for(let i=0;i<uv.count;i++)uv.setXY(i,p.getX(i)/s,p.getZ(i)/s);return g;}
+{const g=uvWorld(flatGeo(INDUSTRY.map(shp),GROUND+.03),10);const m=new T.Mesh(g,flatMat(0xb9bcbb,{map:asphaltTex}));m.receiveShadow=true;scene.add(m);}
+const parkShapes=PARKS.map(([x,y,rx,ry,r])=>{const s=new T.Shape();s.absellipse(x,y,rx,ry,0,Math.PI*2,false,r);return s;});
+{const m=new T.Mesh(uvWorld(flatGeo(parkShapes,GROUND+.05),8),flatMat(0xffffff,{map:grassTex}));m.receiveShadow=true;scene.add(m);}
+// 帯状の地物：u=進行方向の距離、v=幅
+function ribbon(pts,w,y,mat,off=0){const pos=[],uv=[];let acc=0;
+  for(let i=0;i<pts.length-1;i++){const[ax,az]=pts[i],[bx,bz]=pts[i+1];const dx=bx-ax,dz=bz-az,l=Math.hypot(dx,dz)||1;const nx=-dz/l,nz=dx/l;
+    const o1=off+w/2,o2=off-w/2;const A1=[ax+nx*o1,az+nz*o1],B1=[bx+nx*o1,bz+nz*o1],B2=[bx+nx*o2,bz+nz*o2],A2=[ax+nx*o2,az+nz*o2];const u0=acc/8,u1=(acc+l)/8;acc+=l;
+    pos.push(A1[0],y,A1[1],B1[0],y,B1[1],B2[0],y,B2[1],A1[0],y,A1[1],B2[0],y,B2[1],A2[0],y,A2[1]);uv.push(u0,1,u1,1,u1,0,u0,1,u1,0,u0,0);}
+  if(!off)for(const[x,z]of pts){for(let k=0;k<12;k++){const a0=k/12*6.283,a1=(k+1)/12*6.283;pos.push(x,y,z,x+Math.cos(a0)*w/2,y,z+Math.sin(a0)*w/2,x+Math.cos(a1)*w/2,y,z+Math.sin(a1)*w/2);uv.push(0,.5,0,.5,0,.5);}}
+  const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.computeVertexNormals();const m=new T.Mesh(g,mat);m.receiveShadow=true;scene.add(m);return m;}
+function dashes(pts,off,len,gap,w,y,mat){const pos=[];for(let i=0;i<pts.length-1;i++){const[ax,az]=pts[i],[bx,bz]=pts[i+1];const dx=bx-ax,dz=bz-az,l=Math.hypot(dx,dz);const ux=dx/l,uz=dz/l,nx=-uz,nz=ux;
+    for(let s=gap/2;s<l-len;s+=len+gap){const x0=ax+ux*s+nx*off,z0=az+uz*s+nz*off,x1=x0+ux*len,z1=z0+uz*len;const hx=nx*w/2,hz=nz*w/2;pos.push(x0+hx,y,z0+hz,x1+hx,y,z1+hz,x1-hx,y,z1-hz,x0+hx,y,z0+hz,x1-hx,y,z1-hz,x0-hx,y,z0-hz);}}
+  const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.computeVertexNormals();scene.add(new T.Mesh(g,mat));}
+const paveMat=flatMat(0xffffff,{map:paveTex}),asphMat=flatMat(0xffffff,{map:asphaltTex}),whiteLine=flatMat(0xf4f2ea),yellowLine=flatMat(0xe8b53a);
+asphaltTex.repeat.set(1,1);
+ribbon(ROAD,30,GROUND+.04,paveMat);ribbon(ROAD,20,GROUND+.07,asphMat);
+ribbon(ROAD,.35,GROUND+.1,yellowLine,-.3);ribbon(ROAD,.35,GROUND+.1,yellowLine,.3);dashes(ROAD,5,6,8,.18,GROUND+.1,whiteLine);dashes(ROAD,-5,6,8,.18,GROUND+.1,whiteLine);
+ribbon(ROAD,.2,GROUND+.1,whiteLine,9.4);ribbon(ROAD,.2,GROUND+.1,whiteLine,-9.4);
+for(const r of ROADS2){ribbon(r,18,GROUND+.04,paveMat);ribbon(r,12,GROUND+.07,asphMat);dashes(r,0,5,6,.16,GROUND+.1,whiteLine);}
+ribbon(RAIL,9,GROUND+.05,flatMat(0x8d8478));ribbon(RAIL,.15,GROUND+.12,flatMat(0x4a4a4a),-.75);ribbon(RAIL,.15,GROUND+.12,flatMat(0x4a4a4a),.75);ribbon(RAIL,.15,GROUND+.12,flatMat(0x4a4a4a),2.75);ribbon(RAIL,.15,GROUND+.12,flatMat(0x4a4a4a),4.25);
+ribbon(BEACH,70,GROUND+.05,flatMat(0xe8d39b));
+ribbon(YAMASHITA,55,GROUND+.05,flatMat(0xffffff,{map:grassTex}));ribbon(YAMASHITA,6,GROUND+.08,paveMat,-22);
+{const pond=new T.Shape();pond.absellipse(3024,4650,54,30,0,Math.PI*2,false,.2);scene.add(new T.Mesh(flatGeo([pond],GROUND+.09),flatMat(0x3f7f9c)));}
+// 護岸の縁（白いライン）
+{const pos=[];const edge=(p)=>{for(let i=0;i<p.length;i++){const[a,b]=p[i],[c,d]=p[(i+1)%p.length];pos.push(a,GROUND+.12,b,c,GROUND+.12,d);}};edge(LAND);edge(DAIKOKU);
+  const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));scene.add(new T.LineSegments(g,new T.LineBasicMaterial({color:0xe8e4da})));}
+
+/* 桟橋・デッキ・橋（手すり付き） */
+for(const r of RECTS){const colr=r.k==='deck'?0xb88f62:r.k==='bridge'?0xd5d0c3:0xb3ae9f;const h=r.top+4;
+  const m=shadowy(box(r.w,h,r.h,lam(colr)),false,true);m.position.set(r.x+r.w/2,r.top-h,r.y+r.h/2);scene.add(m);
+  if(r.k==='deck'){const g=lam(0x8cbf6e);for(let x=r.x+20;x<r.x+r.w-30;x+=60){const s=shadowy(box(30,.3,r.h-30,g),false,true);s.position.set(x+15,r.top,r.y+r.h/2);scene.add(s);}}
+  const rm=lam(0xdedad0);const long=r.w>r.h;for(const s of[0,1]){const rail=shadowy(box(long?r.w:.08,1.1,long?.08:r.h,rm));rail.position.set(long?r.x+r.w/2:(s?r.x+r.w-.1:r.x+.1),r.top,long?(s?r.y+r.h-.1:r.y+.1):r.y+r.h/2);scene.add(rail);}
+  if(r.k==='pier'){const tip=long?box(.08,1.1,r.h,rm):box(r.w,1.1,.08,rm);tip.position.set(long?r.x+r.w-.1:r.x+r.w/2,r.top,long?r.y+r.h/2:r.y+r.h-.1);scene.add(tip);}}
+
+/* テトラポッド */
+function mergeGeos(list){const pos=[],nor=[];for(const g of list){const n=g.index?g.toNonIndexed():g;pos.push(...n.attributes.position.array);nor.push(...n.attributes.normal.array);}const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('normal',new T.Float32BufferAttribute(nor,3));return g;}
+const tetraGeo=(()=>{const dirs=[[0,1,0],[.943,-.333,0],[-.471,-.333,.816],[-.471,-.333,-.816]];return mergeGeos(dirs.map(d=>{const g=new T.ConeGeometry(.5,1.3,8);g.translate(0,.65,0);g.applyQuaternion(new T.Quaternion().setFromUnitVectors(new V3(0,1,0),new V3(d[0],d[1],d[2])));return g;}));})();
+const dummy=new T.Object3D(),col=new T.Color();
+{const pods=[];const R=mulberry(21);for(const l of TETRA_LINES){const[[ax,ay],[bx,by]]=l;const L=Math.hypot(bx-ax,by-ay),ux=(bx-ax)/L,uy=(by-ay)/L,nx=uy,ny=-ux;
+    for(let s=0;s<L;s+=2.6)for(let row=0;row<3;row++){let o=2+row*2.6+(R()-.5)*.8;let x=ax+ux*s+nx*o,y=ay+uy*s+ny*o;if(isLand(x,y)){x-=nx*2*o;y-=ny*2*o;}if(isLand(x,y))continue;pods.push([x,y,row]);}}
+  const im=new T.InstancedMesh(tetraGeo,lam(0xa6aaa8),pods.length);pods.forEach(([x,y,row],i)=>{dummy.position.set(x,.3+row*.4+R()*.8,y);dummy.rotation.set(R()*6,R()*6,R()*6);dummy.scale.setScalar(1.6+R()*.4);dummy.updateMatrix();im.setMatrixAt(i,dummy.matrix);});
+  im.frustumCulled=false;shadowy(im);scene.add(im);}
+
+/* ===== 道沿いのもの：電柱と電線、街灯、街路樹、バス停、自販機 ===== */
+const LAMPS=[],POLES=[],STREET_TREES=[];
+function along(pts,step,off,out){let carry=0;for(let i=0;i<pts.length-1;i++){const[ax,ay]=pts[i],[bx,by]=pts[i+1];const L=Math.hypot(bx-ax,by-ay),ux=(bx-ax)/L,uy=(by-ay)/L,nx=-uy,ny=ux;
+  for(let s=carry;s<L;s+=step){out.push([ax+ux*s+nx*off,ay+uy*s+ny*off,Math.atan2(uy,ux)]);carry=s+step-L;}}}
+along(ROAD,32,13.5,LAMPS);along(ROAD,32,-13.5,LAMPS);along(YAMASHITA,18,-26,LAMPS);
+for(const r of ROADS2){along(r,30,7.6,POLES);along(r,14,-8,STREET_TREES);}
+along(ROAD,11,12,STREET_TREES);along(ROAD,11,-12,STREET_TREES);
+const keepClear=(x,y)=>STATIONS.some(s=>Math.hypot(s.x-x,s.y-y)<10);
+for(let i=STREET_TREES.length-1;i>=0;i--){const[x,y]=STREET_TREES[i];if(!pip(LAND,x,y)||keepClear(x,y))STREET_TREES.splice(i,1);}
+{const geo=new T.CylinderGeometry(.07,.09,7.5,6).translate(0,3.75,0);const arm=new T.BoxGeometry(1.4,.08,.08).translate(.6,7.4,0);
+  const im=new T.InstancedMesh(geo,lam(0x4c565e),LAMPS.length),im2=new T.InstancedMesh(arm,lam(0x4c565e),LAMPS.length);
+  LAMPS.forEach(([x,y,a],i)=>{dummy.position.set(x,groundY(x,y),y);dummy.rotation.set(0,-a+Math.PI/2,0);dummy.scale.setScalar(1);dummy.updateMatrix();im.setMatrixAt(i,dummy.matrix);im2.setMatrixAt(i,dummy.matrix);});
+  for(const m of[im,im2]){m.frustumCulled=false;m.castShadow=true;scene.add(m);}}
+const glowMat=new T.SpriteMaterial({map:glowTex,blending:T.AdditiveBlending,depthWrite:false,transparent:true,opacity:0,fog:true});
+for(const[x,y,a]of LAMPS){const s=new T.Sprite(glowMat);s.position.set(x+Math.cos(-a+Math.PI/2)*1.2,groundY(x,y)+7.3,y-Math.sin(-a+Math.PI/2)*1.2);s.scale.set(4,4,1);scene.add(s);}
+// 電柱と電線
+{const im=new T.InstancedMesh(new T.CylinderGeometry(.14,.18,10,7).translate(0,5,0),lam(0x9e9a92),POLES.length);const cross=new T.InstancedMesh(new T.BoxGeometry(1.6,.1,.1).translate(0,9.2,0),lam(0x55585a),POLES.length);
+  POLES.forEach(([x,y,a],i)=>{dummy.position.set(x,GROUND,y);dummy.rotation.set(0,-a,0);dummy.scale.setScalar(1);dummy.updateMatrix();im.setMatrixAt(i,dummy.matrix);cross.setMatrixAt(i,dummy.matrix);});
+  for(const m of[im,cross]){m.frustumCulled=false;m.castShadow=true;scene.add(m);}
+  const w=[];for(let i=0;i<POLES.length-1;i++){const[ax,ay,a]=POLES[i],[bx,by]=POLES[i+1];if(Math.hypot(bx-ax,by-ay)>40)continue;for(const o of[-.6,.6]){const nx=-Math.sin(a)*0,px=Math.cos(-a+Math.PI/2);
+      const ox=Math.sin(a)*o*-1,oz=Math.cos(a)*o;for(let k=0;k<6;k++){const t0=k/6,t1=(k+1)/6;const sag=t=>-Math.sin(t*Math.PI)*.6;w.push(lerp(ax,bx,t0)+ox,GROUND+9.2+sag(t0),lerp(ay,by,t0)+oz,lerp(ax,bx,t1)+ox,GROUND+9.2+sag(t1),lerp(ay,by,t1)+oz);}}}
+  const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(w,3));scene.add(new T.LineSegments(g,new T.LineBasicMaterial({color:0x2a2a2a})));}
+// 街路樹
+const tkGeo=new T.CylinderGeometry(.14,.2,1,6).translate(0,.5,0),crGeo=new T.IcosahedronGeometry(1,1);
+{const R=mulberry(30);const n=STREET_TREES.length;const tk=new T.InstancedMesh(tkGeo,trunkMat,n),cr=new T.InstancedMesh(crGeo,crownMat,n);
+  STREET_TREES.forEach(([x,y],i)=>{const s=.9+R()*.4;dummy.rotation.set(0,R()*6,0);dummy.position.set(x,GROUND,y);dummy.scale.set(s,3*s,s);dummy.updateMatrix();tk.setMatrixAt(i,dummy.matrix);
+    dummy.position.set(x,GROUND+3.6*s,y);dummy.scale.set(1.9*s,2.2*s,1.9*s);dummy.updateMatrix();cr.setMatrixAt(i,dummy.matrix);cr.setColorAt(i,col.setHex([0x5e9150,0x6d9f58,0x4f8447][(R()*3)|0]));});
+  for(const m of[tk,cr]){m.frustumCulled=false;shadowy(m);scene.add(m);}}
+// バス停と自販機
+for(const s of STATIONS){let bx=s.x,by=s.y;const g=new T.Group();
+  const pole=new T.Mesh(new T.CylinderGeometry(.05,.05,2.4,6).translate(0,1.2,0),lam(0x9aa0a6));g.add(pole);
+  const sign=new T.Mesh(new T.CylinderGeometry(.32,.32,.05,16),lam(0x2f6fb0));sign.rotation.x=Math.PI/2;sign.position.y=2.5;g.add(sign);
+  const roof=box(3.2,.08,1.4,lam(0xe8e8e4));roof.position.set(2.2,2.5,0);g.add(roof);for(const sx of[.7,3.7]){const p=box(.08,2.5,.08,lam(0x9aa0a6));p.position.set(sx,0,-.6);g.add(p);}
+  const bench=box(2.2,.45,.45,lam(0x7a6a58));bench.position.set(2.2,0,-.3);g.add(bench);
+  for(let k=0;k<2;k++){const vm=box(.95,1.8,.75,new T.MeshLambertMaterial({color:[0xd8312c,0x2d6fb7][k],emissive:0xffffff,emissiveIntensity:0}));EMISSIVE.push(vm.material);vm.position.set(-1.6-k*1.05,0,0);g.add(vm);}
+  g.traverse(o=>{if(o.isMesh)shadowy(o);});g.position.set(bx,GROUND,by);g.rotation.y=.5;scene.add(g);}
+
+/* ===== 名所・ランドマーク（実寸に近い大きさ） ===== */
+const WS={glass:16,apt:12,house:7,wh:6};
+function tower(x,z,w,d,h,key,c){const m=shadowy(box(w,h,d,worldUV(winMats[key].clone(),WS[key])));m.material.color.setHex(c||0xffffff);EMISSIVE.push(m.material);add(m,x,GROUND,z);addCol(x-w/2,z-d/2,x+w/2,z+d/2,h);return m;}
+{const g=new T.CylinderGeometry(22,40,296,4,1);g.rotateY(Math.PI/4);g.translate(0,148,0);const m=shadowy(new T.Mesh(g,worldUV(winMats.glass.clone(),16)));m.material.color.setHex(0xd6dfe6);EMISSIVE.push(m.material);add(m,2070,GROUND,1695);addCol(2042,1667,2098,1723,296);
+  const cap=box(26,8,26,lam(0x6f8597));cap.rotation.y=Math.PI/4;add(cap,2070,GROUND+296,1695);}
+for(const[x,z,w,d,h,mt]of[[1944,1614,40,40,178,'glass'],[2166,1572,44,34,160,'glass'],[2226,1740,38,32,120,'apt'],[1956,1818,36,36,110,'glass'],[1836,1494,34,34,96,'apt'],[2120,1500,30,30,84,'glass']])tower(x,z,w,d,h,mt,0xffffff);
+const wheel=new T.Group();
+{const wr=50,cy=GROUND+60;wheel.add(new T.Mesh(new T.TorusGeometry(wr,.8,8,72),lam(0xe8ecef)));wheel.add(new T.Mesh(new T.TorusGeometry(wr*.92,.4,6,72),lam(0xd8dde1)));
+  const sp=lam(0xcfd6db);for(let i=0;i<24;i++){const s=new T.Mesh(new T.BoxGeometry(.25,wr,.25),sp);s.position.set(Math.cos(i/24*6.283)*wr/2,Math.sin(i/24*6.283)*wr/2,0);s.rotation.z=i/24*6.283-Math.PI/2;wheel.add(s);}
+  wheel.userData.gond=[];const gm=[0xe05d4a,0xf1b746,0x49c1c4,0x8ac06a].map(c=>new T.MeshLambertMaterial({color:c,emissive:c,emissiveIntensity:0}));gm.forEach(m=>EMISSIVE.push(m));
+  for(let i=0;i<60;i++){const g=new T.Mesh(new T.BoxGeometry(2.6,2.8,2.4),gm[i%4]);const a=i/60*6.283;g.position.set(Math.cos(a)*wr,Math.sin(a)*wr,0);wheel.add(g);wheel.userData.gond.push(g);}
+  const hub=new T.Mesh(new T.CylinderGeometry(8,8,1.5,32),new T.MeshLambertMaterial({color:0xf6f2e8,emissive:0xffe6a8,emissiveIntensity:0}));hub.rotation.x=Math.PI/2;wheel.add(hub);EMISSIVE.push(hub.material);
+  wheel.position.set(2280,cy,1884);scene.add(wheel);
+  for(const s of[-1,1]){const leg=shadowy(new T.Mesh(new T.BoxGeometry(1.6,64,1.6),lam(0xb7c0c6)));leg.position.set(2280+s*13,GROUND+30,1888);leg.rotation.z=s*.2;scene.add(leg);}
+  addCol(2262,1880,2298,1896,60);}
+{const bm=worldUV(new T.MeshLambertMaterial({color:0xffffff,map:brickTex,emissiveMap:brickEm,emissive:0xffffff,emissiveIntensity:0}),6);EMISSIVE.push(bm);
+  for(const[x,z]of[[2540,2210],[2640,2270]]){const m=shadowy(new T.Mesh(new T.BoxGeometry(110,18,22).translate(0,9,0),bm));add(m,x,GROUND,z);m.rotation.y=-.1;addCol(x-55,z-12,x+55,z+12,18);
+    const rf=shadowy(box(111,1.2,23,lam(0x5c5650)));rf.rotation.y=-.1;add(rf,x,GROUND+18,z);}}
+{const g=new T.Group();const hull=box(163,13,20,lam(0x23272c));hull.position.y=-4;g.add(hull);const red=box(163.4,3,20.4,lam(0xa8352b));red.position.y=-4.5;g.add(red);
+  const sup=box(80,8,16,lam(0xf3f1ea));sup.position.set(-6,9,0);g.add(sup);const br=box(26,5,13,lam(0xf3f1ea));br.position.set(10,17,0);g.add(br);
+  const fun=new T.Mesh(new T.CylinderGeometry(4,4.4,14,16),lam(0x1d1d1f));fun.position.set(-10,25,0);g.add(fun);const band=new T.Mesh(new T.CylinderGeometry(4.2,4.2,3,16),lam(0xc8463a));band.position.set(-10,26,0);g.add(band);
+  for(const sx of[-55,48]){const ms=new T.Mesh(new T.CylinderGeometry(.5,.6,36,8),lam(0x6b5a4a));ms.position.set(sx,22,0);g.add(ms);}
+  g.traverse(o=>{if(o.isMesh)shadowy(o);});g.position.set(2790,0,2760);g.rotation.y=-.46;scene.add(g);}
+{const g=new T.CylinderGeometry(4,11,106,12,10,true);g.translate(0,53,0);add(new T.Mesh(g,new T.MeshLambertMaterial({color:0xc4523f,wireframe:true})),2895,GROUND,3015);
+  add(shadowy(new T.Mesh(new T.CylinderGeometry(2.2,3.6,106,10).translate(0,53,0),lam(0xd6d2cb))),2895,GROUND,3015);
+  const deck=shadowy(new T.Mesh(new T.CylinderGeometry(10,9,9,20),new T.MeshLambertMaterial({color:0xf3f0e8,emissive:0xffd38a,emissiveIntensity:0})));EMISSIVE.push(deck.material);add(deck,2895,GROUND+88,3015);
+  add(new T.Mesh(new T.SphereGeometry(1.5,10,8),new T.MeshBasicMaterial({color:0xff5040})),2895,GROUND+108,3015);addCol(2884,3004,2906,3026,106);}
+{const g=new T.Group();const red=lam(0xc8382c);for(const sx of[-5.5,5.5]){const p=new T.Mesh(new T.CylinderGeometry(.45,.45,9,12).translate(0,4.5,0),red);p.position.x=sx;g.add(p);}
+  const beam=box(14,1,1,red);beam.position.y=7.2;g.add(beam);const sign=box(4.5,1.8,.3,lam(0xe0a43a));sign.position.y=8.2;g.add(sign);
+  const roof=new T.Mesh(new T.ConeGeometry(10,3,4).rotateY(Math.PI/4).translate(0,1.5,0),lam(0x2f8a5a));roof.scale.set(1,1,.3);roof.position.y=9.2;g.add(roof);
+  g.traverse(o=>{if(o.isMesh)shadowy(o);});g.position.set(2440,GROUND,2925);g.rotation.y=.9;scene.add(g);}
+{const R=mulberry(3);const n=200;const fl=new T.InstancedMesh(new T.SphereGeometry(.35,6,4),lam(0xffffff),n);for(let i=0;i<n;i++){const a=R()*6.28,r=Math.sqrt(R())*45;dummy.position.set(2934+Math.cos(a)*r,GROUND+.4,3576+Math.sin(a)*r*.7);dummy.rotation.set(0,0,0);dummy.scale.setScalar(1);dummy.updateMatrix();fl.setMatrixAt(i,dummy.matrix);fl.setColorAt(i,col.setHex([0xe36a7a,0xf1b746,0xf6f2e8,0xd94a63][i%4]));}fl.frustumCulled=false;scene.add(fl);}
+{const g=new T.Group();const wood=lam(0x6b4a36),rf=lam(0x3c3a38);for(let i=0;i<3;i++){const b=box(6-i*.8,5,6-i*.8,wood);b.position.y=i*6.5;g.add(b);const r=new T.Mesh(new T.ConeGeometry((11-i*1.6)*.74,2.6,4).rotateY(Math.PI/4).translate(0,1.3,0),rf);r.position.y=i*6.5+5;g.add(r);}
+  const sp=new T.Mesh(new T.CylinderGeometry(.25,.25,6,6).translate(0,3,0),lam(0xb08a3a));sp.position.y=20.5;g.add(sp);g.traverse(o=>{if(o.isMesh)shadowy(o);});g.position.set(3108,GROUND,4584);scene.add(g);addCol(3103,4579,3113,4589,26);}
+{const py=shadowy(new T.Mesh(new T.ConeGeometry(50,55,4).rotateY(Math.PI/4).translate(0,27.5,0),new T.MeshPhongMaterial({color:0x8fbad2,specular:0xffffff,shininess:80,emissive:0x6fb6ff,emissiveIntensity:0})));EMISSIVE.push(py.material);add(py,3250,GROUND,7350);addCol(3215,7315,3285,7385,55);
+  const pts=[];for(let i=0;i<60;i++){const a=i/60*6.283;pts.push(new V3(3210+Math.cos(a)*120,GROUND+10+Math.sin(a*3)*10+Math.max(0,Math.sin(a))*22,7410+Math.sin(a)*120));}
+  scene.add(shadowy(new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts,true),240,.7,6,true),lam(0xe05d4a))));}
+{const st=tower(1680,960,200,60,30,'glass',0xe9ecee);add(shadowy(box(204,2,64,lam(0x9fb6c4))),1680,GROUND+30,960);}
+for(const[x,z]of[[2916,5805],[2964,5886]]){add(shadowy(new T.Mesh(new T.CylinderGeometry(4,6,150,16).translate(0,75,0),lam(0xeeeeea))),x,GROUND,z);for(let k=0;k<3;k++)add(new T.Mesh(new T.CylinderGeometry(4.3,4.5,6,16),lam(0xc8463a)),x,GROUND+120+k*11,z);addCol(x-6,z-6,x+6,z+6,150);}
+tower(2840,5930,70,50,30,'wh',0xd8dbd8);
+function crane(x,z,rot){const g=new T.Group();const r=lam(0xd24c3c),w=lam(0xeeeeea);for(const sx of[-9,9])for(const sz of[-7,7]){const l=box(1.6,48,1.6,(sx>0?r:w));l.position.set(sx,0,sz);g.add(l);}
+  const top=box(22,4,18,r);top.position.y=48;g.add(top);const boom=box(90,2.4,3,w);boom.position.set(30,50,0);g.add(boom);g.traverse(o=>{if(o.isMesh)shadowy(o);});g.position.set(x,GROUND,z);g.rotation.y=rot;scene.add(g);addCol(x-10,z-8,x+10,z+8,50);}
+crane(3900,3525,-.6);crane(3978,3615,-.6);crane(3675,2520,Math.PI*.7);crane(3774,2436,Math.PI*.7);
+for(const[x,z]of[[4040,2520],[3990,3725],[3040,5740]]){add(shadowy(box(26,9,16,lam(0xf1ede2))),x,GROUND,z);add(box(27,1,17,lam(0x1b7d82)),x,GROUND+9,z);addCol(x-13,z-8,x+13,z+8,10);}
+{const ax=3954,az=2622,bx=3876,bz=3402;const dx=bx-ax,dz=bz-az,L=Math.hypot(dx,dz),a=Math.atan2(dz,dx);
+  const deck=shadowy(box(L+60,5,40,lam(0xf2f2ee)));deck.position.set((ax+bx)/2,52,(az+bz)/2);deck.rotation.y=-a;scene.add(deck);
+  const tw=[.25,.75].map(k=>[lerp(ax,bx,k),lerp(az,bz,k)]);const twm=lam(0xe9ecee);
+  for(const[tx,tz]of tw){const g=new T.Group();for(const s of[-18,18]){const l=box(5,172,5,twm);l.position.z=s;g.add(l);}for(const y of[55,168]){const b=box(5,5,40,twm);b.position.y=y;g.add(b);}g.traverse(o=>{if(o.isMesh)shadowy(o);});g.position.set(tx,0,tz);g.rotation.y=-a;scene.add(g);}
+  const cab=[];const nx=-Math.sin(a),nz=Math.cos(a);const pt=(k,s,y)=>[lerp(ax,bx,k)+nx*s,y,lerp(az,bz,k)+nz*s];
+  for(const s of[-18,18])for(let i=0;i<=40;i++){const k=i/40;const tk=k<.5?.25:.75;cab.push(...pt(tk,s,170),...pt(k,s,54));}
+  const cg=new T.BufferGeometry();cg.setAttribute('position',new T.Float32BufferAttribute(cab,3));scene.add(new T.LineSegments(cg,new T.LineBasicMaterial({color:0xdfe6ea})));}
+for(const[x,y,h,r]of[[2070,1695,300,60],[2895,3015,90,30],[2280,1884,60,50],[3250,7350,30,50],[1680,960,30,60]]){const s=new T.Sprite(glowMat);s.position.set(x,GROUND+h,y);s.scale.set(r,r,1);scene.add(s);}
+const LANDMARK_KEEP=[[2070,1695,55],[2280,1884,70],[2590,2240,90],[2790,2760,100],[2895,3015,25],[2440,2925,20],[3108,4584,40],[1680,960,120],[2940,5845,90],[2934,3576,70],[1944,1614,40],[2166,1572,40],[2226,1740,35],[1956,1818,35],[1836,1494,35],[2120,1500,30],[2840,5930,50],[3900,3525,20],[3978,3615,20],[3675,2520,20],[3774,2436,20]];
+
+/* ===== 街並みのチャンク生成（近くだけ作り、遠くは消す） ===== */
+const CH=220,CRAD=2,chunks=new Map(),colDone=new Set();
+const UNIT=16;
+function zoneAt(x,y){const d=(a,b)=>Math.hypot(x-a,y-b);
+  if(d(2520,3000)<150)return'china';if(d(2100,1725)<400)return'mm';if(d(1620,1035)<330)return'station';if(d(2400,2790)<360)return'kannai';if(d(2805,3405)<330)return'yamate';
+  for(let k=0;k<INDUSTRY.length;k++)if(pip(INDUSTRY[k],x,y))return'ind';return'res';}
+const ZM={mm:3,station:3,kannai:2,china:1,yamate:1,res:1,ind:4};
+const keepPts=[...SPOTS,...SIGHTS,...STATIONS];
+function okSpot(cx,cy,half){
+  if(!(pip(LAND,cx,cy)||pip(DAIKOKU,cx,cy)))return false;
+  if(nearCoast(cx,cy,18+half))return false;
+  if(lineDist(ROAD,cx,cy)<16+half||lineDist(RAIL,cx,cy)<6+half||ROADS2.some(r=>lineDist(r,cx,cy)<10+half))return false;
+  if(keepPts.some(p=>Math.hypot(p.x-cx,p.y-cy)<14+half))return false;
+  if(LANDMARK_KEEP.some(([a,b,r])=>Math.hypot(a-cx,b-cy)<r+half))return false;
+  if(PARKS.some(([a,b,rx,ry])=>((cx-a)/(rx+half))**2+((cy-b)/(ry+half))**2<1))return false;
+  if(lineDist(YAMASHITA,cx,cy)<30+half||lineDist(BEACH,cx,cy)<40+half)return false;
+  return true;}
+function buildChunk(i,j){
+  const key=i+','+j;const R=mulberry((i*73856093)^(j*19349663)^0x5bd1e995);const L={glass:[],apt:[],house:[],wh:[],cont:[],roof:[],unit:[],tree:[]};
+  const doCol=!colDone.has(key);colDone.add(key);
+  const pick=a=>a[(R()*a.length)|0];
+  const g0=Math.floor(i*CH/UNIT),g1=Math.floor((i+1)*CH/UNIT),h0=Math.floor(j*CH/UNIT),h1=Math.floor((j+1)*CH/UNIT);
+  for(let gx=g0;gx<g1;gx++)for(let gy=h0;gy<h1;gy++){
+    const ax=gx*UNIT,ay=gy*UNIT;const z=zoneAt(ax+8,ay+8);const m=ZM[z];if(gx%m||gy%m)continue;const cell=m*UNIT;
+    const cx=ax+cell/2+(R()-.5)*cell*.12,cy=ay+cell/2+(R()-.5)*cell*.12;const r=R();
+    let w,d,h,mat,c=0xffffff,roof=0,units=0;
+    if(z==='mm'){if(r<.12)continue;w=cell*(.6+R()*.25);d=cell*(.6+R()*.25);h=r<.35?90+R()*90:35+R()*50;mat=R()<.65?'glass':'apt';units=1;}
+    else if(z==='station'){w=cell*(.6+R()*.25);d=cell*(.55+R()*.3);h=25+R()*60;mat=R()<.5?'glass':'apt';c=pick([0xffffff,0xeae6de,0xdfe4e8]);units=1;}
+    else if(z==='kannai'){w=cell*(.65+R()*.2);d=cell*(.65+R()*.2);h=16+R()*35;mat=R()<.35?'glass':'apt';c=pick([0xffffff,0xe9e1d2,0xdcd2c2,0xe6e9ea]);units=1;}
+    else if(z==='china'){w=10+R()*3;d=10+R()*3;h=8+R()*10;mat='apt';c=pick([0xd8584a,0xe6b04a,0x4f9a6a,0xe46a52,0xf3e6cc]);}
+    else if(z==='ind'){const half=cell*.45;if(!okSpot(cx,cy,half))continue;
+      if(r<.45){w=cell*(.65+R()*.2);d=cell*(.45+R()*.3);h=10+R()*7;mat='wh';c=pick([0xffffff,0xd6e2ea,0xeae4d6]);}
+      else{const rows=4;for(let rw=0;rw<rows;rw++){const zz=cy-cell*.36+rw*cell*.24;let stackMax=0;for(let k=0;k<4;k++){const xx=cx-cell*.33+k*12.6+6;const n=1+((R()*4)|0);stackMax=Math.max(stackMax,n);const cc=pick([0xc9493c,0x3c78ad,0xde9a36,0x4f9a63,0xecebe6,0x2f8a8e,0x7e64a8]);
+            for(let s=0;s<n;s++)L.cont.push([xx,zz,12.2,2.6,2.44,GROUND+s*2.6,s?pick([0xc9493c,0x3c78ad,0xde9a36,0x4f9a63,0xecebe6]):cc]);}
+          if(doCol)addCol(cx-cell*.33,zz-1.3,cx-cell*.33+50.4,zz+1.3,stackMax*2.6);}continue;}}
+    else if(z==='yamate'){if(r<.28){if(okSpot(cx,cy,2))L.tree.push([cx,cy,.9+R()*.5]);continue;}w=8+R()*3;d=8+R()*3;h=6+R()*1.5;mat='house';c=pick([0xffffff,0xf3e7d6,0xe8eef0,0xf1ece2]);roof=1;}
+    else{if(r<.22){if(r<.1&&okSpot(cx,cy,2))L.tree.push([cx,cy,.8+R()*.5]);continue;}
+      if(r<.8){w=7.5+R()*3;d=7.5+R()*3;h=5.6+R()*1.2;mat='house';c=pick([0xffffff,0xf3e7d6,0xe1e8dc,0xf4e3d2,0xe6e8ea,0xd9d2c6]);roof=1;}
+      else{w=12+R()*2.5;d=12+R()*2.5;h=12+R()*18;mat='apt';c=pick([0xffffff,0xeae4d8,0xe2e6e8]);units=1;}}
+    const half=Math.max(w,d)/2;if(!okSpot(cx,cy,half*.8))continue;
+    L[mat].push([cx,cy,w,h,d,GROUND,c]);
+    if(roof)L.roof.push([cx,cy,w*1.06,2.2+R()*1.3,d*1.06,GROUND+h,pick([0x8a4b3a,0x566b7c,0x5d5a55,0x3f5a4a,0x9a6b4a])]);
+    if(units&&h>14){const nu=1+((R()*3)|0);for(let k=0;k<nu;k++){const uw=2+R()*w*.25,ud=2+R()*d*.25;L.unit.push([cx+(R()-.5)*(w-uw)*.8,cy+(R()-.5)*(d-ud)*.8,uw,1.5+R()*2.5,ud,GROUND+h,0xffffff]);}}
+    if(doCol)addCol(cx-w/2,cy-d/2,cx+w/2,cy+d/2,h);}
+  const grp=new T.Group();
+  const mk=(list,geo,mat,shadow)=>{if(!list.length)return;const im=new T.InstancedMesh(geo,mat,list.length);list.forEach((o,k)=>{dummy.position.set(o[0],o[5],o[1]);dummy.rotation.set(0,0,0);dummy.scale.set(o[2],o[3],o[4]);dummy.updateMatrix();im.setMatrixAt(k,dummy.matrix);im.setColorAt(k,col.setHex(o[6]));});
+    im.frustumCulled=false;im.castShadow=shadow;im.receiveShadow=true;grp.add(im);};
+  mk(L.glass,bGeo,winMats.glass,true);mk(L.apt,bGeo,winMats.apt,true);mk(L.house,bGeo,winMats.house,true);mk(L.wh,bGeo,winMats.wh,true);mk(L.cont,bGeo,winMats.cont,true);
+  mk(L.roof,rGeo,roofMat,true);mk(L.unit,bGeo,unitMat,true);
+  if(L.tree.length){const tk=new T.InstancedMesh(tkGeo,trunkMat,L.tree.length),cr=new T.InstancedMesh(crGeo,crownMat,L.tree.length);
+    L.tree.forEach(([x,y,s],k)=>{dummy.rotation.set(0,k,0);dummy.position.set(x,GROUND,y);dummy.scale.set(s*1.3,4*s,s*1.3);dummy.updateMatrix();tk.setMatrixAt(k,dummy.matrix);dummy.position.set(x,GROUND+4.6*s,y);dummy.scale.set(3*s,3.2*s,3*s);dummy.updateMatrix();cr.setMatrixAt(k,dummy.matrix);cr.setColorAt(k,col.setHex([0x5e9150,0x6d9f58,0x4f8447][k%3]));});
+    for(const m of[tk,cr]){m.frustumCulled=false;shadowy(m);grp.add(m);}}
+  scene.add(grp);chunks.set(key,grp);}
+const bGeo=new T.BoxGeometry(1,1,1);bGeo.translate(0,.5,0);
+const rGeo=new T.ConeGeometry(.74,1,4);rGeo.rotateY(Math.PI/4);rGeo.translate(0,.5,0);
+function updChunks(force){const ci=Math.floor(S.x/CH),cj=Math.floor(S.y/CH);const need=[];
+  for(let i=ci-CRAD;i<=ci+CRAD;i++)for(let j=cj-CRAD;j<=cj+CRAD;j++){if(!chunks.has(i+','+j))need.push([i,j,Math.hypot(i-ci,j-cj)]);}
+  need.sort((a,b)=>a[2]-b[2]);const n=force?need.length:Math.min(2,need.length);for(let k=0;k<n;k++)buildChunk(need[k][0],need[k][1]);
+  for(const[k,g]of chunks){const[i,j]=k.split(',').map(Number);if(Math.abs(i-ci)>CRAD+1||Math.abs(j-cj)>CRAD+1){scene.remove(g);g.traverse(o=>{if(o.isInstancedMesh)o.dispose();});chunks.delete(k);}}}
+function ensureCollision(){const ci=Math.floor(S.x/CH),cj=Math.floor(S.y/CH);for(let i=ci-1;i<=ci+1;i++)for(let j=cj-1;j<=cj+1;j++)if(!chunks.has(i+','+j))buildChunk(i,j);}
+
+/* ===== 人（関節つきの人型。身長およそ1.73m） ===== */
+function makeHuman(o){
+  const g=new T.Group();const M=c=>lam(c);const mTop=M(o.top),mBot=M(o.bottom),mSkin=M(o.skin),mShoe=M(o.shoe),mHair=M(o.hair);
+  const limb=(r,l,m)=>{const ge=new T.CapsuleGeometry(r,l,3,8);ge.translate(0,-l/2,0);return new T.Mesh(ge,m);};
+  const pelvis=new T.Group();pelvis.position.y=.95;g.add(pelvis);
+  const hip=new T.Mesh(new T.CapsuleGeometry(.12,.14,3,8),mBot);hip.rotation.z=Math.PI/2;hip.scale.set(1,1,.85);hip.position.y=-.02;pelvis.add(hip);
+  const chest=new T.Group();chest.position.y=.04;pelvis.add(chest);
+  const torso=new T.Mesh(new T.CapsuleGeometry(.15,.3,4,10),mTop);torso.position.y=.26;torso.scale.set(1.25,1,.78);chest.add(torso);
+  const neck=new T.Mesh(new T.CylinderGeometry(.048,.055,.1,8),mSkin);neck.position.y=.55;chest.add(neck);
+  const head=new T.Group();head.position.y=.68;chest.add(head);
+  const skull=new T.Mesh(new T.SphereGeometry(.105,16,12),mSkin);skull.scale.set(.95,1.15,1.05);head.add(skull);
+  const hair=new T.Mesh(new T.SphereGeometry(.112,16,12,0,Math.PI*2,0,Math.PI*.55),mHair);hair.scale.set(.97,1.12,1.08);hair.position.set(0,.012,-.008);head.add(hair);
+  if(o.cap){const cp=new T.Mesh(new T.SphereGeometry(.118,16,10,0,Math.PI*2,0,Math.PI*.5),M(o.cap));cp.scale.set(1,.85,1.08);cp.position.y=.04;head.add(cp);const brim=new T.Mesh(new T.CylinderGeometry(.09,.09,.012,16,1,false,-Math.PI/2,Math.PI),M(o.cap));brim.position.set(0,.045,.08);brim.scale.set(1,1,.9);head.add(brim);}
+  if(o.detail){const em=M(0x1a1a1a);for(const sx of[-.035,.035]){const e=new T.Mesh(new T.SphereGeometry(.012,6,6),em);e.position.set(sx,.01,.098);head.add(e);}const nose=new T.Mesh(new T.SphereGeometry(.016,6,6),mSkin);nose.position.set(0,-.02,.108);head.add(nose);}
+  const P={g,pelvis,chest,head};
+  for(const[s,nm]of[[-1,'L'],[1,'R']]){
+    const sh=new T.Group();sh.position.set(.215*s,.47,0);chest.add(sh);sh.add(limb(.048,.24,mTop));
+    const el=new T.Group();el.position.y=-.29;sh.add(el);el.add(limb(.042,.22,o.short?mSkin:mTop));const hand=new T.Mesh(new T.SphereGeometry(.045,8,6),mSkin);hand.scale.set(.9,1.2,.7);hand.position.y=-.29;el.add(hand);
+    const hp=new T.Group();hp.position.set(.095*s,-.05,0);pelvis.add(hp);hp.add(limb(.068,.36,mBot));
+    const kn=new T.Group();kn.position.y=-.43;hp.add(kn);kn.add(limb(.055,.36,mBot));const foot=new T.Mesh(new T.BoxGeometry(.095,.07,.25),mShoe);foot.position.set(0,-.43,.045);kn.add(foot);
+    P['sh'+nm]=sh;P['el'+nm]=el;P['hand'+nm]=hand;P['hip'+nm]=hp;P['kn'+nm]=kn;}
+  return P;}
+function animHuman(P,ph,amp,t){
+  const s=Math.sin(ph);
+  P.hipL.rotation.x=-s*.6*amp;P.hipR.rotation.x=s*.6*amp;
+  P.knL.rotation.x=(Math.max(0,Math.sin(ph+1.3))*1.05+.05)*amp;P.knR.rotation.x=(Math.max(0,Math.sin(ph+1.3+Math.PI))*1.05+.05)*amp;
+  P.shL.rotation.set(s*.55*amp,0,-.06);P.shR.rotation.set(-s*.55*amp,0,.06);P.elL.rotation.x=-.25-.35*amp;P.elR.rotation.x=-.25-.35*amp;
+  P.pelvis.position.y=.95-.035*amp+Math.abs(Math.cos(ph))*.035*amp;P.chest.rotation.set(.06*amp+Math.sin(t*1.6)*.01,s*.1*amp,0);P.pelvis.rotation.y=-s*.06*amp;}
+
+/* プレイヤー */
+const ME=makeHuman({top:0x2f5f4f,bottom:0x3a4150,shoe:0x2a2a2a,skin:0xe9c4a3,hair:0x2a2018,cap:0x1f3f5c,detail:1});
+const P=ME.g;P.traverse(o=>{if(o.isMesh)o.castShadow=true;});scene.add(P);
+// ベスト（釣り用）
+{const v=new T.Mesh(new T.CapsuleGeometry(.158,.22,4,10),lam(0xd9b44a));v.position.y=.29;v.scale.set(1.27,1,.82);ME.chest.add(v);v.castShadow=true;}
+
+/* 歩行者と車（都会の往来） */
+const ROADLEN=[];let ROADTOT=0;for(let i=0;i<ROAD.length-1;i++){const l=Math.hypot(ROAD[i+1][0]-ROAD[i][0],ROAD[i+1][1]-ROAD[i][1]);ROADLEN.push(l);ROADTOT+=l;}
+function roadAt(s){s=clamp(s,0,ROADTOT-.01);for(let i=0;i<ROADLEN.length;i++){if(s<=ROADLEN[i]){const[ax,ay]=ROAD[i],[bx,by]=ROAD[i+1];const k=s/ROADLEN[i],ux=(bx-ax)/ROADLEN[i],uy=(by-ay)/ROADLEN[i];return[ax+(bx-ax)*k,ay+(by-ay)*k,ux,uy];}s-=ROADLEN[i];}return[...ROAD[ROAD.length-1],0,1];}
+function roadS(x,y){let best=0,bd=1e9,acc=0;for(let i=0;i<ROADLEN.length;i++){const[ax,ay]=ROAD[i],[bx,by]=ROAD[i+1];const dx=bx-ax,dy=by-ay,l2=dx*dx+dy*dy;const t=clamp(((x-ax)*dx+(y-ay)*dy)/l2,0,1);const d=Math.hypot(x-(ax+dx*t),y-(ay+dy*t));if(d<bd){bd=d;best=acc+t*ROADLEN[i];}acc+=ROADLEN[i];}return[best,bd];}
+const PEDS=[];
+const OUTFITS=[[0x2b2b30,0x2b2b30,0x1b1b1b],[0xe8e4dc,0x3b4a66,0x5a4636],[0x9b2f2f,0x2b2b30,0xf0f0f0],[0x6e8fb4,0xc9b99a,0x6b4a2a],[0x3d5f3a,0x2b2b30,0x2b2b2b],[0xf0d8c0,0x6a5a4a,0xffffff],[0x4a4f7a,0x1f2430,0x111111]];
+for(let i=0;i<16;i++){const o=OUTFITS[i%OUTFITS.length];const hp=makeHuman({top:o[0],bottom:o[1],shoe:o[2],skin:[0xe9c4a3,0xd8ab88,0xf1d2b6][i%3],hair:[0x1a1410,0x3a2a1c,0x5a5a5a][i%3],short:i%4===0});scene.add(hp.g);PEDS.push({P:hp,s:0,side:1,dir:1,v:1.3,ph:rnd()*6,on:false});}
+const CARS=[];const carBody=new T.BoxGeometry(4.4,.8,1.75).translate(0,.75,0),carCab=new T.BoxGeometry(2.3,.65,1.6).translate(-.2,1.45,0),busBody=new T.BoxGeometry(10.5,2.6,2.45).translate(0,1.55,0);
+const glassMat=new T.MeshPhongMaterial({color:0x26323c,specular:0x99aabb,shininess:80}),tireMat=lam(0x1a1a1a),headMat=new T.MeshBasicMaterial({color:0xfff2d2}),tailMat=new T.MeshBasicMaterial({color:0xd03020});
+const tireGeo=new T.CylinderGeometry(.33,.33,.25,12).rotateX(Math.PI/2);
+for(let i=0;i<14;i++){const bus=i%7===3;const g=new T.Group();
+  if(bus){g.add(new T.Mesh(busBody,lam(0xf2f2f0)));const band=new T.Mesh(new T.BoxGeometry(10.52,.9,2.47).translate(0,1.9,0),lam(0x2a6db0));g.add(band);const win=new T.Mesh(new T.BoxGeometry(9.6,.8,2.48).translate(0,2.3,0),glassMat);g.add(win);}
+  else{g.add(new T.Mesh(carBody,lam([0xf3f3f1,0x1d1d20,0x9aa2aa,0xb23a32,0x2c4f86,0xf0c418,0x3e5f4a][i%7])));g.add(new T.Mesh(carCab,glassMat));}
+  const len=bus?10.5:4.4;for(const sx of[-len*.32,len*.32])for(const sz of[-.8,.8]){const w=new T.Mesh(tireGeo,tireMat);w.position.set(sx,.33,sz*(bus?1.25:1));g.add(w);}
+  for(const sz of[-.6,.6]){const h=new T.Mesh(new T.BoxGeometry(.05,.18,.3),headMat);h.position.set(len/2+.02,.85,sz);g.add(h);const tl=new T.Mesh(new T.BoxGeometry(.05,.18,.3),tailMat);tl.position.set(-len/2-.02,.85,sz);g.add(tl);}
+  g.traverse(o=>{if(o.isMesh)o.castShadow=true;});scene.add(g);CARS.push({g,s:0,dir:1,lane:1,v:12,vt:12,len,on:false});}
+let sPlayer=0,sChk=0;
+function spawnAlong(around,range){return clamp(around+(rnd()-.5)*2*range,1,ROADTOT-1);}
+function updTraffic(dt,t){
+  sChk-=dt;let dRoad=1e9;if(sChk<=0){sChk=.4;const r=roadS(S.x,S.y);sPlayer=r[0];dRoad=r[1];updTraffic.d=dRoad;}
+  const near=(updTraffic.d||0)<400;
+  for(const c of CARS){if(!c.on||Math.abs(c.s-sPlayer)>420){if(!near){c.g.visible=false;c.on=false;continue;}c.s=spawnAlong(sPlayer,380);c.dir=rnd()<.5?1:-1;c.lane=rnd()<.5?1:2;c.vt=c.len>6?9:10+rnd()*5;c.v=c.vt;c.on=true;c.g.visible=true;}
+    // 前の車・歩行者（プレイヤー）で止まる
+    let vt=c.vt;const[x,y,ux,uy]=roadAt(c.s);const fx=ux*c.dir,fy=uy*c.dir;
+    for(const o of CARS){if(o===c||!o.on||o.dir!==c.dir||o.lane!==c.lane)continue;const ds=(o.s-c.s)*c.dir;if(ds>0&&ds<c.len/2+o.len/2+5)vt=0;}
+    const px=S.x-x,py=S.y-y;const ahead=px*fx+py*fy,lat=Math.abs(px*-fy+py*fx-(-(c.lane*3.4-1.7)));if(ahead>0&&ahead<14&&Math.hypot(px,py)<16&&Math.abs(px*-uy+py*ux)<10)vt=0;
+    c.v+=(vt-c.v)*Math.min(1,dt*(vt<c.v?3:1));c.s+=c.v*c.dir*dt;if(c.s<1||c.s>ROADTOT-1)c.on=false;
+    const off=(c.lane*3.4-1.7)*-c.dir;const[x2,y2,ux2,uy2]=roadAt(c.s);const nx=-uy2,ny=ux2;
+    c.g.position.set(x2+nx*off,GROUND+.07,y2+ny*off);c.g.rotation.y=-Math.atan2(uy2*c.dir,ux2*c.dir);}
+  for(const p of PEDS){if(!p.on||Math.abs(p.s-sPlayer)>260){if(!near){p.P.g.visible=false;p.on=false;continue;}p.s=spawnAlong(sPlayer,240);p.side=rnd()<.5?1:-1;p.dir=rnd()<.5?1:-1;p.v=1.1+rnd()*.5;p.on=true;p.P.g.visible=true;p.off=12+rnd()*2.5;}
+    p.s+=p.v*p.dir*dt;p.ph+=dt*p.v*3.3;const[x,y,ux,uy]=roadAt(p.s);const nx=-uy,ny=ux;p.P.g.position.set(x+nx*p.off*p.side,GROUND,y+ny*p.off*p.side);p.P.g.rotation.y=Math.atan2(ux*p.dir,uy*p.dir);animHuman(p.P,p.ph,.75,t);}}
+
+/* ===== 竿・糸・ウキ ===== */
+const rodMat=new T.MeshPhongMaterial({color:0x1e2a33,specular:0x667788,shininess:60});const rodMesh=new T.Mesh(new T.BufferGeometry(),rodMat);rodMesh.frustumCulled=false;rodMesh.castShadow=true;scene.add(rodMesh);
+const reel=new T.Mesh(new T.CylinderGeometry(.035,.035,.05,12).rotateZ(Math.PI/2),lam(0xb8bcc0));scene.add(reel);
+const lineGeo=new T.BufferGeometry();lineGeo.setAttribute('position',new T.Float32BufferAttribute(new Float32Array(32*3),3));
+const lineObj=new T.Line(lineGeo,new T.LineBasicMaterial({color:0xf4f0e0,transparent:true,opacity:.85}));lineObj.frustumCulled=false;scene.add(lineObj);
+const bobber=new T.Group();{const t=new T.Mesh(new T.SphereGeometry(.06,12,8,0,6.283,0,Math.PI/2),new T.MeshBasicMaterial({color:0xff4a2a}));const b=new T.Mesh(new T.SphereGeometry(.06,12,8,0,6.283,Math.PI/2,Math.PI/2),lam(0xf6f2e8));const a=new T.Mesh(new T.CylinderGeometry(.008,.008,.25,4).translate(0,.12,0),new T.MeshBasicMaterial({color:0xff4a2a}));bobber.add(t,b,a);}
+scene.add(bobber);
+const jig=new T.Mesh(new T.BoxGeometry(.03,.02,.1),new T.MeshPhongMaterial({color:0xcfd8e0,specular:0xffffff,shininess:90}));scene.add(jig);
+const aimRing=new T.Mesh(new T.RingGeometry(.8,1,40).rotateX(-Math.PI/2),new T.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.95,depthWrite:false}));aimRing.renderOrder=5;scene.add(aimRing);
+const aimRing2=new T.Mesh(new T.RingGeometry(1.35,1.45,40).rotateX(-Math.PI/2),new T.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.5,depthWrite:false}));scene.add(aimRing2);
+const aimLineGeo=new T.BufferGeometry();aimLineGeo.setAttribute('position',new T.Float32BufferAttribute(new Float32Array(6),3));
+const aimLine=new T.Line(aimLineGeo,new T.LineDashedMaterial({color:0xffffff,dashSize:1,gapSize:1.5,transparent:true,opacity:.5}));aimLine.frustumCulled=false;scene.add(aimLine);
+const ripples=[];for(let i=0;i<16;i++){const m=new T.Mesh(new T.RingGeometry(.9,1,32).rotateX(-Math.PI/2),new T.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0,depthWrite:false}));m.visible=false;scene.add(m);ripples.push({m,life:0,max:1,size:1});}
+let rpi=0;function ripple(x,z,size,life){const r=ripples[rpi++%ripples.length];r.m.position.set(x,.03,z);r.life=r.max=life;r.size=size;r.m.visible=true;}
+const drops=[];const dropGeo=new T.SphereGeometry(.05,5,4),dropMat=new T.MeshBasicMaterial({color:0xf2f8fb});
+for(let i=0;i<80;i++){const m=new T.Mesh(dropGeo,dropMat);m.visible=false;scene.add(m);drops.push({m,v:new V3(),life:0});}
+let dpi=0;function splash(x,z,n,pow){for(let i=0;i<n;i++){const d=drops[dpi++%drops.length];d.m.position.set(x,.05,z);d.v.set((rnd()-.5)*pow,pow*(1+rnd()),(rnd()-.5)*pow);d.life=1;d.m.visible=true;}}
+const birds=[];const birdMat=new T.MeshBasicMaterial({color:0xf7f7f4,side:T.DoubleSide});
+for(let i=0;i<14;i++){const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(new Float32Array(18),3));const m=new T.Mesh(g,birdMat);m.visible=false;m.frustumCulled=false;scene.add(m);birds.push(m);}
+
+/* ===== 目印 ===== */
+function labelSprite(txt,size){const pad=10;const m=document.createElement('canvas').getContext('2d');m.font=`900 ${size}px ${FONT}`;const tw=Math.ceil(m.measureText(txt).width)+pad*2,th=Math.round(size+pad*1.4);
+  const tex=canvasTex(tw,th,(g,w,h)=>{g.font=`900 ${size}px ${FONT}`;g.fillStyle='rgba(12,33,54,.82)';const r=h/2;g.beginPath();g.moveTo(r,0);g.lineTo(w-r,0);g.arc(w-r,r,r,-Math.PI/2,Math.PI/2);g.lineTo(r,h);g.arc(r,r,r,Math.PI/2,Math.PI*1.5);g.fill();g.fillStyle='#f6f2e8';g.textAlign='center';g.textBaseline='middle';g.fillText(txt,w/2,h/2+1);});
+  tex.wrapS=tex.wrapT=T.ClampToEdgeWrapping;const s=new T.Sprite(new T.SpriteMaterial({map:tex,depthTest:false,transparent:true,sizeAttenuation:false}));s.scale.set(tw/th*.032,.032,1);s.renderOrder=10;s.userData.ar=tw/th;return s;}
+const spotBadge=canvasTex(64,64,(g)=>{g.fillStyle='#1b7d82';g.beginPath();g.arc(32,32,28,0,7);g.fill();g.strokeStyle='#fff';g.lineWidth=5;g.stroke();g.fillStyle='#fff';g.beginPath();g.ellipse(28,32,12,7,0,0,7);g.fill();g.beginPath();g.moveTo(38,32);g.lineTo(48,24);g.lineTo(48,40);g.fill();g.fillStyle='#1b7d82';g.beginPath();g.arc(22,30,2.2,0,7);g.fill();});
+const starTex=canvasTex(64,64,(g)=>{g.fillStyle='#f1b746';g.beginPath();g.arc(32,32,26,0,7);g.fill();g.strokeStyle='#13263b';g.lineWidth=3;g.stroke();g.fillStyle='#13263b';g.font=`900 30px ${FONT}`;g.textAlign='center';g.textBaseline='middle';g.fillText('★',32,34);});
+const doneTex=canvasTex(64,64,(g)=>{g.fillStyle='#f6f2e8';g.beginPath();g.arc(32,32,26,0,7);g.fill();g.strokeStyle='#1b7d82';g.lineWidth=4;g.stroke();g.fillStyle='#1b7d82';g.font=`900 30px ${FONT}`;g.textAlign='center';g.textBaseline='middle';g.fillText('✓',32,34);});
+for(const t of[spotBadge,starTex,doneTex])t.wrapS=t.wrapT=T.ClampToEdgeWrapping;
+const spotMk=SPOTS.map(sp=>{const b=new T.Sprite(new T.SpriteMaterial({map:spotBadge,depthTest:false,transparent:true,sizeAttenuation:false}));b.scale.set(.045,.045,1);b.renderOrder=11;b.position.set(sp.x,groundY(sp.x,sp.y)+5,sp.y);scene.add(b);
+  const l=labelSprite(sp.n,30);l.position.set(sp.x,groundY(sp.x,sp.y)+5,sp.y);l.center.set(.5,-.9);scene.add(l);return{sp,b,l};});
+const sightMk=SIGHTS.map(s=>{const b=new T.Sprite(new T.SpriteMaterial({map:starTex,depthTest:false,transparent:true,sizeAttenuation:false}));b.scale.set(.036,.036,1);b.renderOrder=11;b.position.set(s.x,GROUND+8,s.y);scene.add(b);
+  const l=labelSprite(s.n,30);l.position.set(s.x,GROUND+8,s.y);l.center.set(.5,-.9);l.visible=false;scene.add(l);return{s,b,l};});
+
+/* ===== 釣りロジック（距離はメートル） ===== */
+const F={st:'idle',t:0,spot:null,ang:0,angOff:0,pw:0,ox:0,oy:0,tx:0,ty:0,d0:30,dist:30,ten:0,stam:1,surge:0,slack:0,hold:false,fish:null,size:0,wkg:0,P:1,biteAt:0,noFishTip:false,nabura:false,ph:0,cand:null};
+let N=null,nearSpot=null,nearSight=null,face=0,walkT=0,speedNow=0;
+function castMax(){return BAIT[S.bait].max*(1+.08*S.rod);}
+function stock(){return S.bait==='isome'?S.isome:S.bait==='lure'?S.lure:S.bait==='egi'?S.egi:1;}
+function aimTarget(){const D=6+(castMax()-6)*F.pw;const a=F.ang;let tx=F.ox+Math.cos(a)*D,ty=F.oy+Math.sin(a)*D;for(let i=0;i<40&&!isWater(tx,ty);i++){tx+=Math.cos(a);ty+=Math.sin(a);}return[tx,ty,Math.hypot(tx-F.ox,ty-F.oy)];}
+function mainDown(){
+  if(!$('title').hidden||!$('sheet').hidden||!$('result').hidden||!$('sight').hidden)return;
+  switch(F.st){
+    case'idle':{const sp=nearSpot;if(!sp)return;
+      if(!spotOpen(sp)){toast(`営業時間外です（${sp.hours[0]}:00〜${sp.hours[1]}:00）`);return;}
+      if(stock()<=0){toast(`${BAIT[S.bait].n}がありません。釣具店で買えます`);return;}
+      F.st='aim';F.t=0;F.spot=sp;F.ox=S.x;F.oy=S.y;F.angOff=0;F.ang=sp.dir;F.pw=0;yawT=yawFor(sp.dir);break;}
+    case'wait':reelIn('仕掛けを回収した');break;
+    case'bite':hook();break;
+    case'fight':F.hold=true;break;
+  }}
+function mainUp(){
+  if(F.st==='aim'){const[tx,ty,D]=aimTarget();F.tx=tx;F.ty=ty;F.d0=Math.max(4,Math.round(D));if(S.bait==='isome')S.isome--;F.st='fly';F.t=0;}
+  if(F.st==='fight')F.hold=false;}
+function reelIn(msg){F.st='idle';F.t=0;if(msg)toast(msg);}
+function candidates(){const h=hourF(),sp=F.spot,out=[];let sum=0;const mon=gameDate().getMonth()+1;
+  const inN=N&&N.spot===sp&&Math.hypot(F.tx-N.x,F.ty-N.y)<N.r+4;F.nabura=!!inN;
+  const tet=inTetra(F.tx,F.ty);const dist=Math.hypot(F.tx-F.ox,F.ty-F.oy);const far=dist/castMax();
+  for(const id in sp.w){const f=FISH[id];if(!f.bait.includes(S.bait))continue;let w=sp.w[id]*tmul(f.tm,h)*(f.mo[mon]?1:.12);
+    if(inN&&f.blue)w*=6;if(tet&&f.rock)w*=2.5;if(f.near)w*=dist<14?1.8:.55;if(f.far)w*=.3+far*1.2;if((id==='inada'||id==='warasa')&&!inN)w*=.3;out.push([id,w]);sum+=w;}
+  return{out,sum,tet};}
+function startWait(){F.st='wait';F.t=0;F.noFishTip=false;const c=candidates();F.cand=c;const ti=tideInfo(),td=tideAt(hourF(),ti);
+  const rf=(.5+.9*Math.abs(td.s)*ti.amp)*ti.boost*(F.nabura?3.2:1);
+  ripple(F.tx,F.ty,1.5,1);splash(F.tx,F.ty,8,1.6);
+  if(c.sum<=0){F.biteAt=1e9;return;}
+  const mean=9/(rf*clamp(c.sum/40,.35,1.6));F.biteAt=1.5+Math.min(28,-Math.log(1-rnd())*mean);}
+function pickFish(){const c=F.cand;let r=rnd()*c.sum;for(const[id,w]of c.out){r-=w;if(r<=0)return id;}return c.out[c.out.length-1][0];}
+function hook(){F.st='fight';F.t=0;F.hold=false;F.dist=F.d0;F.ten=.3;F.stam=1;F.surge=0;F.slack=0;F.ph=rnd()*6;$('fight').hidden=false;toast('掛かった！ 長押しで巻く・赤くなったら離す');}
+function endFight(){$('fight').hidden=true;F.hold=false;}
+function fishPos(){const k=clamp(F.dist/F.d0,0,1.3);const px=-Math.sin(F.ang),py=Math.cos(F.ang);const sw=F.st==='fight'?Math.sin(F.t*2.2+F.ph)*Math.min(6,F.d0*.15)*k:0;return[F.ox+(F.tx-F.ox)*k+px*sw,F.oy+(F.ty-F.oy)*k+py*sw];}
+let fxT=0;
+function updateFishing(dt){
+  if(F.st==='idle')return;F.t+=dt;
+  if(F.st==='aim'){F.pw=1-Math.abs(((F.t*.8)%2)-1);F.angOff=clamp(F.angOff+(jx+(K.r-K.l))*dt*1.1,-1,1);F.ang=F.spot.dir+F.angOff;yawT=yawFor(F.ang);return;}
+  if(F.st==='fly'){if(F.t>=.9)startWait();return;}
+  if(F.st==='wait'){
+    if(F.cand.tet&&rnd()<dt*.01){snag('根掛かりした…（仕掛けがテトラの間に入った）');return;}
+    if(F.t>=F.biteAt){const id=pickFish();const f=FISH[id];F.fish=id;F.size=Math.round((f.L[0]+(f.L[1]-f.L[0])*Math.pow(rnd(),1.8))*10)/10;F.wkg=f.a*Math.pow(F.size,3)/1000;
+      F.P=Math.max(.25,.3+F.wkg*1.05*(f.ff||1)*(f.blue?1.15:1));F.st='bite';F.t=0;buzz(40);ripple(F.tx,F.ty,.8,.5);}
+    else if(F.t>15&&!F.noFishTip&&F.cand.sum<=0){F.noFishTip=true;toast('アタリがない… この仕掛けで狙える魚がいないかも');}
+    return;}
+  if(F.st==='bite'){fxT-=dt;if(fxT<=0){fxT=.22;ripple(F.tx,F.ty,.7,.45);}if(F.t>1.05){F.st='idle';toast(S.bait==='isome'?'エサだけ取られた…':'アタリを逃した…');}return;}
+  if(F.st==='fight'){
+    const lim=RODS[S.rod].lim;
+    if(rnd()<dt*.45)F.surge=Math.max(F.surge,F.P*(.45+rnd()*.5));F.surge*=Math.pow(.25,dt);
+    const pull=F.P*(.5+.5*F.stam)*(.8+.2*Math.sin(F.t*2.7+F.ph))+F.surge;
+    if(F.hold){const tg=pull*1.25+.35;F.ten+=(tg-F.ten)*Math.min(1,dt*2.6);F.dist-=5.5*Math.max(.15,1-pull/(lim*1.15))*dt;F.stam=Math.max(0,F.stam-dt*.5/(1+F.P*.4));F.slack=0;}
+    else{const tg=pull*.35;F.ten+=(tg-F.ten)*Math.min(1,dt*3.5);F.dist=Math.min(F.d0+10,F.dist+pull*.7*dt*(.4+.6*F.stam));F.stam=Math.min(1,F.stam+dt*.05);F.slack+=dt;}
+    const f=FISH[F.fish];const fp=fishPos();
+    fxT-=dt;if(fxT<=0){fxT=.18;ripple(fp[0],fp[1],.5+F.P*.25,.7);if(F.surge>F.P*.3||rnd()<.3)splash(fp[0],fp[1],4,1+F.P*.25);}
+    if(f.rock&&inTetra(fp[0],fp[1])&&rnd()<dt*(F.hold?.02:.22)){endFight();snag('テトラに潜られた！ 際では緩めずに巻き切ろう');return;}
+    if(F.ten>lim){endFight();if(S.bait==='lure')S.lure=Math.max(0,S.lure-1);if(S.bait==='egi')S.egi=Math.max(0,S.egi-1);F.st='idle';toast(S.rod<3?'糸が切れた！ 大物には強い竿が必要かも':'糸が切れた！ 赤くなったら指を離そう');save();return;}
+    if(F.slack>2.8){endFight();F.st='idle';toast('針が外れた… 離しすぎに注意');return;}
+    if(F.dist<=0){endFight();F.st='idle';splash(fp[0],fp[1],10,1.6);showResult();return;}
+  }}
+function snag(msg){F.st='idle';let lost='';if(S.bait==='lure'){S.lure=Math.max(0,S.lure-1);lost='（ジグを1つ失った）';}if(S.bait==='egi'){S.egi=Math.max(0,S.egi-1);lost='（エギを1つ失った）';}toast(msg+lost);save();}
+function buzz(ms){try{navigator.vibrate&&navigator.vibrate(ms);}catch(e){}}
+let nTimer=0;
+function updateNabura(dt){
+  if(N){N.life-=dt;if(N.life<=0)N=null;}
+  nTimer-=dt;if(nTimer>0)return;nTimer=6;
+  if(N||!nearSpot)return;const sp=nearSpot,h=hourF();const mz=(h>=4.5&&h<7.5)||(h>=16&&h<18.5);if(rnd()>(mz?.3:.1))return;
+  const mx=BAIT.lure.max*(1+.08*S.rod);
+  for(let i=0;i<10;i++){const d=lerp(mx*.6,mx*.92,rnd()),a=sp.dir+(rnd()-.5)*1.1;const x=sp.x+Math.cos(a)*d,y=sp.y+Math.sin(a)*d;
+    if(isWater(x,y)&&!inTetra(x,y)){N={x,y,r:9,life:40+rnd()*25,spot:sp,fx:0};toast('鳥山が立った！ 沖のナブラを狙え');buzz(25);return;}}}
+
+/* ===== 結果・名所 ===== */
+function priceOf(id,kg){const f=FISH[id];if(f.poison)return 0;return Math.max(10,Math.round(f.kg*kg/10)*10);}
+function wtxt(kg){return kg<1?`${Math.round(kg*1000)} g`:`${kg.toFixed(2)} kg`;}
+let pending=null;
+function showResult(){const id=F.fish,f=FISH[id],sz=F.size,kg=F.wkg;const d=S.dex[id]||{c:0,max:0,kg:0};const isNew=!d.c,isRec=!isNew&&sz>d.max;d.c++;d.max=Math.max(d.max,sz);d.kg=Math.max(d.kg||0,kg);S.dex[id]=d;pending={id,sz,price:priceOf(id,kg)};
+  $('resKick').textContent=F.nabura?'ナブラ撃ち成功！':'釣れた！';$('resName').textContent=f.n;$('resSize').innerHTML=`${f.unit?`<small>${f.unit} </small>`:''}${sz.toFixed(1)}<small> cm</small>`;$('resW').textContent=`重さ ${wtxt(kg)}`;
+  let b='';if(isNew)b+='<span class="badge">図鑑に登録</span> ';if(isRec)b+='<span class="badge">自己記録更新</span> ';if(f.poison)b+='<span class="badge red">持ち帰り不可</span> ';if(f.venom)b+='<span class="badge red">毒のトゲに注意</span>';
+  $('resBadges').innerHTML=b;$('resDesc').textContent=f.d;const kb=$('resKeep');
+  if(f.poison){kb.hidden=true;$('resRel').textContent='海へ返す';}else{kb.hidden=false;kb.textContent=`持ち帰る ¥${pending.price.toLocaleString()}`;$('resRel').textContent='リリース';}
+  $('result').hidden=false;drawFishCanvas($('resCv'),id,false);save();}
+function keep(k){if(!pending)return;if(k&&!FISH[pending.id].poison){S.money+=pending.price;toast(`+¥${pending.price.toLocaleString()}`);}else toast('海へ返した');pending=null;$('result').hidden=true;save();updMoney();}
+$('resKeep').onclick=()=>keep(true);$('resRel').onclick=()=>keep(false);
+function openSight(){const s=nearSight;if(!s)return;$('sgName').textContent=s.n;$('sgDesc').textContent=s.d;
+  if(!S.stamps[s.id]){S.stamps[s.id]=1;S.money+=200;$('sgBadge').innerHTML=`<span class="badge">スタンプ獲得 ＋¥200（${Object.keys(S.stamps).length}/10）</span>`;updMoney();save();}
+  else $('sgBadge').innerHTML='<span class="badge">スタンプ済み</span>';$('sight').hidden=false;}
+function closeSight(){$('sight').hidden=true;}
+$('sgOk').onclick=closeSight;$('viewBtn').onclick=openSight;
+
+/* ===== UI ===== */
+let toastT=0;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),2400);}
+function updMoney(){$('money').textContent='¥'+S.money.toLocaleString();}
+const mainBtn=$('mainBtn');
+mainBtn.addEventListener('pointerdown',e=>{e.preventDefault();try{mainBtn.setPointerCapture(e.pointerId);}catch(_){}mainDown();});
+mainBtn.addEventListener('pointerup',mainUp);mainBtn.addEventListener('pointercancel',mainUp);mainBtn.addEventListener('contextmenu',e=>e.preventDefault());
+function cycleBait(){if(F.st!=='idle')return;const o=['sabiki','isome','lure','egi'];S.bait=o[(o.indexOf(S.bait)+1)%4];save();}
+$('baitBtn').onclick=cycleBait;
+let uiKey='';
+function updUI(){
+  let st='',txt='',p=0;
+  if(F.st==='idle'&&nearSpot){st='ready';txt='投げる<small>長押しで飛距離</small>';}
+  else if(F.st==='aim'){st='aim';txt='離して投げる<small>スティックで方向</small>';p=F.pw;}
+  else if(F.st==='fly'){st='busy';txt='…';}
+  else if(F.st==='wait'){st='wait';txt='待つ<small>タップで回収</small>';}
+  else if(F.st==='bite'){st='bite';txt='合わせ！';}
+  else if(F.st==='fight'){st='fight';txt='巻く<small>長押し</small>';p=1-clamp(F.dist/F.d0,0,1);}
+  mainBtn.style.setProperty('--p',p.toFixed(3));
+  const bl=`仕掛け：${BAIT[S.bait].n}`+(S.bait==='isome'?` ×${S.isome}`:S.bait==='lure'?` ×${S.lure}`:S.bait==='egi'?` ×${S.egi}`:'');
+  const showBait=!!nearSpot&&F.st==='idle';const showView=!!nearSight&&F.st==='idle'&&!nearSpot;
+  const key=st+txt+bl+showBait+showView+(nearSight?nearSight.id:'');
+  if(key!==uiKey){uiKey=key;mainBtn.hidden=!st;mainBtn.dataset.s=st;$('mainTxt').innerHTML=txt;$('baitBtn').hidden=!showBait;$('baitBtn').textContent=bl;$('viewBtn').hidden=!showView;if(showView)$('viewBtn').textContent=`${nearSight.n}を見る`;}
+  const info=$('info');let Tt='',Sb='',warn=false;
+  if(F.spot&&F.st!=='idle'){const sp=F.spot;
+    if(F.st==='aim'){const tg=aimTarget();Tt=`飛距離 ${Math.round(tg[2])}m`;const it=inTetra(tg[0],tg[1]);const inN=N&&Math.hypot(tg[0]-N.x,tg[1]-N.y)<N.r+4;Sb=inN?'ナブラの中！ 青物のチャンス':it?'テトラ際：根魚が多いが根掛かり注意':tg[2]<14?'足元の際：根魚・タコのポイント':sp.n;warn=it&&!inN;}
+    else if(F.st==='wait'){Tt=F.nabura?'ナブラ直撃！':'アタリを待っています';Sb=`${BAIT[S.bait].n}・${Math.round(F.d0)}m先`+(F.cand&&F.cand.tet?'・テトラ際':'');}
+    else if(F.st==='fight'){const rk=F.cand&&F.cand.tet&&FISH[F.fish].rock;Tt='ファイト中';Sb=rk?'テトラに潜られる前に巻き切れ':'テンションが赤になったら指を離す';warn=!!rk;}
+    else if(F.st==='bite'){Tt='アタリ！';Sb='すぐにボタンをタップ';}
+  }else if(nearSpot){const sp=nearSpot;Tt=sp.n;Sb=(sp.hours?(spotOpen(sp)?`営業中 ${sp.hours[0]}:00〜${sp.hours[1]}:00`:`営業時間外（${sp.hours[0]}:00〜${sp.hours[1]}:00）`):'岸壁の公園')+(sp.tetra?'・岸際にテトラ帯':'')+(N&&N.spot===sp?'・沖にナブラ！':'');warn=!spotOpen(sp);}
+  const ik=Tt+Sb+warn;if(info._k!==ik){info._k=ik;info.hidden=!Tt;$('infoT').textContent=Tt;$('infoS').textContent=Sb;info.classList.toggle('warn',warn);}
+  if(F.st==='fight'){const lim=RODS[S.rod].lim;const r=F.ten/lim;$('tens').style.width=clamp(r/1.15*100,0,100)+'%';$('tens').dataset.hi=r>.85?'1':'0';
+    $('fbR').textContent=`${F.ten.toFixed(1)} / ${lim}kg`;$('fbD').textContent=`あと ${Math.max(0,Math.ceil(F.dist))}m`;$('distb').style.width=clamp((1-F.dist/F.d0)*100,0,100)+'%';}}
+let lastClock='';
+function updClock(){const t=fmtTime(S.min);if(t===lastClock)return;lastClock=t;$('clk').textContent=t;
+  const ti=tideInfo(),td=tideAt(hourF(),ti);const dt=gameDate();
+  $('tideTx').textContent=`${dt.getMonth()+1}/${dt.getDate()} ${ti.name}・${tideLabel(td)}`;
+  const c=$('tideCv').getContext('2d');c.clearRect(0,0,148,68);c.strokeStyle='rgba(255,255,255,.18)';c.lineWidth=2;c.beginPath();c.moveTo(0,34);c.lineTo(148,34);c.stroke();
+  c.strokeStyle='#49c1c4';c.lineWidth=3;c.beginPath();for(let i=0;i<=48;i++){const y=34-tideAt(i/2,ti).lv*26,x=i/48*148;i?c.lineTo(x,y):c.moveTo(x,y);}c.stroke();
+  c.fillStyle='#f1b746';c.beginPath();c.arc(hourF()/24*148,34-td.lv*26,6,0,7);c.fill();}
+
+/* ===== シート ===== */
+let tab='map';
+function openMenu(){if(F.st!=='idle'&&F.st!=='wait'){toast('釣りの最中です');return;}if(F.st==='wait')reelIn();$('sheet').hidden=false;renderTab();}
+function closeSheet(){$('sheet').hidden=true;}
+$('menuBtn').onclick=openMenu;$('sheetX').onclick=closeSheet;
+$('sheet').addEventListener('pointerdown',e=>{if(e.target.id==='sheet')closeSheet();});
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('button[data-t]');if(!b)return;tab=b.dataset.t;renderTab();});
+function nearestStation(){let best=null,bd=1e9;for(const s of STATIONS){const d=Math.hypot(s.x-S.x,s.y-S.y);if(d<bd){bd=d;best=s;}}return[best,bd];}
+function fare(s){const cur=nearestStation()[0];const d=Math.hypot(s.x-cur.x,s.y-cur.y);return{yen:220+(s.far||cur.far?110:0)+(d>3600?110:0),min:Math.round(8+d/400*1.5)};}
+let busWait={};
+function renderTab(){
+  for(const b of document.querySelectorAll('#tabs button[data-t]'))b.classList.toggle('on',b.dataset.t===tab);
+  const sb=$('sb');let h='';
+  if(tab==='map'){const[cur,cd]=nearestStation();const atStop=cd<40;
+    h=`<canvas id="mapCv"></canvas><p class="sub">${atStop?`「${cur.n}」のバス停にいます。乗るバスを選んでください。待ち時間は便によって変わります。`:`バスに乗るには、まずバス停まで歩いてください。一番近いのは「${cur.n}」（約${Math.round(cd)}m）。`}</p><div class="list">`;
+    STATIONS.forEach((s,i)=>{const here=cur===s;const f=fare(s);const sp=SPOTS.find(p=>Math.hypot(p.x-s.x,p.y-s.y)<500);if(busWait[i]==null)busWait[i]=2+Math.floor(rnd()*14);
+      h+=`<button class="item${here?' on':''}${atStop||here?'':' dim'}" data-go="${i}" ${here||!atStop?'disabled':''}><div class="tx"><b>${s.n}</b><span>${here?'いまいるバス停':`次の便まで${busWait[i]}分・乗車約${f.min}分`}${sp?'・釣り場：'+sp.n:''}</span></div><div class="pr">${here?'':'¥'+f.yen}</div></button>`;});
+    h+=`<button class="item" id="restBtn"><div class="tx"><b>ベンチでひと休み</b><span>時間を1時間進める（潮や時間帯を待つ）</span></div><div class="pr">無料</div></button></div>`;
+    sb.innerHTML=h;drawMapCv($('mapCv'));
+    sb.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>travel(+b.dataset.go));
+    $('restBtn').onclick=()=>{advance(60);busWait={};toast(`${fmtTime(S.min)}になった`);renderTab();};
+  }else if(tab==='dex'){
+    const got=FISH_IDS.filter(id=>S.dex[id]).length;const mon=gameDate().getMonth()+1;
+    h=`<p class="sub">${got} / ${FISH_IDS.length} 種。未発見の魚には仕掛け・時間帯・旬のヒントが出ます。いまは${mon}月。</p><div class="dex">`;
+    FISH_IDS.forEach(id=>{const f=FISH[id],d=S.dex[id];const where=SPOTS.filter(s=>s.w[id]).map(s=>s.n.replace(/海づり施設|水際線緑地|水際線プロムナード|臨海緑地/,'')).join('・');
+      h+=`<div class="dx"><canvas data-f="${id}" data-k="${d?1:0}"></canvas><b>${d?f.n:'？？？'}</b><span>${d?`最大 ${d.max.toFixed(1)}cm・${wtxt(d.kg||0)}・${d.c}匹`:`${f.bait.map(b=>BAIT[b].n).join('/')}・${TM_LABEL[f.tm]}`}</span><span>旬 ${seasonTxt(f)}${f.mo[mon]?'（いま）':''}・${where}</span></div>`;});
+    sb.innerHTML=h+'</div>';sb.querySelectorAll('canvas[data-f]').forEach(c=>drawFishCanvas(c,c.dataset.f,c.dataset.k!=='1'));
+  }else if(tab==='stamp'){
+    h=`<p class="sub">${Object.keys(S.stamps).length} / 10 か所。名所に近づくと「見る」ボタンが出ます。初回はお小遣い ＋¥200。</p><div class="list">`;
+    SIGHTS.forEach(s=>{const ok=S.stamps[s.id];h+=`<div class="item${ok?'':' dim'}"><div class="tx"><b>${ok?'● ':'○ '}${s.n}</b><span>${ok?s.d:'まだ訪れていません'}</span></div></div>`;});
+    sb.innerHTML=h+'</div>';
+  }else if(tab==='shop'){
+    h=`<p class="sub">所持金 ¥${S.money.toLocaleString()}・いまの竿：${RODS[S.rod].n}（${RODS[S.rod].line}・約${RODS[S.rod].lim}kgで切れる）</p><div class="list">`;
+    RODS.forEach((r,i)=>{if(!i)return;const own=S.rod>=i;h+=`<button class="item${own?' on':''}" data-rod="${i}" ${own?'disabled':''}><div class="tx"><b>${r.n}</b><span>${r.line}・約${r.lim}kg・飛距離 +${i*8}%</span></div><div class="pr">${own?'所持':'¥'+r.price.toLocaleString()}</div></button>`;});
+    h+=`<button class="item" data-buy="isome"><div class="tx"><b>青イソメ 20匹</b><span>ハゼ・カレイ・根魚・アナゴなど底の魚に。所持 ${S.isome}匹</span></div><div class="pr">¥500</div></button>`;
+    h+=`<button class="item" data-buy="lure"><div class="tx"><b>メタルジグ</b><span>シーバス・青物・ヒラメ・カマスに。根掛かりや糸切れで失う。所持 ${S.lure}個</span></div><div class="pr">¥800</div></button>`;
+    h+=`<button class="item" data-buy="egi"><div class="tx"><b>エギ</b><span>イカ・タコ用の疑似餌。根掛かりや糸切れで失う。所持 ${S.egi}個</span></div><div class="pr">¥900</div></button></div>`;
+    sb.innerHTML=h;
+    sb.querySelectorAll('[data-rod]').forEach(b=>b.onclick=()=>{const i=+b.dataset.rod,r=RODS[i];if(S.money<r.price){toast('お金が足りません');return;}S.money-=r.price;S.rod=i;toast(`${r.n}を手に入れた`);save();updMoney();renderTab();});
+    sb.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{const k=b.dataset.buy,p={isome:500,lure:800,egi:900}[k];if(S.money<p){toast('お金が足りません');return;}S.money-=p;if(k==='isome')S.isome+=20;else S[k]++;save();updMoney();renderTab();});
+  }else{
+    sb.innerHTML=`<div class="help">
+<p><b>歩く・見回す</b>　左のスティックで歩き、大きく倒すと走ります。画面をドラッグすると視点が回ります。右上の丸い地図は向いている方向が上です。</p>
+<p><b>バス</b>　バス停（青い丸看板）に立ってMENUの「移動」から乗ります。便によって待ち時間があり、時計が進みます。</p>
+<p><b>釣り場</b>　青い魚マークが釣り場です。横浜市では海づり施設などを除き、ふ頭・防波堤は釣り禁止なので、釣れるのは実在の6か所だけ。海づり施設は6:00〜19:00の営業です。</p>
+<p><b>投げる</b>　ボタンを長押しすると飛距離ゲージが往復し、指を離すと投げます。長押し中にスティックを左右に倒すと方向を変えられます。足元（14m以内）は根魚やタコ、遠投はキスやカレイが多くなります。</p>
+<p><b>やり取り</b>　長押しで巻く。テンションが赤くなったら指を離して糸切れを防ぎ、離しすぎると針が外れます。竿のしなりがテンションの目安です。重い魚ほど引きが強くなります。</p>
+<p><b>季節と潮</b>　魚には旬があり、旬を外れるとほとんど釣れません。左上の曲線は今日の潮の目安で、潮が動いている時間ほど釣れやすく、大潮は活性が上がります。</p>
+<p><b>テトラ帯</b>　末広・杉田・金沢の岸際にあります。根魚が多い一方、ゆるめると潜られて根掛かりします。</p>
+<p><b>鳥山とナブラ</b>　朝夕を中心に、釣り場の沖で鳥が群れて小魚がはねることがあります。メタルジグで届く距離なので、その中へ投げると青物のアタリが一気に増えます。</p>
+<p><b>危険な魚</b>　クサフグ・ソウシハギは毒があるので持ち帰れません。ゴンズイとアカエイはトゲに毒があります。</p></div>`;}}
+function travel(i){const s=STATIONS[i];const f=fare(s);if(S.money<f.yen){toast('お金が足りません');return;}const w=busWait[i]||5;S.money-=f.yen;advance(w+f.min);busWait={};S.x=s.x;S.y=s.y;N=null;closeSheet();updMoney();updChunks(true);snapCam();toast(`${w}分待って乗車、${s.n}に到着（${fmtTime(S.min)}）`);save();}
+
+/* ===== 2D地図 ===== */
+function poly2(c,p){c.moveTo(p[0][0],p[0][1]);for(let i=1;i<p.length;i++)c.lineTo(p[i][0],p[i][1]);c.closePath();}
+function pline2(c,pts){c.beginPath();c.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)c.lineTo(pts[i][0],pts[i][1]);}
+function drawMap2D(c,labels){c.lineJoin='round';c.lineCap='round';
+  c.beginPath();poly2(c,LAND);poly2(c,DAIKOKU);c.moveTo(ISLE.x+ISLE.r,ISLE.y);c.arc(ISLE.x,ISLE.y,ISLE.r,0,7);c.fillStyle='#e4dfc8';c.fill();
+  c.fillStyle='#cfd2cf';for(const p of INDUSTRY){c.beginPath();poly2(c,p);c.fill();}
+  c.fillStyle='#a8cc8a';for(const[x,y,rx,ry,r]of PARKS){c.beginPath();c.ellipse(x,y,rx,ry,r,0,7);c.fill();}
+  c.strokeStyle='#a8cc8a';c.lineWidth=55;pline2(c,YAMASHITA);c.stroke();c.strokeStyle='#ecd596';c.lineWidth=70;pline2(c,BEACH);c.stroke();
+  c.strokeStyle='#ffffff';c.lineWidth=30;pline2(c,ROAD);c.stroke();c.lineWidth=18;for(const r of ROADS2){pline2(c,r);c.stroke();}
+  c.strokeStyle='#9a9088';c.lineWidth=9;pline2(c,RAIL);c.stroke();
+  for(const r of RECTS){c.fillStyle='#b8b3a6';c.fillRect(r.x,r.y,Math.max(r.w,12),Math.max(r.h,12));}
+  c.strokeStyle='#f4f4f1';c.lineWidth=40;pline2(c,[[3954,2622],[3876,3402]]);c.stroke();
+  if(labels){c.textAlign='center';c.textBaseline='middle';c.font=`900 ${44*SC}px ${FONT}`;c.fillStyle='rgba(19,38,59,.6)';for(const[n,x,y]of AREAS)c.fillText(n,x,y);}}
+const MAPC=document.createElement('canvas');MAPC.width=480;MAPC.height=780;
+{const c=MAPC.getContext('2d');c.fillStyle='#2a7aa3';c.fillRect(0,0,480,780);c.scale(.1,.1);drawMap2D(c,false);}
+function drawMapCv(cvs){const w=cvs.clientWidth||320,h=w*1.2;cvs.style.height=h+'px';const d=Math.min(window.devicePixelRatio||1,2);cvs.width=Math.round(w*d);cvs.height=Math.round(h*d);
+  const c=cvs.getContext('2d');const sc=Math.min(w/3300,h/7800);const ox=w/2-3150*sc;
+  c.setTransform(d,0,0,d,0,0);c.fillStyle='#2a7aa3';c.fillRect(0,0,w,h);c.setTransform(d*sc,0,0,d*sc,d*ox,0);drawMap2D(c,true);
+  for(const sp of SPOTS){c.fillStyle='#1b7d82';c.beginPath();c.arc(sp.x,sp.y,66,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=18;c.stroke();}
+  for(const s of STATIONS){c.fillStyle='#2f6fb0';c.fillRect(s.x-36,s.y-36,72,72);c.strokeStyle='#fff';c.lineWidth=12;c.strokeRect(s.x-36,s.y-36,72,72);}
+  c.fillStyle='#e04a3b';c.beginPath();c.arc(S.x,S.y,90,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=24;c.stroke();}
+const miniC=$('mini').getContext('2d');let miniT=0;
+function drawMini(){const c=miniC,W=208,R=W/2,z=2.6;c.save();c.clearRect(0,0,W,W);c.beginPath();c.arc(R,R,R,0,7);c.clip();c.fillStyle='#2a7aa3';c.fillRect(0,0,W,W);
+  c.translate(R,R);c.rotate(yaw);c.scale(z,z);c.translate(-S.x*.1,-S.y*.1);c.drawImage(MAPC,0,0);
+  for(const sp of SPOTS){c.fillStyle='#1b7d82';c.beginPath();c.arc(sp.x*.1,sp.y*.1,3,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=.8;c.stroke();}
+  for(const s of STATIONS){c.fillStyle='#2f6fb0';c.fillRect(s.x*.1-1.6,s.y*.1-1.6,3.2,3.2);}
+  for(const s of SIGHTS){c.fillStyle=S.stamps[s.id]?'#f6f2e8':'#f1b746';c.beginPath();c.arc(s.x*.1,s.y*.1,2,0,7);c.fill();}
+  if(N){c.fillStyle='#ffffff';c.beginPath();c.arc(N.x*.1,N.y*.1,2,0,7);c.fill();}
+  c.restore();
+  const hd=P.rotation.y;const mx=Math.sin(hd),mz=Math.cos(hd);const sx=mx*Math.cos(yaw)-mz*Math.sin(yaw),sy=mx*Math.sin(yaw)+mz*Math.cos(yaw);
+  c.save();c.translate(R,R);c.rotate(Math.atan2(sy,sx)+Math.PI/2);c.fillStyle='#e04a3b';c.strokeStyle='#fff';c.lineWidth=2;c.beginPath();c.moveTo(0,-11);c.lineTo(7,7);c.lineTo(0,3);c.lineTo(-7,7);c.closePath();c.fill();c.stroke();c.restore();}
+
+/* ===== 魚の絵 ===== */
+function drawFishCanvas(cvs,id,sil){const r=cvs.getBoundingClientRect();const w=Math.max(60,r.width||140),h=Math.max(30,r.height||56);const d=Math.min(window.devicePixelRatio||1,2.5);
+  cvs.width=Math.round(w*d);cvs.height=Math.round(h*d);const c=cvs.getContext('2d');c.setTransform(d,0,0,d,0,0);c.clearRect(0,0,w,h);drawFish(c,FISH[id],w,h,sil);}
+function drawFish(c,f,w,h,sil){const s=f.sh;const shape=s.shape||'fish';const SIL='#24384c';
+  const fillBody=(path,Hb,y)=>{path();if(sil){c.fillStyle=SIL;c.fill();return false;}const g=c.createLinearGradient(0,y-Hb/2,0,y+Hb/2);g.addColorStop(0,s.bk);g.addColorStop(.55,s.bl);g.addColorStop(1,s.bl);c.fillStyle=g;c.fill();return true;};
+  const qmark=()=>{c.fillStyle='rgba(255,255,255,.55)';c.font=`900 ${Math.round(h*.38)}px ${FONT}`;c.textAlign='center';c.textBaseline='middle';c.fillText('？',w/2,h/2);};
+  const eye=(x,y,r)=>{if(sil)return;c.fillStyle='#fff';c.beginPath();c.arc(x,y,r,0,7);c.fill();c.fillStyle='#111';c.beginPath();c.arc(x-r*.1,y,r*.6,0,7);c.fill();};
+  const R=mulberry(f.n.length*31);
+  if(shape==='squid'){const L=w*.8,Hb=Math.min(h*.5,L*.28),x0=(w-L)/2,y=h/2;
+    c.fillStyle=sil?SIL:s.bk;for(let i=0;i<8;i++){c.beginPath();c.moveTo(x0+L*.3,y-Hb*.2+i*Hb*.05);c.quadraticCurveTo(x0+L*.12,y+(i-4)*Hb*.12,x0,y+(i-4)*Hb*.09);c.lineWidth=Math.max(1,Hb*.06);c.strokeStyle=sil?SIL:s.bk;c.stroke();}
+    fillBody(()=>{c.beginPath();c.ellipse(x0+L*.62,y,L*.34,Hb*.5,0,0,7);},Hb,y);if(!sil){c.fillStyle=s.bk;c.beginPath();c.ellipse(x0+L*.62,y,L*.36,Hb*.62,0,0,7);c.globalAlpha=.25;c.fill();c.globalAlpha=1;}
+    eye(x0+L*.3,y-Hb*.12,Hb*.1);if(sil)qmark();return;}
+  if(shape==='octo'){const cx=w*.4,cy=h*.42,r=Math.min(h*.3,w*.16);c.strokeStyle=sil?SIL:s.bk;c.lineCap='round';
+    for(let i=0;i<8;i++){c.lineWidth=Math.max(2,r*.28);c.beginPath();c.moveTo(cx,cy+r*.5);const a=(i/7-.5)*2.2;c.bezierCurveTo(cx+Math.sin(a)*r*1.5,cy+r*1.4,cx+Math.sin(a)*r*2.4+r*.8,cy+r*1.5,cx+Math.sin(a)*r*3+r*1.2,cy+r*.9+Math.cos(i)*r*.3);c.stroke();}
+    fillBody(()=>{c.beginPath();c.ellipse(cx+r*.9,cy-r*.2,r*1.2,r*.9,-.4,0,7);},r*2,cy);eye(cx+r*.1,cy+r*.15,r*.18);if(sil)qmark();return;}
+  if(shape==='ray'){const cx=w*.42,cy=h/2,rw=Math.min(w*.3,h*.55),rh=rw*.85;
+    c.strokeStyle=sil?SIL:s.bk;c.lineWidth=Math.max(1.5,rw*.06);c.beginPath();c.moveTo(cx+rw*.6,cy);c.quadraticCurveTo(cx+rw*1.4,cy+rh*.1,cx+rw*1.9,cy-rh*.1);c.stroke();
+    fillBody(()=>{c.beginPath();c.moveTo(cx-rw*.9,cy);c.quadraticCurveTo(cx-rw*.2,cy-rh*.95,cx+rw*.7,cy);c.quadraticCurveTo(cx-rw*.2,cy+rh*.95,cx-rw*.9,cy);},rh*2,cy);eye(cx-rw*.35,cy-rh*.08,rw*.05);eye(cx-rw*.35,cy+rh*.08,rw*.05);if(sil)qmark();return;}
+  if(shape==='flat'){const L=w*.78,Hb=Math.min(h*.82,L*s.a),x0=(w-L)/2,y=h/2;
+    c.fillStyle=sil?SIL:s.bk;c.beginPath();c.ellipse(x0+L*.45,y,L*.44,Hb*.6,0,0,7);c.globalAlpha=sil?1:.55;c.fill();c.globalAlpha=1;
+    c.beginPath();c.moveTo(x0+L*.82,y);c.lineTo(x0+L,y-Hb*.3);c.lineTo(x0+L,y+Hb*.3);c.closePath();c.fill();
+    if(fillBody(()=>{c.beginPath();c.ellipse(x0+L*.43,y,L*.38,Hb*.48,0,0,7);},Hb,y)){c.save();c.beginPath();c.ellipse(x0+L*.43,y,L*.38,Hb*.48,0,0,7);c.clip();c.fillStyle='rgba(60,40,20,.25)';for(let i=0;i<16;i++){c.beginPath();c.arc(x0+L*(.1+R()*.65),y+Hb*(R()-.5)*.8,Hb*(.04+R()*.06),0,7);c.fill();}c.restore();}
+    const ex=s.left?x0+L*.12:x0+L*.12;eye(ex,y-Hb*.12,Hb*.06);eye(ex+L*.04,y-Hb*.02,Hb*.06);if(sil)qmark();return;}
+  // 通常の魚・細長い魚
+  const ribbon=shape==='ribbon'||shape==='eel',needle=shape==='needle';let L=w*.82,Hb=L*s.a*1.25;if(Hb>h*.8){Hb=h*.8;L=Hb/(s.a*1.25);}
+  const x0=(w-L)/2,y=h/2,x1=x0+L*(ribbon?1:.8);
+  const body=()=>{c.beginPath();c.moveTo(x0,y);
+    if(ribbon){c.quadraticCurveTo(x0+L*.1,y-Hb*.55,x0+L*.3,y-Hb*.5);c.lineTo(x1-(shape==='eel'?L*.04:0),y-(shape==='eel'?Hb*.2:0));c.lineTo(x1,y);c.lineTo(x0+L*.3,y+Hb*.5);c.quadraticCurveTo(x0+L*.1,y+Hb*.5,x0,y);}
+    else{c.bezierCurveTo(x0+L*.18,y-Hb*.62,x0+L*.55,y-Hb*.6,x1,y-Hb*.13);c.lineTo(x1,y+Hb*.13);c.bezierCurveTo(x0+L*.55,y+Hb*.56,x0+L*.18,y+Hb*.5,x0,y);}c.closePath();};
+  c.fillStyle=sil?SIL:s.bk;
+  if(!ribbon){c.beginPath();if(s.tail==='round'){c.ellipse(x1+L*.08,y,L*.1,Hb*.38,0,0,7);}else{c.moveTo(x1-2,y);c.lineTo(x0+L,y-Hb*.48);c.lineTo(x0+L*.93,y);c.lineTo(x0+L,y+Hb*.48);c.closePath();}c.fill();
+    c.beginPath();c.moveTo(x0+L*.3,y-Hb*.5);c.quadraticCurveTo(x0+L*.45,y-Hb*(f.rock?.95:.75),x0+L*.62,y-Hb*.4);c.fill();}
+  else c.fillRect(x0+L*.3,y-Hb*.62,L*.6,Hb*.12);
+  if(needle){c.fillStyle=sil?SIL:'#d9533f';c.beginPath();c.moveTo(x0+2,y+Hb*.05);c.lineTo(x0-L*.1,y+Hb*.12);c.lineTo(x0+2,y+Hb*.2);c.fill();}
+  if(!fillBody(body,Hb,y)){qmark();return;}
+  c.save();body();c.clip();
+  if(s.pat==='dots'){c.fillStyle=shape==='eel'?'#fff':'#1d2b3a';for(let i=0;i<(shape==='eel'?14:6);i++){c.beginPath();c.arc(x0+L*(.25+i*(shape==='eel'?.05:.08)),y-Hb*.02,Hb*.05,0,7);c.fill();}}
+  if(s.pat==='dots2'){c.fillStyle='rgba(30,40,20,.5)';for(let i=0;i<22;i++){c.beginPath();c.arc(x0+L*(.15+R()*.6),y-Hb*(.1+R()*.35),Hb*.04,0,7);c.fill();}}
+  if(s.pat==='line'){c.strokeStyle='rgba(60,70,60,.55)';c.lineWidth=Math.max(1,Hb*.05);c.beginPath();c.moveTo(x0+L*.2,y-Hb*.1);c.quadraticCurveTo(x0+L*.45,y-Hb*.22,x1,y);c.stroke();}
+  if(s.pat==='wave'){c.strokeStyle='#18323c';c.lineWidth=Math.max(1,Hb*.05);for(let i=0;i<7;i++){const xx=x0+L*(.3+i*.07);c.beginPath();c.moveTo(xx,y-Hb*.5);c.quadraticCurveTo(xx+L*.04,y-Hb*.3,xx,y-Hb*.1);c.stroke();}}
+  if(s.pat==='stripe'){c.fillStyle='#e9c94a';c.fillRect(x0+L*.15,y-Hb*.08,L*.8,Hb*.1);}
+  if(s.pat==='stripe2'){c.fillStyle='#f2e08a';c.fillRect(x0+L*.1,y-Hb*.22,L*.85,Hb*.08);c.fillRect(x0+L*.1,y+Hb*.05,L*.85,Hb*.08);}
+  if(s.pat==='mottle'){c.fillStyle='rgba(70,40,25,.35)';for(let i=0;i<14;i++){c.beginPath();c.arc(x0+L*(.2+R()*.6),y+Hb*(R()-.6)*.6,Hb*(.06+R()*.08),0,7);c.fill();}}
+  if(s.pat==='bars'){c.fillStyle='rgba(20,22,26,.25)';for(let i=0;i<5;i++)c.fillRect(x0+L*(.25+i*.11),y-Hb*.6,L*.05,Hb*1.2);}
+  if(s.pat==='scribble'){c.strokeStyle='#3d8fd0';c.lineWidth=Math.max(1,Hb*.035);for(let i=0;i<8;i++){c.beginPath();const sx=x0+L*(.2+R()*.6),sy=y+Hb*(R()-.5)*.7;c.moveTo(sx,sy);c.quadraticCurveTo(sx+L*.05,sy-Hb*.1,sx+L*.1,sy+Hb*.05);c.stroke();}c.fillStyle='#1c2a35';for(let i=0;i<12;i++){c.beginPath();c.arc(x0+L*(.15+R()*.7),y+Hb*(R()-.5)*.7,Hb*.025,0,7);c.fill();}}
+  c.restore();eye(x0+L*(ribbon?.07:.12),y-Hb*.1,Hb*.11*(s.eye||1)*(ribbon?1.8:1));
+  c.strokeStyle='rgba(0,0,0,.25)';c.lineWidth=1;c.beginPath();c.moveTo(x0+L*.22,y-Hb*.35);c.quadraticCurveTo(x0+L*.26,y,x0+L*.22,y+Hb*.32);c.stroke();}
+
+/* ===== カメラ（建物にめり込まないよう距離を詰める） ===== */
+function yawFor(a){return Math.atan2(-Math.cos(a),-Math.sin(a));}
+function angLerp(a,b,k){let d=b-a;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;return a+d*k;}
+const camTarget=new V3(),camGoal=new V3();let camDist=6,camD=6;
+function snapCam(){P.position.set(S.x,groundY(S.x,S.y),S.y);camTarget.set(S.x,groundY(S.x,S.y)+1.5,S.y);placeCam(1);}
+function placeCam(k){const fishing=F.st!=='idle';const want=fishing?9:6.2;const pt=fishing?.26:pitch;
+  let tx=S.x,tz=S.y;if(fishing){const tg=F.st==='aim'?aimTarget():[F.tx,F.ty];const kk=Math.min(.25,12/Math.max(1,Math.hypot(tg[0]-S.x,tg[1]-S.y)));tx=lerp(S.x,tg[0],kk);tz=lerp(S.y,tg[1],kk);}
+  camGoal.set(tx,groundY(S.x,S.y)+(fishing?1.8:1.5),tz);camTarget.lerp(camGoal,k);
+  let D=want;const dx=Math.sin(yaw)*Math.cos(pt),dy=Math.sin(pt),dz=Math.cos(yaw)*Math.cos(pt);
+  for(let s=.6;s<=want;s+=.4){const x=camTarget.x+dx*s,y=camTarget.y+dy*s,z=camTarget.z+dz*s;const o=colAt(x,z,.4);if(o&&y<GROUND+o.h+.5){D=Math.max(1.2,s-.5);break;}}
+  camD=D<camD?D:lerp(camD,D,Math.min(1,k));
+  camera.position.set(camTarget.x+dx*camD,Math.max(camTarget.y+dy*camD,.6),camTarget.z+dz*camD);camera.lookAt(camTarget);}
+
+/* ===== 竿・糸（しなり）と釣りのポーズ ===== */
+const _h=new V3(),_t0=new V3(),_tp=new V3(),_c=new V3(),_g=new V3(),_v=new V3(),_b=new V3();
+function poseFishing(t){
+  const st=F.st,show=!!nearSpot||st!=='idle';if(!show)return;
+  let rx=-.75,re=-1.0,lx=-.55,le=-1.25,lean=0;
+  if(st==='aim'){rx=lerp(-.9,-2.7,F.pw);re=lerp(-1,-.6,F.pw);lx=lerp(-.6,-2.2,F.pw);le=-.9;lean=-.12*F.pw;}
+  else if(st==='fly'){const k=F.t/.9;const q=k<.2?k/.2:1;rx=lerp(-2.7,-.6,q);re=lerp(-.6,-.5,q);lx=lerp(-2.2,-.5,q);lean=lerp(-.12,.15,q)*(1-k);}
+  else if(st==='fight'){const b=clamp(F.ten/RODS[S.rod].lim,0,1.1);rx=-.95-b*.35;re=-1.15+(F.hold?Math.sin(t*14)*.12:0);lx=-.7;le=-1.3;lean=-.18*b;}
+  else if(st==='bite'){rx=-.85+Math.sin(t*30)*.05;}
+  ME.shR.rotation.set(rx,0,.12);ME.elR.rotation.x=re;ME.shL.rotation.set(lx,0,.35);ME.elL.rotation.x=le;ME.chest.rotation.x=lean;
+  if(st!=='idle'){ME.hipL.rotation.x=-.1;ME.hipR.rotation.x=.15;ME.knL.rotation.x=.12;ME.knR.rotation.x=.08;}}
+function updRod(t){
+  const show=!!nearSpot||F.st!=='idle';rodMesh.visible=reel.visible=show;lineObj.visible=show&&F.st!=='idle'&&F.st!=='aim';bobber.visible=false;jig.visible=false;
+  if(!show)return;
+  P.updateMatrixWorld(true);ME.handR.getWorldPosition(_h);
+  const a=F.st==='idle'?nearSpot.dir:F.ang;const dx=Math.cos(a),dz=Math.sin(a);
+  const L=S.bait==='lure'||S.bait==='egi'?2.9:3.6;let el=62*Math.PI/180,bend=0;
+  if(F.st==='aim'){el=(60+F.pw*65)*Math.PI/180;bend=-.15-F.pw*.25;}
+  else if(F.st==='fly'){const k=F.t/.9;el=(k<.18?lerp(125,22,k/.18):lerp(22,40,(k-.18)/.82))*Math.PI/180;bend=k<.35?.8*Math.sin(k/.35*Math.PI):.12*Math.sin(k*45)*(1-k);}
+  else if(F.st==='wait'){el=38*Math.PI/180;bend=.05+.02*Math.sin(t*2);}
+  else if(F.st==='bite'){el=40*Math.PI/180;bend=.3+.25*Math.sin(t*38);}
+  else if(F.st==='fight'){el=(52+(F.hold?6:0))*Math.PI/180;bend=clamp(F.ten/RODS[S.rod].lim,0,1.15)*1.0+.04*Math.sin(t*22);}
+  _b.set(_h.x-dx*.45*Math.cos(el),_h.y-.45*Math.sin(el),_h.z-dz*.45*Math.cos(el));
+  _t0.set(_h.x+dx*L*Math.cos(el),_h.y+L*Math.sin(el),_h.z+dz*L*Math.cos(el));
+  let ex,ey,ez;
+  if(F.st==='fly'){const k=clamp(F.t/.9,0,1);ex=lerp(_t0.x,F.tx,k);ez=lerp(_t0.z,F.ty,k);ey=lerp(_t0.y,.05,k)+Math.sin(k*Math.PI)*Math.min(18,F.d0*.35);}
+  else if(F.st==='fight'){const fp=fishPos();ex=fp[0];ez=fp[1];ey=.02;}
+  else if(F.st==='idle'||F.st==='aim'){ex=_t0.x;ez=_t0.z;ey=_t0.y-1.2;}
+  else{ex=F.tx;ez=F.ty;ey=.03;}
+  _g.set(ex,ey,ez);_v.subVectors(_g,_t0).normalize();
+  _tp.copy(_t0);if(bend>0){_tp.addScaledVector(_v,L*.4*bend);_tp.y-=L*.15*bend;}else{_tp.x-=dx*L*-bend*.35;_tp.z-=dz*L*-bend*.35;_tp.y-=L*-bend*.1;}
+  _c.subVectors(_t0,_b).multiplyScalar(.55).add(_b);
+  rodMesh.geometry.dispose();rodMesh.geometry=new T.TubeGeometry(new T.QuadraticBezierCurve3(_b.clone(),_c.clone(),_tp.clone()),16,.016,6,false);
+  reel.position.set(_h.x+(-dz)*.06,_h.y-.08,_h.z+dx*.06);reel.rotation.y=-a;
+  const tension=F.st==='fight'?clamp(F.ten/RODS[S.rod].lim,0,1):F.st==='bite'?.6:F.st==='fly'?.9:.08;const sag=(1-tension)*Math.min(4,F.d0*.08+.3);
+  const pa=lineGeo.attributes.position.array;
+  for(let i=0;i<32;i++){const k=i/31;let y=lerp(_tp.y,ey,k)-Math.sin(k*Math.PI)*sag;if(F.st!=='fly')y=Math.max(y,.02);pa[i*3]=lerp(_tp.x,ex,k);pa[i*3+1]=y;pa[i*3+2]=lerp(_tp.z,ez,k);}
+  lineGeo.attributes.position.needsUpdate=true;
+  const art=S.bait==='lure'||S.bait==='egi';
+  if(F.st==='idle'||F.st==='aim'){const o=art?jig:bobber;o.visible=true;o.position.set(ex,ey,ez);}
+  else if(F.st==='fly'){const o=art?jig:bobber;o.visible=true;o.position.set(ex,ey,ez);}
+  else if((F.st==='wait'||F.st==='bite')&&!art){bobber.visible=true;const sink=F.st==='bite'?-.08+Math.sin(t*30)*.03:Math.sin(t*3)*.015;bobber.position.set(ex,.02+sink,ez);}
+  // 釣り中は竿・ウキを見やすく少し大きめに
+  const sc=Math.max(1,camera.position.distanceTo(bobber.position)/12);bobber.scale.setScalar(sc);}
+
+/* ===== ナブラ・鳥山・波紋 ===== */
+function updFX(dt,t){
+  for(const r of ripples){if(r.life<=0)continue;r.life-=dt;const k=1-r.life/r.max;r.m.scale.setScalar(.3+k*r.size);r.m.material.opacity=.7*(1-k);if(r.life<=0)r.m.visible=false;}
+  for(const d of drops){if(d.life<=0)continue;d.life-=dt*1.4;d.v.y-=dt*12;d.m.position.addScaledVector(d.v,dt);if(d.m.position.y<0||d.life<=0){d.m.visible=false;d.life=0;}}
+  const on=!!N;for(const b of birds)b.visible=on;if(!on)return;
+  N.fx-=dt;if(N.fx<=0){N.fx=.1;const a=rnd()*6.28,r=rnd()*N.r;const x=N.x+Math.cos(a)*r,z=N.y+Math.sin(a)*r;splash(x,z,5,1.6);ripple(x,z,1.5,.8);}
+  const fade=clamp(N.life/5,0,1);
+  birds.forEach((m,i)=>{const sp=.5+hash(i,7)*.6,rr=5+hash(i,3)*14;const a=t*sp*(i%2?1:-1)+i*1.7;const dive=Math.max(0,Math.sin(t*1.2+i*2.1)-.8)*5;
+    const x=N.x+Math.cos(a)*rr,z=N.y+Math.sin(a)*rr,y=(8+hash(i,5)*8)*(1-Math.min(.9,dive*.9))*fade+.6;
+    const hd=a+(i%2?Math.PI/2:-Math.PI/2);const fx=Math.cos(hd),fz=Math.sin(hd),px=-fz,pz=fx;const fl=Math.sin(t*12+i*2)*.35*(dive>0?.2:1);const span=.7;
+    const p=m.geometry.attributes.position.array;const set=(o,X,Y,Z)=>{p[o]=X;p[o+1]=Y;p[o+2]=Z;};
+    set(0,x+fx*.25,y,z+fz*.25);set(3,x-fx*.25,y,z-fz*.25);set(6,x+px*span,y+fl,z+pz*span);
+    set(9,x+fx*.25,y,z+fz*.25);set(12,x-fx*.25,y,z-fz*.25);set(15,x-px*span,y+fl,z-pz*span);
+    m.geometry.attributes.position.needsUpdate=true;if(dive>.6&&rnd()<dt*2)splash(x,z,3,1.4);});}
+
+/* ===== 時間帯の見た目 ===== */
+const tmpA=new T.Color();
+function updSky(){const h=hourF();const tp=keyLerp(SKYTOP,h),hr=keyLerp(SKYHOR,h);skyU.top.value.setRGB(tp[0]/255,tp[1]/255,tp[2]/255);skyU.hor.value.setRGB(hr[0]/255,hr[1]/255,hr[2]/255);
+  scene.fog.color.copy(skyU.hor.value);scene.background=skyU.hor.value;
+  const se=keyLerp(SEA,h);seaMat.color.setRGB(se[0]/255,se[1]/255,se[2]/255);
+  const sc=keyLerp(SUNC,h);const sI=keyLerp(SUN,h);sun.intensity=sI;sun.color.setRGB(sc[0]/255,sc[1]/255,sc[2]/255);hemi.intensity=keyLerp(HEMI,h);
+  const dk=keyLerp(DARK,h);hemi.color.setRGB(lerp(.9,.5,dk),lerp(.95,.58,dk),lerp(1,.88,dk));hemi.groundColor.setRGB(lerp(.55,.12,dk),lerp(.5,.12,dk),lerp(.42,.16,dk));
+  const sa=(h-6)/12*Math.PI;const sd=new V3(Math.cos(sa),Math.max(.08,Math.sin(sa)),-.35).normalize();skyU.sd.value.copy(sd);skyU.sunc.value.setRGB(sc[0]/255*sI,sc[1]/255*sI*.9,sc[2]/255*sI*.75);
+  sun.position.set(S.x+sd.x*300,sd.y*300,S.y+sd.z*300);sun.target.position.set(S.x,0,S.y);sun.castShadow=sI>.05;
+  scene.fog.near=lerp(220,120,dk);scene.fog.far=lerp(1000,650,dk);
+  for(const m of EMISSIVE)m.emissiveIntensity=dk*1.2;glowMat.opacity=clamp(dk*1.1,0,.95);seaMat.shininess=lerp(90,30,dk);
+  headMat.color.setHex(dk>.3?0xfff6dc:0xd8d8d0);}
+
+/* ===== メインループ ===== */
+let last=performance.now(),acc=0,coastChk=0,chunkT=0;
+function paused(){return!$('title').hidden||!$('sheet').hidden||!$('result').hidden||!$('sight').hidden;}
+function update(dt,t){
+  if(!$('title').hidden){yaw+=dt*.05;updTraffic(dt,t);return;}
+  if(paused())return;
+  advance(dt);updClock();
+  let mx=jx+(K.r-K.l),my=jy+(K.d-K.u);const m=Math.min(1,Math.hypot(mx,my));if(Math.hypot(mx,my)>1){const l=Math.hypot(mx,my);mx/=l;my/=l;}
+  let moving=false;
+  if(F.st==='idle'&&m>.08){const run=m>.92||K.sh;const sp=run?6.2:1.4+m*1.6;speedNow=lerp(speedNow,sp,Math.min(1,dt*6));
+    const fx=-Math.sin(yaw),fz=-Math.cos(yaw),rx=Math.cos(yaw),rz=-Math.sin(yaw);let wx=fx*-my+rx*mx,wz=fz*-my+rz*mx;const wl=Math.hypot(wx,wz)||1;wx/=wl;wz/=wl;
+    const nx=S.x+wx*speedNow*dt,ny=S.y+wz*speedNow*dt;if(walk(nx,S.y))S.x=nx;if(walk(S.x,ny))S.y=ny;face=Math.atan2(wx,wz);moving=true;walkT+=dt*speedNow*(run?1.55:2.4);}
+  else speedNow=lerp(speedNow,0,Math.min(1,dt*8));
+  nearSpot=null;for(const sp of SPOTS)if(Math.hypot(sp.x-S.x,sp.y-S.y)<6){nearSpot=sp;break;}
+  if(F.st!=='idle')nearSpot=F.spot;
+  nearSight=null;for(const s of SIGHTS)if(Math.hypot(s.x-S.x,s.y-S.y)<s.r){nearSight=s;break;}
+  updateFishing(dt);updateNabura(dt);
+  if(yawT!==null&&F.st!=='idle')yaw=angLerp(yaw,yawT,Math.min(1,dt*3));
+  const gy=groundY(S.x,S.y);
+  const target=F.st!=='idle'?Math.atan2(Math.cos(F.ang),Math.sin(F.ang)):(nearSpot&&!moving)?Math.atan2(Math.cos(nearSpot.dir),Math.sin(nearSpot.dir)):face;
+  P.rotation.y=angLerp(P.rotation.y,target,Math.min(1,dt*10));P.position.set(S.x,gy,S.y);
+  const amp=clamp(speedNow/3,0,1.35);animHuman(ME,walkT,amp,t);poseFishing(t);
+  chunkT-=dt;if(chunkT<=0){chunkT=.25;updChunks(false);}
+  updTraffic(dt,t);
+  coastChk-=dt;if(coastChk<=0){coastChk=.5;if(!nearSpot&&!S.tip.coast&&!rectAt(S.x,S.y)&&nearCoast(S.x,S.y,8)){S.tip.coast=1;toast('ここの岸壁は釣り禁止。青い魚マークの釣り場へ行こう');}}
+  let best='',bd=1e9;for(const[n,x,y]of AREAS){const d=Math.hypot(x-S.x,y-S.y);if(d<bd){bd=d;best=n;}}const ae=$('area');if(ae.textContent!==best)ae.textContent=best;
+  acc+=dt;if(acc>8){acc=0;save();}
+}
+function render(dt,t){
+  updSky();seaNorm.offset.x=(t*.006)%1;seaNorm.offset.y=(t*.004)%1;sky.position.copy(camera.position);
+  wheel.rotation.z=t*.03;for(const g of wheel.userData.gond)g.rotation.z=-wheel.rotation.z;
+  placeCam(Math.min(1,dt*6));
+  for(const o of spotMk){const d=Math.hypot(o.sp.x-S.x,o.sp.y-S.y);const here=nearSpot===o.sp;o.b.visible=!here;o.l.visible=!here&&d<500;o.b.position.y=groundY(o.sp.x,o.sp.y)+5+Math.sin(t*2+o.sp.x)*.3;o.l.position.y=o.b.position.y;}
+  for(const o of sightMk){const want=S.stamps[o.s.id]?doneTex:starTex;if(o.b.material.map!==want){o.b.material.map=want;o.b.material.needsUpdate=true;}const d=Math.hypot(o.s.x-S.x,o.s.y-S.y);o.b.visible=d<900;o.b.position.y=GROUND+8+Math.sin(t*2.4+o.s.x)*.3;o.l.visible=nearSight===o.s&&F.st==='idle';o.l.position.y=o.b.position.y;}
+  const aiming=F.st==='aim';aimRing.visible=aimRing2.visible=aimLine.visible=aiming;
+  if(aiming){const tg=aimTarget();const inN=N&&Math.hypot(tg[0]-N.x,tg[1]-N.y)<N.r+4,it=inTetra(tg[0],tg[1]);const cc=inN?0xf1b746:it?0xff9d86:0xffffff;
+    const rs=Math.max(1,tg[2]/25);aimRing.material.color.setHex(cc);aimRing2.material.color.setHex(cc);aimRing.position.set(tg[0],.05,tg[1]);aimRing2.position.set(tg[0],.04,tg[1]);aimRing.scale.setScalar(rs);aimRing2.scale.setScalar(rs*(1+Math.sin(t*6)*.12));
+    const D=castMax();const pa=aimLineGeo.attributes.position.array;pa[0]=F.ox;pa[1]=.1;pa[2]=F.oy;pa[3]=F.ox+Math.cos(F.ang)*D;pa[4]=.1;pa[5]=F.oy+Math.sin(F.ang)*D;aimLineGeo.attributes.position.needsUpdate=true;aimLine.computeLineDistances();}
+  updRod(t);updFX(dt,t);
+  renderer.render(scene,camera);
+  miniT-=dt;if(miniT<=0){miniT=.08;drawMini();}}
+function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;const t=now/1000;update(dt,t);render(dt,t);updUI();requestAnimationFrame(frame);}
+
+/* ===== 開始 ===== */
+function start(fromSave){const ld=fromSave&&load();S=ld?Object.assign(fresh(),ld):fresh();if(!ld)S.base=today0();
+  F.st='idle';N=null;$('title').hidden=true;updMoney();lastClock='';updClock();yaw=0;updChunks(true);if(!walk(S.x,S.y)){S.x=2130;S.y=1880;updChunks(true);}snapCam();save();
+  if(!ld)setTimeout(()=>toast('まずは釣り場へ。歩くか、青い丸看板のバス停からバスで'),500);}
+$('newBtn').onclick=()=>start(false);$('contBtn').onclick=()=>start(true);
+const hotS=hot&&hot.data&&hot.data.S;
+if(hotS&&hotS.money!=null){S=Object.assign(fresh(),hotS);$('title').hidden=true;}
+else if(load())$('contBtn').hidden=false;
+updMoney();updClock();updChunks(true);snapCam();requestAnimationFrame(frame);
+})();
+</script>
+</html>
