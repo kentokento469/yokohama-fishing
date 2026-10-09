@@ -51,3 +51,5 @@
 - 海づり施設（大黒・本牧・磯子＝RECTS の pier で name なし）：床・杭・梁・手すり・街灯（夜は光と足元の明かり）・東屋・管理棟（看板）。形は一般的な海づり施設の想定で、実物の寸法ではない。
 - 標高：terrain.js（標高タイルの復号・格子・緯度経度で高さ）、tools/terrain/fetch_dem.py、tests/terrain.test.js。地理院は 403 で未取得。横浜は手描き（緯度経度と合わない）なので本牧に実標高は使えない（本牧ふ頭は埋立地でほぼ平ら。丘を作らない）。3Dへの反映（地面の高さ）はデータ取得後。
 - 素材のライセンスは docs/ASSETS.md。
+- 標高 取得済（ネット許可後）：湘南 z14（dem_png 10m）→ data-build/terrain/shonan.*（12MB、git外）→ tools/terrain/build_game_grid.mjs → data/terrain/shonan-game.js（40m、308KB）。
+  ゲーム：groundY に terrOff（標高20m超の分）。丘の地形メッシュ（近景＋遠景用の複製＝描画距離外も霞んで見える）、丘に森（木はおおよそ）、丘には建物を建てない。江の島は手作りの丘のまま。横浜には使わない。

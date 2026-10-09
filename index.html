@@ -330,25 +330,27 @@ addEventListener('error',e=>{try{let d=document.getElementById('bootErr');if(!d)
   d.textContent+='エラー：'+(e.message||'')+'（'+String(e.filename||'').split('/').pop()+':'+(e.lineno||'')+'）\n再読み込みしても直らないときはこの画面を送ってください\n';}catch(_){}});
 </script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
-<script src="fishing-sim.js?v=202610091136"></script>
-<script src="fish-ai.js?v=202610091136"></script>
-<script src="data/tackle-data.js?v=202610091136"></script>
-<script src="tackle.js?v=202610091136"></script>
-<script src="fight.js?v=202610091136"></script>
-<script src="sound.js?v=202610091136"></script>
-<script src="data/fish/species.js?v=202610091136"></script>
-<script src="data/fish/images.js?v=202610091136"></script>
-<script src="geo.js?v=202610091136"></script>
-<script src="data/shonan-spots.js?v=202610091136"></script>
-<script src="shonan.js?v=202610091136"></script>
-<script src="osm-convert.js?v=202610091136"></script>
-<script src="mapdata.js?v=202610091136"></script>
-<script src="data/geo/geo-data.js?v=202610091136"></script>
-<script src="tiles.js?v=202610091136"></script>
-<script src="routing.js?v=202610091136"></script>
-<script src="nav.js?v=202610091136"></script>
-<script src="vehicles.js?v=202610091136"></script>
-<script src="data/osm/index.js?v=202610091136"></script>
+<script src="fishing-sim.js?v=202610091900"></script>
+<script src="fish-ai.js?v=202610091900"></script>
+<script src="data/tackle-data.js?v=202610091900"></script>
+<script src="tackle.js?v=202610091900"></script>
+<script src="fight.js?v=202610091900"></script>
+<script src="sound.js?v=202610091900"></script>
+<script src="data/fish/species.js?v=202610091900"></script>
+<script src="data/fish/images.js?v=202610091900"></script>
+<script src="geo.js?v=202610091900"></script>
+<script src="data/shonan-spots.js?v=202610091900"></script>
+<script src="shonan.js?v=202610091900"></script>
+<script src="terrain.js?v=202610091900"></script>
+<script src="data/terrain/shonan-game.js?v=202610091900"></script>
+<script src="osm-convert.js?v=202610091900"></script>
+<script src="mapdata.js?v=202610091900"></script>
+<script src="data/geo/geo-data.js?v=202610091900"></script>
+<script src="tiles.js?v=202610091900"></script>
+<script src="routing.js?v=202610091900"></script>
+<script src="nav.js?v=202610091900"></script>
+<script src="vehicles.js?v=202610091900"></script>
+<script src="data/osm/index.js?v=202610091900"></script>
 <script>
 (()=>{
 'use strict';
@@ -579,7 +581,7 @@ let VW=1,VHt=1;
 const GFX_KEY='hama-tsuri-gfx';
 const GFX_LV={high:{n:'高品質',d:'影がくっきり、遠くまで描画。新しいスマホ・パソコン向け',pr:2,shadow:2048,far:1500,fog:1.1,crad:2,peds:16,cars:14,sea:2},
   std:{n:'標準',d:'スマホで30fps以上を目標にした設定（おすすめ）',pr:1.5,shadow:1024,far:1200,fog:.9,crad:2,peds:10,cars:10,sea:1},
-  low:{n:'軽量',d:'影なし・描画距離短め。古い機種や電池を節約したいとき',pr:1,shadow:0,far:800,fog:.65,crad:1,peds:5,cars:6,sea:0}};
+  low:{n:'軽量',d:'影なし・描画距離短め。古い機種や電池を節約したいとき',pr:1,shadow:0,far:800,fog:.65,crad:1,peds:5,cars:6,sea:0,trees:20}};
 let GFX=(()=>{try{return localStorage.getItem(GFX_KEY);}catch(e){return null;}})();if(!GFX_LV[GFX])GFX=MOBILE?'std':'high';
 const gfx=()=>GFX_LV[GFX];
 function resize(){VW=innerWidth;VHt=innerHeight;renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,gfx().pr));renderer.setSize(VW,VHt,false);camera.aspect=VW/VHt;camera.updateProjectionMatrix();}
@@ -619,7 +621,10 @@ function colAt(x,z,pad){const a=cgrid.get(Math.floor(x/CG)+','+Math.floor(z/CG))
 function walk(x,y){const sh=SH.inShonan(x,y);if(!sh&&(x<20||y<20||x>4780||y>7780))return false;let ok=false;
   if(sh?SH.isLand(x,y):pip(LAND,x,y)||pip(DAIKOKU,x,y))ok=true;else if(Math.hypot(x-ISLE.x,y-ISLE.y)<ISLE.r-2)ok=true;else if(rectAt(x,y))ok=true;
   return ok&&!colAt(x,y,.35);}
-function groundY(x,y){const r=rectAt(x,y);return r?r.top:GROUND;}
+// 湘南の丘（国土地理院の標高。標高20mより上だけを立体にする。海沿いの平地・横浜は平らのまま）
+const TERR=window.HamaTerrain&&window.HamaTerrainData&&HamaTerrainData.shonan?HamaTerrain.gameGrid(HamaTerrainData.shonan):null;
+function terrOff(x,y){return TERR&&y>8200?TERR.offAt(x,y):0;}
+function groundY(x,y){const r=rectAt(x,y);return r?r.top:GROUND+terrOff(x,y);}
 
 /* ===== テクスチャ（窓・壁は世界座標で貼るので、建物の大きさに関係なく窓の大きさが一定） ===== */
 function plainCorner(c,w,h,col){c.fillStyle=col;c.fillRect(w-6,0,6,6);}
@@ -724,6 +729,20 @@ landGeo.rotateX(Math.PI/2);landGeo.translate(0,GROUND,0);
 {const uv=landGeo.attributes.uv,p=landGeo.attributes.position;for(let i=0;i<uv.count;i++)uv.setXY(i,p.getX(i)/12,p.getZ(i)/12);}
 groundTex.repeat.set(1,1);
 const land=new T.Mesh(landGeo,[lam(0xffffff,{map:groundTex,side:T.DoubleSide}),lam(0x9a978e,{side:T.DoubleSide})]);land.receiveShadow=true;scene.add(land);
+// 湘南の丘の地形メッシュ（標高20mより上。縁は地面の下へ少し沈めて平地とつなぐ）
+let HILL_FAR=null;
+if(TERR){const{nx,ny,dx,x0,y0,off}=TERR;const pos=[],col=[],idx=[],vid=new Int32Array(nx*ny).fill(-1),c=new T.Color(),R=mulberry(91);
+  const used=k=>off[k]>0;
+  const vert=k=>{if(vid[k]>=0)return vid[k];const i=k%nx,j=(k/nx)|0,o=off[k];vid[k]=pos.length/3;pos.push(x0+i*dx,GROUND+(o>0?o:-1.5),y0+j*dx);
+    const e=Math.min(1,o/120),n=R()*.08;c.setRGB(.24+e*.1+n,.36+e*.06+n,.2+n*.5);col.push(c.r,c.g,c.b);return vid[k];};
+  for(let j=0;j<ny-1;j++)for(let i=0;i<nx-1;i++){const k=j*nx+i;if(!(used(k)||used(k+1)||used(k+nx)||used(k+nx+1)))continue;
+    const a=vert(k),b=vert(k+1),cc=vert(k+nx),d=vert(k+nx+1);idx.push(a,cc,b,b,cc,d);}
+  const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('color',new T.Float32BufferAttribute(col,3));g.setIndex(idx);g.computeVertexNormals();
+  // 遠くの丘は霞む程度に（霧を弱める）。遠景用の複製は描画距離の外でも消えないよう奥行きを押さえ、空の直後に描く
+  const haze=(m,far)=>{m.onBeforeCompile=sh=>{sh.fragmentShader=sh.fragmentShader.replace('#include <fog_fragment>','#ifdef USE_FOG\nfloat fogFactor=smoothstep(fogNear,fogFar*4.5,vFogDepth)*.88;gl_FragColor.rgb=mix(gl_FragColor.rgb,fogColor,fogFactor);\n#endif');
+    if(far)sh.vertexShader=sh.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\ngl_Position.z=min(gl_Position.z,gl_Position.w*.9999);');};m.customProgramCacheKey=()=>far?'hillFar':'hill';return m;};
+  const hill=new T.Mesh(g,haze(lam(0xffffff,{vertexColors:true}),0));hill.receiveShadow=true;scene.add(hill);
+  HILL_FAR=new T.Mesh(g,haze(lam(0xffffff,{vertexColors:true,depthTest:false,depthWrite:false}),1));HILL_FAR.renderOrder=-9;HILL_FAR.frustumCulled=false;scene.add(HILL_FAR);}
 function uvWorld(g,s){const uv=g.attributes.uv,p=g.attributes.position;for(let i=0;i<uv.count;i++)uv.setXY(i,p.getX(i)/s,p.getZ(i)/s);return g;}
 {const g=uvWorld(flatGeo(INDUSTRY.map(shp),GROUND+.03),10);const m=flatOrder(new T.Mesh(g,flatMat(0xb9bcbb,{map:asphaltTex})),GROUND+.03);m.receiveShadow=true;scene.add(m);}
 const parkShapes=PARKS.map(([x,y,rx,ry,r])=>{const s=new T.Shape();s.absellipse(x,y,rx,ry,0,Math.PI*2,false,r);return s;});
@@ -837,7 +856,7 @@ for(const[x,y,a]of LAMPS){const s=new T.Sprite(glowMat);s.position.set(x+Math.co
 // 電柱と電線
 {const pg=new T.CylinderGeometry(.14,.18,10,7).translate(0,5,0),cg=new T.BoxGeometry(1.6,.1,.1).translate(0,9.2,0),pm=lam(0x9e9a92),cm=lam(0x55585a);
   for(const part of byTile(POLES)){const im=new T.InstancedMesh(pg,pm,part.length),cross=new T.InstancedMesh(cg,cm,part.length);
-    part.forEach(([x,y,a],i)=>{dummy.position.set(x,GROUND,y);dummy.rotation.set(0,-a,0);dummy.scale.setScalar(1);dummy.updateMatrix();im.setMatrixAt(i,dummy.matrix);cross.setMatrixAt(i,dummy.matrix);});
+    part.forEach(([x,y,a],i)=>{dummy.position.set(x,groundY(x,y),y);dummy.rotation.set(0,-a,0);dummy.scale.setScalar(1);dummy.updateMatrix();im.setMatrixAt(i,dummy.matrix);cross.setMatrixAt(i,dummy.matrix);});
     for(const m of[im,cross]){fitInstances(m);m.castShadow=true;scene.add(m);}}
   const w=[];for(let i=0;i<POLES.length-1;i++){const[ax,ay,a]=POLES[i],[bx,by]=POLES[i+1];if(Math.hypot(bx-ax,by-ay)>40)continue;for(const o of[-.6,.6]){const nx=-Math.sin(a)*0,px=Math.cos(-a+Math.PI/2);
       const ox=Math.sin(a)*o*-1,oz=Math.cos(a)*o;for(let k=0;k<6;k++){const t0=k/6,t1=(k+1)/6;const sag=t=>-Math.sin(t*Math.PI)*.6;w.push(lerp(ax,bx,t0)+ox,GROUND+9.2+sag(t0),lerp(ay,by,t0)+oz,lerp(ax,bx,t1)+ox,GROUND+9.2+sag(t1),lerp(ay,by,t1)+oz);}}}
@@ -845,8 +864,8 @@ for(const[x,y,a]of LAMPS){const s=new T.Sprite(glowMat);s.position.set(x+Math.co
 // 街路樹
 const tkGeo=new T.CylinderGeometry(.14,.2,1,6).translate(0,.5,0),crGeo=new T.IcosahedronGeometry(1,1);
 {const R=mulberry(30);for(const part of byTile(STREET_TREES)){const n=part.length;const tk=new T.InstancedMesh(tkGeo,trunkMat,n),cr=new T.InstancedMesh(crGeo,crownMat,n);
-  part.forEach(([x,y],i)=>{const s=.9+R()*.4;dummy.rotation.set(0,R()*6,0);dummy.position.set(x,GROUND,y);dummy.scale.set(s,3*s,s);dummy.updateMatrix();tk.setMatrixAt(i,dummy.matrix);
-    dummy.position.set(x,GROUND+3.6*s,y);dummy.scale.set(1.9*s,2.2*s,1.9*s);dummy.updateMatrix();cr.setMatrixAt(i,dummy.matrix);cr.setColorAt(i,col.setHex([0x5e9150,0x6d9f58,0x4f8447][(R()*3)|0]));});
+  part.forEach(([x,y],i)=>{const s=.9+R()*.4;dummy.rotation.set(0,R()*6,0);const gy=groundY(x,y);dummy.position.set(x,gy,y);dummy.scale.set(s,3*s,s);dummy.updateMatrix();tk.setMatrixAt(i,dummy.matrix);
+    dummy.position.set(x,gy+3.6*s,y);dummy.scale.set(1.9*s,2.2*s,1.9*s);dummy.updateMatrix();cr.setMatrixAt(i,dummy.matrix);cr.setColorAt(i,col.setHex([0x5e9150,0x6d9f58,0x4f8447][(R()*3)|0]));});
   for(const m of[tk,cr]){shadowy(fitInstances(m));scene.add(m);}}}
 // バス停と自販機
 for(const s of STATIONS){let bx=s.x,by=s.y;const g=new T.Group();
@@ -953,7 +972,7 @@ const ZM={mm:3,station:3,kannai:2,china:1,yamate:1,res:1,ind:4};
 const keepPts=[...SPOTS,...SIGHTS,...STATIONS];
 function okSpot(cx,cy,half){
   if(onRoad(cx,cy,half)||inOSM(cx,cy))return false;
-  if(SH.inShonan(cx,cy)){if(!SH.isLand(cx,cy)||nearCoast(cx,cy,18+half))return false;
+  if(SH.inShonan(cx,cy)){if(!SH.isLand(cx,cy)||nearCoast(cx,cy,18+half)||terrOff(cx,cy)>.5)return false;
     // 砂浜・国道134号・松林の帯には建てない。線路・川の上にも建てない
     if(SH.lineDist(SH.COAST,cx,cy)<190+half||SH.lineDist(SH.JR,cx,cy)<7+half||SH.lineDist(SH.ENODEN,cx,cy)<6+half)return false;
     if(SH.RIVERS.some(r=>SH.lineDist(r.pts,cx,cy)<r.half+8+half))return false;
@@ -970,6 +989,8 @@ function buildChunk(i,j){
   const key=i+','+j;const R=mulberry((i*73856093)^(j*19349663)^0x5bd1e995);const L={glass:[],apt:[],house:[],wh:[],cont:[],roof:[],unit:[],tree:[]};
   const doCol=!colDone.has(key);colDone.add(key);
   const pick=a=>a[(R()*a.length)|0];
+  // 湘南の丘の森（標高データのある所だけ。木はおおよその密度で、実際の植生ではない）
+  if(TERR&&j*CH>8000){const st=gfx().trees||13;for(let x=i*CH;x<(i+1)*CH;x+=st)for(let y=j*CH;y<(j+1)*CH;y+=st){const px=x+R()*st,py=y+R()*st,o=terrOff(px,py);if(o>1.5&&R()<.75&&!onRoad(px,py,3))L.tree.push([px,py,1+R()*.6]);}}
   const g0=Math.floor(i*CH/UNIT),g1=Math.floor((i+1)*CH/UNIT),h0=Math.floor(j*CH/UNIT),h1=Math.floor((j+1)*CH/UNIT);
   for(let gx=g0;gx<g1;gx++)for(let gy=h0;gy<h1;gy++){
     const ax=gx*UNIT,ay=gy*UNIT;const z=zoneAt(ax+8,ay+8);const m=ZM[z];if(gx%m||gy%m)continue;const cell=m*UNIT;
@@ -999,7 +1020,7 @@ function buildChunk(i,j){
   mk(L.glass,bGeo,winMats.glass,true);mk(L.apt,bGeo,winMats.apt,true);mk(L.house,bGeo,winMats.house,true);mk(L.wh,bGeo,winMats.wh,true);mk(L.cont,bGeo,winMats.cont,true);
   mk(L.roof,rGeo,roofMat,true);mk(L.unit,bGeo,unitMat,true);
   if(L.tree.length){const tk=new T.InstancedMesh(tkGeo,trunkMat,L.tree.length),cr=new T.InstancedMesh(crGeo,crownMat,L.tree.length);
-    L.tree.forEach(([x,y,s],k)=>{dummy.rotation.set(0,k,0);dummy.position.set(x,GROUND,y);dummy.scale.set(s*1.3,4*s,s*1.3);dummy.updateMatrix();tk.setMatrixAt(k,dummy.matrix);dummy.position.set(x,GROUND+4.6*s,y);dummy.scale.set(3*s,3.2*s,3*s);dummy.updateMatrix();cr.setMatrixAt(k,dummy.matrix);cr.setColorAt(k,col.setHex([0x5e9150,0x6d9f58,0x4f8447][k%3]));});
+    L.tree.forEach(([x,y,s],k)=>{dummy.rotation.set(0,k,0);const gy=GROUND+terrOff(x,y);dummy.position.set(x,gy,y);dummy.scale.set(s*1.3,4*s,s*1.3);dummy.updateMatrix();tk.setMatrixAt(k,dummy.matrix);dummy.position.set(x,gy+4.6*s,y);dummy.scale.set(3*s,3.2*s,3*s);dummy.updateMatrix();cr.setMatrixAt(k,dummy.matrix);cr.setColorAt(k,col.setHex([0x5e9150,0x6d9f58,0x4f8447][k%3]));});
     for(const m of[tk,cr]){shadowy(fitInstances(m));grp.add(m);}}
   scene.add(grp);chunks.set(key,grp);}
 const bGeo=new T.BoxGeometry(1,1,1);bGeo.translate(0,.5,0);
@@ -2056,7 +2077,8 @@ function applyGfx(){const g=gfx();resize();renderer.shadowMap.enabled=!!g.shadow
 function renderSettings(sb){let h='<h3 class="hd">画質</h3><div class="gfx">';
   for(const[k,g]of Object.entries(GFX_LV))h+=`<button data-gfx="${k}" class="${GFX===k?'on':''}"><b>${g.n}${GFX===k?'（使用中）':''}</b><span>${g.d}</span></button>`;
   h+=`</div><h3 class="hd">表示</h3><div class="gfx"><button id="fpsT" class="${FPS_ON?'on':''}"><b>FPS（1秒あたりの描画回数）を表示：${FPS_ON?'オン':'オフ'}</b><span>動作の重さの確認用。30以上が目安</span></button></div>
-    <h3 class="hd">そのほか</h3><div class="gfx"><a class="gfxA" href="legacy/2026-10-pre-visual/" target="_blank" rel="noopener"><button><b>改善前のバージョンを開く</b><span>グラフィック・UI改善の前の状態（比較用。セーブは共通）</span></button></a></div>`;
+    <h3 class="hd">そのほか</h3><div class="gfx"><a class="gfxA" href="legacy/2026-10-pre-visual/" target="_blank" rel="noopener"><button><b>改善前のバージョンを開く</b><span>グラフィック・UI改善の前の状態（比較用。セーブは共通）</span></button></a></div>
+    <h3 class="hd">出典</h3><p class="sub" style="font-size:12px;line-height:1.6">湘南の丘の高さ：「国土地理院 標高タイル」を加工して作成（標高20mより上だけ立体。木の配置はおおよそ）。海岸線：GSHHS/GSHHG。地図データがある場合は © OpenStreetMap contributors。魚の写真は図鑑の各写真に出典を表示。素材の一覧は docs/ASSETS.md。</p>`;
   sb.innerHTML=h;
   sb.querySelectorAll('[data-gfx]').forEach(b=>b.onclick=()=>{GFX=b.dataset.gfx;try{localStorage.setItem(GFX_KEY,GFX);}catch(e){}applyGfx();renderTab();toast(`画質：${gfx().n}`);});
   $('fpsT').onclick=()=>{FPS_ON=!FPS_ON;try{localStorage.setItem('hama-tsuri-fps',FPS_ON?'1':'0');}catch(e){}renderTab();};}
@@ -2279,7 +2301,7 @@ function update(dt,t){
   acc+=dt;if(acc>8){acc=0;save();}
 }
 function render(dt,t){
-  updSky();updSea(t);updRain(dt);{const wk=envNow(nearSpot||F.spot).w;const sp=wk.kind==='windy'?2.2:1;seaNorm.offset.x=(t*.006*sp)%1;seaNorm.offset.y=(t*.004*sp)%1;}sky.position.copy(camera.position);
+  updSky();updSea(t);updRain(dt);{const wk=envNow(nearSpot||F.spot).w;const sp=wk.kind==='windy'?2.2:1;seaNorm.offset.x=(t*.006*sp)%1;seaNorm.offset.y=(t*.004*sp)%1;}sky.position.copy(camera.position);if(HILL_FAR)HILL_FAR.visible=S.y>7600;
   wheel.rotation.z=t*.03;for(const g of wheel.userData.gond)g.rotation.z=-wheel.rotation.z;
   placeCam(Math.min(1,dt*6));
   for(const o of spotMk){const d=Math.hypot(o.sp.x-S.x,o.sp.y-S.y);const here=nearSpot===o.sp;o.b.visible=!here;o.l.visible=!here&&d<500;o.b.position.y=groundY(o.sp.x,o.sp.y)+5+Math.sin(t*2+o.sp.x)*.3;o.l.position.y=o.b.position.y;}

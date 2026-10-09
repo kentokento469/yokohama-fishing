@@ -10,24 +10,29 @@
  ・改変は「縮小・圧縮・切り抜き」だけ。CC BY-SA の画像は改変後も CC BY-SA。帰属（作者・ライセンス・元の URL・改変の内容）を images.js と図鑑の出典に表示する。
  ・元の高解像度（長辺2048px）は data-build/fish-img/master/ に保存（リポジトリには入れない）。ゲームには長辺1600pxの WebP（約200KB）と 384px のサムネイル。
 """
-import argparse, html, json, os, re, sys, time, urllib.parse, urllib.request
+import argparse, html, json, os, re, sys, time, urllib.error, urllib.parse, urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 BUILD = ROOT / 'data-build' / 'fish-img'
 OUT = ROOT / 'data' / 'fish' / 'img'
 API = 'https://commons.wikimedia.org/w/api.php'
-UA = 'yokohama-fishing-game/1.0 (hobby project; image licensing check)'
+UA = 'yokohama-fishing-game/1.0 (hobby project; https://github.com/kentokento469/yokohama-fishing)'
 OK_LIC = re.compile(r'^(cc0|public domain|pd|cc by(-sa)? ?\d(\.\d)?( [a-z]+)?)$', re.I)
 BAD_WORDS = re.compile(r'(drawing|illustration|map|distribution|stamp|logo|diagram|\.svg|\.gif|\.tif|skeleton|otolith|egg|larva)', re.I)
 DISPLAY, THUMB, MASTER = 1600, 384, 2048
 
 
-def get(params):
-    q = API + '?' + urllib.parse.urlencode(dict(params, format='json', formatversion=2))
-    req = urllib.request.Request(q, headers={'User-Agent': UA})
-    with urllib.request.urlopen(req, timeout=60) as r:
-        return json.loads(r.read())
+def get(params, tries=6):
+    q = API + '?' + urllib.parse.urlencode(dict(params, format='json', formatversion=2, maxlag=5))
+    for k in range(tries):  # 回数制限（429）は待って再試行
+        try:
+            with urllib.request.urlopen(urllib.request.Request(q, headers={'User-Agent': UA}), timeout=60) as r:
+                return json.loads(r.read())
+        except urllib.error.HTTPError as e:
+            if e.code not in (429, 503) or k == tries - 1:
+                raise
+            time.sleep(int(e.headers.get('Retry-After') or 0) or 10 * (k + 1))
 
 
 def species():
@@ -46,8 +51,11 @@ def license_ok(meta):
 def search(ids):
     S = species()
     BUILD.mkdir(parents=True, exist_ok=True)
-    out = {}
+    cf = BUILD / 'candidates.json'
+    out = json.loads(cf.read_text()) if cf.exists() else {}  # 前回の結果に足す（候補のある種は探し直さない）
     for id in ids or S:
+        if out.get(id, {}).get('candidates'):
+            continue
         s = S[id]
         sci = s['sci'].split(' (')[0].replace('（', '(')
         found = []
@@ -72,7 +80,7 @@ def search(ids):
                               'license_url': (meta.get('LicenseUrl') or {}).get('value'), 'artist': artist or '不明',
                               'credit': re.sub('<[^>]+>', '', (meta.get('Credit') or {}).get('value', '')).strip(),
                               'score': min(w, 4000) / 4000 + (0.3 if 'fish' in p['title'].lower() else 0)})
-            time.sleep(0.5)
+            time.sleep(2)
         found = sorted({f['title']: f for f in found}.values(), key=lambda f: -f['score'])[:8]
         out[id] = {'ja': s['ja'], 'sci': s['sci'], 'candidates': found}
         print(f"{id} {s['ja']}：候補 {len(found)}", flush=True)

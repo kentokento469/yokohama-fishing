@@ -6,3 +6,6 @@ test('格子から緯度経度で高さ（補間・範囲外・無効）',()=>{c
   const g=TR.grid({z,x0,y0,w:1,h:1,px,scale:.1},data);assert.ok(g.covers(lat,lon));
   const h=g.heightAt(lat,lon);assert.ok(h>=0&&h<=3,'h='+h);assert.strictEqual(g.covers(35.0,139.0),false);
   assert.strictEqual(TR.heightAt(lat,lon),null);TR.add(g);assert.ok(TR.heightAt(lat,lon)!=null);});
+test('湘南の丘（ゲーム座標の格子）',()=>{const D=require('../data/terrain/shonan-game.js');const g=TR.gameGrid(D);
+  assert.strictEqual(g.offAt(-5000,16000),0);assert.strictEqual(g.offAt(400,12700),0,'由比ヶ浜の砂浜は平ら');
+  assert.ok(g.offAt(-20760,11260)>60,'大磯の丘');let n=0;for(const v of g.off)if(v>0)n++;assert.ok(n>5000);});

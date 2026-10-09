@@ -2,14 +2,15 @@
 """国土地理院の標高タイル（dem5a_png → 無ければ dem_png）を取得して、ゲーム用の格子にまとめる。
   python3 tools/terrain/fetch_dem.py honmoku 35.395,139.655,35.425,139.69 [--z 15]
   python3 tools/terrain/fetch_dem.py honmoku BBOX --from-dir DIR   # 手元の PNG（DIR/<z>/<x>/<y>.png）から作る
-出力：data/terrain/<名前>.json（manifest・出典）と <名前>.bin（Int16、0.1m 単位、無効は -32768）、data/terrain/index.json に追記。
+出力：data-build/terrain/<名前>.json（manifest・出典）と <名前>.bin（Int16、0.1m 単位、無効は -32768）。
+ゲーム用（間引き・ゲーム座標）は node tools/terrain/build_game_grid.mjs <名前> → data/terrain/<名前>-game.js。
 出典表記：「国土地理院 標高タイル」を加工して作成（国土地理院コンテンツ利用規約、CC BY 4.0 互換）。
 注意：横浜の 3D は手描きの地図（約1/3、緯度経度と一致しない）なので、この格子は今は湘南（等倍）と将来の等倍エリアだけで使う。
 """
 import argparse, io, json, math, sys, urllib.request
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / 'data' / 'terrain'
+OUT = ROOT / 'data-build' / 'terrain'  # 元の格子（大きいので git に入れない）。ゲーム用は tools/terrain/build_game_grid.mjs
 URLS = ['https://cyberjapandata.gsi.go.jp/xyz/dem5a_png/{z}/{x}/{y}.png', 'https://cyberjapandata.gsi.go.jp/xyz/dem_png/{z}/{x}/{y}.png']
 NA = 1 << 23
 
@@ -88,7 +89,7 @@ def main():
     if a.name not in idx['areas']:
         idx['areas'].append(a.name)
     idx_f.write_text(json.dumps(idx, ensure_ascii=False, indent=1))
-    print(f'{a.name}: タイル {got}/{w*h}、{w*px}×{h*px} 格子 → data/terrain/')
+    print(f'{a.name}: タイル {got}/{w*h}、{w*px}×{h*px} 格子 → data-build/terrain/')
 
 
 if __name__ == '__main__':
