@@ -99,9 +99,10 @@ const TACKLE=require('../data/tackle-data.js');
 const item=(style,i=0)=>TACKLE.filter(t=>t.style===style)[i];
 const mk=(style,depth=0,i=0)=>{const it=item(style,i);const L=SIM.makeLure(SIM.baitClassOf(it),{waterDepth:20,bottomType:'sand'},{dist:40,tipH:4,item:it});L.depth=depth;return L;};
 
-test('カタログ：ルアー100件・ジグ100件、IDの重複なし、価格は正',()=>{
+test('カタログ：ロッド・リール・ルアー・ジグ各100件（計400）、IDの重複なし、価格は正',()=>{
   assert.equal(TACKLE.filter(t=>t.cat==='lure').length,100);assert.equal(TACKLE.filter(t=>t.cat==='jig').length,100);
-  assert.equal(new Set(TACKLE.map(t=>t.id)).size,200);assert.ok(TACKLE.every(t=>t.priceYen>0&&t.weightG>0));});
+  assert.equal(TACKLE.filter(t=>t.cat==='rod').length,100);assert.equal(TACKLE.filter(t=>t.cat==='reel').length,100);
+  assert.equal(new Set(TACKLE.map(t=>t.id)).size,400);assert.ok(TACKLE.every(t=>t.priceYen>0));assert.ok(TACKLE.filter(t=>t.cat==='lure'||t.cat==='jig').every(t=>t.weightG>0));});
 
 test('フローティングミノー：止めると浮き、巻くと潜行深度あたりまで潜る',()=>{
   const it=item('floating_minnow',9);const a=runC(mk('floating_minnow',1,9),3,1/60,{hold:false});assert.ok(a.depth<1-.5,`浮上 ${a.depth}`);

@@ -16,15 +16,39 @@ test('セーブ：JSONにして戻しても所持・装備が残る',()=>{
   const S={money:5000,tk:{},eq:null};const it=TACKLE[0];TK.buy(S,it,3,1);S.eq=it.id;const R=JSON.parse(JSON.stringify(S));
   assert.equal(TK.owned(R,it.id),3);assert.equal(R.eq,it.id);});
 
-test('竿の適合：重量オーバーは投げられず、軽すぎは飛距離が落ちる',()=>{
-  const heavy=TACKLE.find(t=>t.weightG>100);assert.equal(TK.rodFit(heavy,3),'heavy');assert.equal(TK.castMax(heavy,3),0);
-  const j40=TACKLE.find(t=>t.cat==='jig'&&t.weightG===40);assert.equal(TK.rodFit(j40,0),'heavy');assert.equal(TK.rodFit(j40,2),'ok');
-  const tiny=TACKLE.find(t=>t.weightG<3);assert.equal(TK.rodFit(tiny,3),'light');
-  const ok=TACKLE.find(t=>t.weightG>=20&&t.weightG<=30);assert.ok(TK.castMax(ok,3)>TK.castMax(ok,1),'良い竿ほど飛ぶ');});
+const rod=(style,lv=1)=>TACKLE.find(t=>t.cat==='rod'&&t.style===style&&t.unlockedAtLevel===lv);
+const reel=(style,lv=1)=>TACKLE.find(t=>t.cat==='reel'&&t.style===style&&t.unlockedAtLevel===lv);
 
-test('飛距離：重く投げやすいルアーほど遠くへ（同じ竿）',()=>{
-  const a=TACKLE.find(t=>t.style==='long_cast'&&t.weightG<=40&&t.weightG>=30),b=TACKLE.find(t=>t.style==='popper'&&t.weightG<=8);
-  assert.ok(TK.castMax(a,3)>TK.castMax(b,1));});
+test('ロッドの適合重量：重量オーバーは投げられず、軽すぎは飛距離が落ちる',()=>{
+  const sb=rod('seabass');const heavy=TACKLE.find(t=>t.weightG>sb.maxLureWeightG&&t.cat==='jig');
+  assert.equal(TK.rodFit(heavy,sb),'heavy');assert.equal(TK.castMax(heavy,sb),0);
+  const ok=TACKLE.find(t=>t.cat==='jig'&&t.weightG>=sb.minLureWeightG*2&&t.weightG<=sb.maxLureWeightG*.6);assert.equal(TK.rodFit(ok,sb),'ok');
+  const tiny=TACKLE.find(t=>t.weightG<sb.minLureWeightG);assert.equal(TK.rodFit(tiny,sb),'light');
+  assert.ok(TK.castMax(ok,sb)>TK.castMax(tiny,sb));});
+
+test('飛距離：長いロッドほど飛び、ショアジギングロッドは重いジグを遠くへ',()=>{
+  const j40=TACKLE.find(t=>t.cat==='jig'&&t.weightG===40);
+  assert.ok(TK.castMax(j40,rod('shore_jig'))>TK.castMax(j40,rod('seabass')),'ショアジギングの方が飛ぶ');
+  assert.equal(TK.castMax(j40,rod('ajing')),0,'アジングロッドで40gは投げられない');});
+
+test('ロッドとリールの種類が違うと使えない',()=>{
+  assert.ok(TK.reelMatch(rod('seabass'),reel('spinning_light')));
+  assert.equal(TK.reelMatch(rod('offshore_jig'),reel('spinning_light')),false);
+  assert.ok(TK.reelMatch(rod('offshore_jig'),reel('conventional')));});
+
+test('リール：ハンドル1回転の巻き取り量が多いほど速く巻け、太い糸ほど強い',()=>{
+  const lt=reel('spinning_light'),hv=reel('spinning_heavy');
+  assert.ok(TK.reelMaxSpeed(hv)>TK.reelMaxSpeed(lt));assert.ok(TK.lineKg(hv)>TK.lineKg(lt));});
+
+test('竿とリールは1本ずつしか買えない。装備の切り替え',()=>{
+  const S={money:1e6,tk:{}};const r=rod('surf');assert.ok(TK.buy(S,r,3,1).ok);assert.equal(TK.owned(S,r.id),1);
+  assert.equal(TK.buy(S,r,1,1).ok,false);TK.equip(S,r);assert.equal(S.rodId,r.id);assert.ok(TK.isEquipped(S,r));});
+
+test('最初の竿とリール、古いセーブの竿の置き換え',()=>{
+  const st=TK.starter(TACKLE);assert.ok(st.rod&&st.reel&&TK.reelMatch(st.rod,st.reel));
+  for(let k=0;k<4;k++){const S={rod:k,tk:{}};TK.migrateGear(S,TACKLE);const rr=TACKLE.find(t=>t.id===S.rodId),rl=TACKLE.find(t=>t.id===S.reelId);
+    assert.ok(rr&&rl&&TK.reelMatch(rr,rl),`old rod ${k}`);assert.equal(TK.owned(S,st.rod.id),1);}
+  const S3={rod:3,tk:{}};TK.migrateGear(S3,TACKLE);assert.equal(TACKLE.find(t=>t.id===S3.rodId).style,'shore_jig');});
 
 test('レベル：図鑑2種ごとに1上がる',()=>{assert.equal(TK.level(0),1);assert.equal(TK.level(3),2);assert.equal(TK.level(35),18);});
 

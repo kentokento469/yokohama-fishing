@@ -32,7 +32,7 @@ function speciesParams(id){const st=SIM.styleOf(id),o=OVR[id]||{},b=BASE[o.base|
 const AI={
   interestGain:1.1,interestDecay:.35,noticeTime:.5,strikeBase:.55,refuseBase:.12,unnaturalMul:3,
   chaseTooLong:6,feetDist:3,giveupTime:1.4,waryTime:15,shortBase:.12,respawnEvery:6,vertVision:1.6,
-  lateralLine:1.6,spreadY:6,minCount:3,aware:3,drift:.35};
+  lateralLine:.7,spreadY:6,minCount:3,aware:3,drift:.35};
 
 function pickWeighted(list,rng){let s=0;for(const[,w]of list)s+=w;let r=rng()*s;for(const[id,w]of list){r-=w;if(r<=0)return id;}return list[list.length-1][0];}
 
@@ -67,7 +67,7 @@ function stepSchool(s,L,dt,env){const ev=[],rng=s.rng,o=s.opt;s.t+=dt;if(dt<=0||
   for(const f of s.fish){if(f.gone)continue;const p=f.p;f.tState+=dt;
     const dx=lx-f.x,dy=ly-f.y,dz=lz-f.z;const dist=Math.hypot(dx,dy,dz*AI.vertVision);
     // 気づく距離：目（明るさで変わる）＋ 側線（動いているルアーの波動。暗くても効く）
-    const moving=c.speed>.2||c.fall;const range=Math.max(p.vision*(.45+.55*light),moving?p.vision*AI.lateralLine*.6:0)*(1+loud)*(p.fallOnly&&c.fall?1.3:1);const sees=dist<range&&!L.home;
+    const moving=c.speed>.2||c.fall;const range=Math.max(p.vision*(.45+.55*light),moving?p.vision*AI.lateralLine:0)*(1+loud)*(p.fallOnly&&c.fall?1.3:1);const sees=dist<range&&!L.home;
     const D=o.depthAt(f.x);const zMin=p.maxRise?Math.max(0,D-p.maxRise):0;
     let appeal=SIM.actionAppeal(f.id,L);if(L.onBottom&&L.reel<.05)appeal*=Math.exp(-L.bottomT/12);
     if(f.wary>0){f.wary-=dt;f.interest=Math.min(f.interest,0);}
