@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """魚の写真を Wikimedia Commons から集め、ライセンスを画像ごとに確かめて、ゲーム用に変換する。
   python3 tools/fish/fetch_images.py search  [--ids aji,saba]   # 候補を探す → data-build/fish-img/candidates.json と review.html（目で確認する一覧）
+  python3 tools/fish/fetch_images.py download [--k 0] [--ids ...]   # 候補を1280pxで取得（回数制限が厳しいので時間がかかる。続きから再開できる）
   python3 tools/fish/fetch_images.py approve aji=File:Trachurus_japonicus.jpg ...   # 確認して採用（data/fish/img/approved.json に記録）
   python3 tools/fish/fetch_images.py build                    # 採用した画像を取得・変換 → data/fish/img/<id>.webp（表示用）と <id>_t.webp（サムネイル）、data/fish/images.js（出典つき）
   python3 tools/fish/fetch_images.py build --from-dir DIR     # 手元の画像（DIR/<id>.jpg と DIR/<id>.json＝出典）から変換だけ（取得できない環境用）
@@ -19,7 +20,7 @@ OUT = ROOT / 'data' / 'fish' / 'img'
 API = 'https://commons.wikimedia.org/w/api.php'
 UA = 'yokohama-fishing-game/1.0 (hobby project; https://github.com/kentokento469/yokohama-fishing)'
 OK_LIC = re.compile(r'^(cc0|public domain|pd|cc by(-sa)? ?\d(\.\d)?( [a-z]+)?)$', re.I)
-BAD_WORDS = re.compile(r'(drawing|illustration|map|distribution|stamp|logo|diagram|\.svg|\.gif|\.tif|skeleton|otolith|egg|larva)', re.I)
+BAD_WORDS = re.compile(r'(drawing|illustration|map|distribution|stamp|logo|diagram|\.svg|\.gif|\.tif|skeleton|otolith|egg|larva|ukiyo|hiroshige|hokusai|print|woodblock|sushi|sashimi|dried|niboshi|dish|plate|cooked|grilled|fried|eye|head|scale|museum|specimen)', re.I)
 DISPLAY, THUMB, MASTER = 1600, 384, 2048
 
 
@@ -110,6 +111,36 @@ def approve(pairs):
     print('採用', len(ap), '種')
 
 
+def download(k, ids):
+    """候補 k 番目を幅1280px（Wikimedia の標準サイズ）で data-build/fish-img/dl/<id>_<k>.jpg に取得。回数制限に合わせて待つ。途中から再開できる。
+    取得後は目で確かめ、良いものだけ data-build/fish-img/approved_src/<id>.jpg と <id>.json（title・page・artist・license・license_url）に置いて build --from-dir。"""
+    cand = json.loads((BUILD / 'candidates.json').read_text())
+    D = BUILD / 'dl'
+    D.mkdir(parents=True, exist_ok=True)
+    wait = 4
+    for id in ids or [i for i in cand if len(cand[i]['candidates']) > k]:
+        f = D / f'{id}_{k}.jpg'
+        if f.exists() or len(cand.get(id, {}).get('candidates', [])) <= k:
+            continue
+        c = cand[id]['candidates'][k]
+        u = c['url'].split('?')[0]
+        if c['w'] > 1280:
+            p = u.split('/wikipedia/commons/')[1]
+            u = f'https://upload.wikimedia.org/wikipedia/commons/thumb/{p}/1280px-{p.split("/")[-1]}'
+        for t in range(8):
+            try:
+                with urllib.request.urlopen(urllib.request.Request(u, headers={'User-Agent': UA}), timeout=90) as r:
+                    f.write_bytes(r.read())
+                print('取得', id, k, flush=True)
+                wait = max(4, wait * .8)
+                break
+            except Exception as e:
+                wait = min(240, wait * 2)
+                print('待つ', id, int(wait), e, flush=True)
+            time.sleep(wait)
+        time.sleep(wait)
+
+
 def convert(src_path, id, credit):
     from PIL import Image, ImageOps
     im = ImageOps.exif_transpose(Image.open(src_path)).convert('RGB')
@@ -169,13 +200,16 @@ def build(from_dir=None):
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()
-    ap.add_argument('cmd', choices=['search', 'approve', 'build'])
+    ap.add_argument('cmd', choices=['search', 'download', 'approve', 'build'])
+    ap.add_argument('--k', type=int, default=0)
     ap.add_argument('args', nargs='*')
     ap.add_argument('--ids')
     ap.add_argument('--from-dir')
     a = ap.parse_args()
     if a.cmd == 'search':
         search(a.ids.split(',') if a.ids else None)
+    elif a.cmd == 'download':
+        download(a.k, a.ids.split(',') if a.ids else None)
     elif a.cmd == 'approve':
         approve(a.args)
     else:

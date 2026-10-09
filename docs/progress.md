@@ -53,3 +53,5 @@
 - 素材のライセンスは docs/ASSETS.md。
 - 標高 取得済（ネット許可後）：湘南 z14（dem_png 10m）→ data-build/terrain/shonan.*（12MB、git外）→ tools/terrain/build_game_grid.mjs → data/terrain/shonan-game.js（40m、308KB）。
   ゲーム：groundY に terrOff（標高20m超の分）。丘の地形メッシュ（近景＋遠景用の複製＝描画距離外も霞んで見える）、丘に森（木はおおよそ）、丘には建物を建てない。江の島は手作りの丘のまま。横浜には使わない。
+- 魚の写真（ネット許可後）：search で104種中93種に候補（data-build/fish-img/candidates.json）。upload.wikimedia.org の回数制限が厳しく、2時間で18種分しか取得できず、目で確認して5種を採用（マアジ・マハゼ・シログチ・アカカマス・スズキ。CC BY-SA 4.0/CC BY 4.0）。浮世絵・寿司・干物・目のアップ・不鮮明は不採用（BAD_WORDS に追加）。
+  続き：python3 tools/fish/fetch_images.py download --k 0（未取得の種）→ 目で確認 → approved_src に置く → build --from-dir data-build/fish-img/approved_src。不採用の種は --k 1 で次の候補。

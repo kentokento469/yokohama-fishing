@@ -1,0 +1,62 @@
+{
+ "aji": {
+  "title": "File:Trachurus japonicus Umi-Tamago.jpg",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/4/4c/Trachurus_japonicus_Umi-Tamago.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+  "page": "https://commons.wikimedia.org/wiki/File:Trachurus_japonicus_Umi-Tamago.jpg",
+  "w": 4032,
+  "h": 3024,
+  "license": "CC BY-SA 4.0",
+  "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+  "artist": "Totti",
+  "credit": "Own work",
+  "score": 1.0
+ },
+ "haze": {
+  "title": "File:Acanthogobius flavimanus Nakagawa.jpg",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/c/c8/Acanthogobius_flavimanus_Nakagawa.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+  "page": "https://commons.wikimedia.org/wiki/File:Acanthogobius_flavimanus_Nakagawa.jpg",
+  "w": 4032,
+  "h": 2141,
+  "license": "CC BY-SA 4.0",
+  "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+  "artist": "Totti",
+  "credit": "Own work",
+  "score": 1.0
+ },
+ "ishimochi": {
+  "title": "File:Pennahia argentata Kasai.jpg",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/e/e1/Pennahia_argentata_Kasai.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+  "page": "https://commons.wikimedia.org/wiki/File:Pennahia_argentata_Kasai.jpg",
+  "w": 3126,
+  "h": 1759,
+  "license": "CC BY-SA 4.0",
+  "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+  "artist": "Totti",
+  "credit": "Own work",
+  "score": 0.7815
+ },
+ "kamasu": {
+  "title": "File:Sphyraena pinguis on the market.jpg",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/e/e0/Sphyraena_pinguis_on_the_market.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+  "page": "https://commons.wikimedia.org/wiki/File:Sphyraena_pinguis_on_the_market.jpg",
+  "w": 4032,
+  "h": 3024,
+  "license": "CC BY-SA 4.0",
+  "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+  "artist": "Totti",
+  "credit": "Own work",
+  "score": 1.0
+ },
+ "seabass": {
+  "title": "File:Lateolabrax japonicas 01.jpg",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/5/5d/Lateolabrax_japonicas_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+  "page": "https://commons.wikimedia.org/wiki/File:Lateolabrax_japonicas_01.jpg",
+  "w": 5377,
+  "h": 3585,
+  "license": "CC BY 4.0",
+  "license_url": "https://creativecommons.org/licenses/by/4.0",
+  "artist": "Σ64",
+  "credit": "Own work",
+  "score": 1.0
+ }
+}
