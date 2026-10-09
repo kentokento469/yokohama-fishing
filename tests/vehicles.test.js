@@ -64,3 +64,7 @@ test('セーブの往復と古いセーブの移行',()=>{
   const S=S0();V.buy(S,V.byId('bike_mtb'));V.park(S,S.veh.owned[0],1,2,null);const T=V.migrate(JSON.parse(JSON.stringify(S)));
   assert.deepStrictEqual(T.veh,S.veh);const part={money:1,veh:{owned:[]}};V.migrate(part);assert.strictEqual(part.veh.stamina,100);
 });
+test('地域の縮め方：湘南（等倍 sc=1）は同じゲームの距離で燃料の減りが横浜（sc=3）の1/3',()=>{
+  const S=S0();const a=V.buy(S,V.byId('car_kei')).o,b=V.buy(S,V.byId('car_kei')).o;V.consume(a,V.byId('car_kei'),3000,S,1);V.consume(b,V.byId('car_kei'),3000,S,3);
+  assert.ok(Math.abs((30-a.fuel)-3/20)<1e-9&&Math.abs((30-b.fuel)-9/20)<1e-9);
+});

@@ -1,6 +1,6 @@
 /* 横浜みなと釣り旅 — 湘南エリアの釣り場ルールと地理（描画に依存しない。ブラウザでも Node でも動く）
    データ：data/shonan-spots.js（window.HamaShonanData）。
-   ・緯度経度（おおよそ）→ ゲームの座標：横浜と同じく距離を約1/3に縮め、横浜マップの南側（y=8300〜）に置く。
+   ・緯度経度（おおよそ）→ ゲームの座標：等倍（実際のメートル。geo.js）で、横浜マップの南側（y=8300〜）に置く。
    ・釣り場の種類ごとのゲーム用推定値（水深・底質・濁り・流れ・波当たり）。実測ではない。
    ・釣りできるかの判定：開放区分、利用時間、夏の遊泳区域、高波、禁止された釣り方、規制エリア。 */
 (function(root){
@@ -11,7 +11,7 @@ const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 /* ===== 位置：緯度経度 → ゲーム座標（m、距離は約1/3） ===== */
 // 変換は共通の座標システム geo.js（原点・向き・縮尺はそこで固定）
 const GEO=root&&root.HamaGeo||(typeof require==='function'?require('./geo.js'):null);
-const SC=GEO.SC,R0=GEO.SHONAN,M_LON=R0.mLon,M_LAT=R0.mLat;
+const R0=GEO.SHONAN,SC=R0.sc,M_LON=R0.mLon,M_LAT=R0.mLat;
 function toGame(lat,lon){return GEO.toGame(lat,lon,R0);}
 const BOUNDS=R0.bounds;
 function inShonan(x,y){return x>=BOUNDS.x0&&x<=BOUNDS.x1&&y>=BOUNDS.y0-100&&y<=BOUNDS.y1;}

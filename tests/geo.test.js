@@ -7,13 +7,13 @@ test('緯度経度⇔ゲーム座標の往復誤差が1cm未満（実距離）',
 test('原点は固定、向きは既存どおり（東=+x・北=−y）、shonan.js と同じ値',()=>{
   assert.deepEqual(G.toGame(35.345,139.56),[2400,8300]);const[x0,y0]=G.toGame(35.3,139.4),[x1]=G.toGame(35.3,139.41),[,y1]=G.toGame(35.31,139.4);
   assert.ok(x1>x0&&y1<y0);assert.deepEqual(SH.toGame(35.3,139.4),[x0,y0]);});
-test('ゲームの距離×3＝実際の距離（湘南の範囲で誤差0.5%以内）',()=>{
+test('湘南は等倍：ゲームの距離＝実際の距離（誤差0.5%以内）',()=>{
   for(const[[a,b],[c,d]]of[[[35.30,139.30],[35.30,139.55]],[[35.25,139.4],[35.34,139.4]],[[35.29,139.29],[35.33,139.55]]]){const p=G.toGame(a,b),q=G.toGame(c,d);
-    const real=G.haversine(a,b,c,d),game=Math.hypot(p[0]-q[0],p[1]-q[1])*G.SC;assert.ok(Math.abs(game/real-1)<.005,`${game} vs ${real}`);}});
+    const real=G.haversine(a,b,c,d),game=G.realMeters(Math.hypot(p[0]-q[0],p[1]-q[1]));assert.ok(Math.abs(game/real-1)<.005,`${game} vs ${real}`);}});
 test('地図の表示：world⇔screen の往復、拡大しても指の位置の地点は動かない、回転あり',()=>{
   const v=G.view(100,200,.5,320,400,.7);const[px,py]=G.worldToScreen(v,130,170);const[x,y]=G.screenToWorld(v,px,py);assert.ok(Math.abs(x-130)<1e-9&&Math.abs(y-170)<1e-9);
   const w=G.view(0,0,.2,300,300);const before=G.screenToWorld(w,50,80);G.zoomAt(w,50,80,1.7);const after=G.screenToWorld(w,50,80);assert.ok(Math.hypot(before[0]-after[0],before[1]-after[1])<1e-9);
-  const sb=G.scaleBar({z:.1},100);assert.ok(sb.px<=100&&/m|km/.test(sb.label));});
+  assert.equal(G.SHONAN.sc,1);const sb=G.scaleBar({z:.1},100);assert.ok(sb.px<=100&&/m|km/.test(sb.label));});
 test('提供データ（GSHHS）は正しい GeoJSON で、範囲内・多角形は閉じている',()=>{
   const bb=D.manifest.coverage_bbox_wsen||D.manifest.bbox_wsen;assert.equal(D.manifest.crs,'EPSG:4326');assert.equal(D.areas.length,6);assert.ok(D.areas.every(a=>a.administrative===false));
   for(const[f,o]of Object.entries(D.files)){const v=MD.validate({type:'FeatureCollection',features:o.features},{bbox:bb});assert.ok(v.ok,f+v.err);assert.equal(v.warn.length,0,f+v.warn);}});

@@ -40,7 +40,8 @@ function fallback(trunks,targets,land,opt){const roads=[],lots=[],missing=[];let
   // 幹線に近いマスの判定は格子で（毎回線分との距離を測ると遅い）
   if(!opt.near){const cl=opt.cell||8,tr=raster(trunks.map(t=>({pts:t.pts,w:cl*2})),cl/2);opt.near=(x,y)=>!!tr.at(x,y);}
   for(const t of trunks)roads.push({id:'fb'+(n++),pts:t.pts,kind:t.kind||'primary',car:1,bike:1,foot:1,oneway:0,surface:'paved',w:t.w||10,name:t.name||null,approx:true});
-  for(const g of targets){const p=accessPath(g.x,g.y,trunks,land,opt);if(!p){missing.push({id:g.id,why:'幹線道路まで陸でつながる道が見つからない'});continue;}
+  // opt.strict（陸の縁から離れた所だけ）で探し、見つからなければ land（縁も含む）で探す
+  for(const g of targets){const p=(opt.strict&&accessPath(g.x,g.y,trunks,opt.strict,opt))||accessPath(g.x,g.y,trunks,land,opt);if(!p){missing.push({id:g.id,why:'幹線道路まで陸でつながる道が見つからない'});continue;}
     const L=plen(p);const car=g.car!==false;
     roads.push({id:'ac_'+g.id,pts:p.slice().reverse(),kind:car?'service':'path',car:car?1:0,bike:1,foot:1,oneway:0,surface:'paved',w:car?7:3,name:(g.name||g.id)+'への道（仮）',approx:true,to:g.id});
     // 推定駐車場：車で行ける所は釣り場の手前（約25m）、行けない所は幹線との交わる所

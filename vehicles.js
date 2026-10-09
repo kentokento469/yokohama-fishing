@@ -48,7 +48,7 @@ function canRide(S,o,kg){const sp=specOf(o);if(!sp)return{ok:false,reason:'乗�
 /* 走る：state={v（速さm/s）, h（向き rad。x=sin, z=cos のゲームの向き）}、input={throttle(-1〜1), steer(-1〜1)}、
    env={surface, limit（その道での上限 m/s）, slope（上り0〜1）, offRoad（車が道の外に出ようとしている）}
    戻り値 {dist（ゲームのm）, blocked} */
-function ride(o,state,input,env,dt,S){const sp=specOf(o);env=env||{};
+function ride(o,state,input,env,dt,S){const sp=specOf(o);env=env||{};const sc=env.sc||SC;
   if(BLOCKED.includes(env.surface)){state.v=0;return{dist:0,blocked:'乗ったままでは進めない（岩場・階段）'};}
   let vmax=sp.kmh/3.6;
   if(sp.kind==='bike'){vmax*=sp.terrain[env.surface]==null?1:sp.terrain[env.surface];
@@ -60,9 +60,9 @@ function ride(o,state,input,env,dt,S){const sp=specOf(o);env=env||{};
   const a=tg>state.v?sp.accel:sp.accel*(sp.kind==='car'?2.5:3);state.v+=clamp(tg-state.v,-a*dt,a*dt);
   // 旋回：速さがあるほど曲がれる（止まっていると曲がれないのは車だけ）
   const turnK=sp.kind==='car'?clamp(Math.abs(state.v)/4,0,1):1;state.h+=(input.steer||0)*sp.turn*turnK*dt*(state.v<0?-1:1);
-  const dist=Math.abs(state.v)*dt;consume(o,sp,dist,S);return{dist,blocked:null};}
-// 走った分だけ燃料・電池・体力・耐久が減る（実際の距離 = ゲームの距離 × SC）
-function consume(o,sp,dist,S){const km=dist*SC/1000;if(km<=0)return;
+  const dist=Math.abs(state.v)*dt;consume(o,sp,dist,S,sc);return{dist,blocked:null};}
+// 走った分だけ燃料・電池・体力・耐久が減る（実際の距離 = ゲームの距離 × sc。横浜3・湘南1）
+function consume(o,sp,dist,S,sc){const km=dist*(sc||SC)/1000;if(km<=0)return;
   if(sp.kind==='car')o.fuel=Math.max(0,o.fuel-km/sp.kmPerL);
   if(sp.batteryKm)o.batt=Math.max(0,o.batt-km/sp.batteryKm*100);
   if(sp.kind==='bike'&&S&&S.veh){const k=sp.batteryKm&&o.batt<=0?3:sp.staminaPerKm;S.veh.stamina=Math.max(0,S.veh.stamina-km*k);}

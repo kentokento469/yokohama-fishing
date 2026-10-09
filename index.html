@@ -400,7 +400,10 @@ function regionAt(x,y){return SH.inShonan(x,y)?'shonan':'yokohama';}
 /* ===== 状態 ===== */
 const SAVE_KEY='hama-tsuri-v2';
 function today0(){const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();}
-function fresh(){const st=TK.starter(TACKLE);return{money:1500,rod:0,bait:'sabiki',isome:10,lure:0,egi:0,tk:{[st.rod.id]:1,[st.reel.id]:1},eq:null,rodId:st.rod.id,reelId:st.reel.id,dragKg:null,spd:.8,dex:{},stamps:{},base:today0(),day:0,min:6*60+30,x:2130,y:1880,tip:{},veh:window.HamaVehicles.fresh()};}
+function fresh(){const st=TK.starter(TACKLE);return{money:1500,rod:0,bait:'sabiki',isome:10,lure:0,egi:0,tk:{[st.rod.id]:1,[st.reel.id]:1},eq:null,rodId:st.rod.id,reelId:st.reel.id,dragKg:null,spd:.8,dex:{},stamps:{},base:today0(),day:0,min:6*60+30,x:2130,y:1880,tip:{},veh:window.HamaVehicles.fresh(),mapv:2};}
+/* 湘南を等倍にした（mapv 2）：古いセーブの湘南の位置（1/3の地図）を等倍の位置に直す。原点 (2400,8300) から3倍 */
+function migrateMap(S){if((S.mapv||1)>=2)return S;const old=(x,y)=>x>=-6000&&x<=2700&&y>=8200&&y<=10700,fix=p=>{if(p&&old(p.x,p.y)){p.x=2400+(p.x-2400)*3;p.y=8300+(p.y-8300)*3;}};
+  fix(S);if(S.veh){for(const k in S.veh.parked||{})fix(S.veh.parked[k]);fix(S.veh.dest);}S.mapv=2;return S;}
 let S=fresh();
 function save(){try{if(S.veh)S.veh.h=RIDE?RIDE.st.h:null;localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(e){}}
 function load(){try{const s=localStorage.getItem(SAVE_KEY);return s?JSON.parse(s):null;}catch(e){return null;}}
@@ -561,7 +564,7 @@ const EMISSIVE=[winMats.glass,winMats.apt,winMats.house];
 
 /* ===== 海と陸 ===== */
 const seaMat=new T.MeshPhongMaterial({color:0x2a7aa3,specular:0x9fb8c8,shininess:90,normalMap:seaNorm,normalScale:new T.Vector2(.5,.5)});
-const sea=new T.Mesh(new T.PlaneGeometry(32000,30000),seaMat);sea.rotation.x=-Math.PI/2;sea.position.set(-1000,0,6000);sea.receiveShadow=true;scene.add(sea);
+const sea=new T.Mesh(new T.PlaneGeometry(90000,60000),seaMat);sea.rotation.x=-Math.PI/2;sea.position.set(-9000,0,10000);sea.receiveShadow=true;scene.add(sea);
 const isleS=new T.Shape();isleS.absarc(ISLE.x,ISLE.y,ISLE.r,0,Math.PI*2,false);
 const landGeo=new T.ExtrudeGeometry([shp(LAND),shp(DAIKOKU),isleS,shp(SH.LAND),shp(SH.ENOSHIMA)],{depth:8,bevelEnabled:false,curveSegments:40});
 landGeo.rotateX(Math.PI/2);landGeo.translate(0,GROUND,0);
@@ -591,7 +594,7 @@ for(const r of ROADS2){ribbon(r,18,GROUND+.04,paveMat);ribbon(r,12,GROUND+.07,as
 ribbon(RAIL,9,GROUND+.05,flatMat(0x8d8478));ribbon(RAIL,.15,GROUND+.12,flatMat(0x4a4a4a),-.75);ribbon(RAIL,.15,GROUND+.12,flatMat(0x4a4a4a),.75);ribbon(RAIL,.15,GROUND+.12,flatMat(0x4a4a4a),2.75);ribbon(RAIL,.15,GROUND+.12,flatMat(0x4a4a4a),4.25);
 ribbon(BEACH,70,GROUND+.05,flatMat(0xe8d39b));
 /* 湘南：砂浜（海岸線の陸側）、川、国道134号、JR東海道線・江ノ電 */
-{const sand=flatMat(0xe2cf9c),water=flatMat(0x2f6f8f);ribbon(SH.COAST,24,GROUND+.05,sand,-12);
+{const sand=flatMat(0xe2cf9c),water=flatMat(0x2f6f8f);ribbon(SH.COAST,60,GROUND+.05,sand,-30);
   for(const r of SH.RIVERS){ribbon(r.pts,r.half*2+3,GROUND+.06,sand);ribbon(r.pts,r.half*2,GROUND+.09,water);}
   ribbon(SH.COAST,4,.06,flatMat(0xf4f7f8,{transparent:true,opacity:.5}),5);
   ribbon(SH.R134,18,GROUND+.04,paveMat);ribbon(SH.R134,12,GROUND+.07,asphMat);dashes(SH.R134,0,5,6,.16,GROUND+.1,whiteLine);
@@ -726,16 +729,16 @@ for(const[x,y,h,r]of[[2070,1695,300,60],[2895,3015,90,30],[2280,1884,60,50],[325
     const head=new T.Mesh(new T.SphereGeometry(2.1,18,14),br);head.scale.set(1,1.15,1);head.position.y=12.4;g.add(head);
     g.traverse(o=>{if(o.isMesh)shadowy(o);});g.position.set(s.x,GROUND,s.y);g.rotation.y=Math.PI;scene.add(g);addCol(s.x-8,s.y-8,s.x+8,s.y+8,14);}
   // 江の島：島の中央の丘と、頂上のシーキャンドル（展望灯台）
-  {const s=P('seacandle'),hill=new T.Mesh(new T.SphereGeometry(55,24,12,0,Math.PI*2,0,Math.PI/2),lam(0x5f8f52));hill.scale.set(1.6,.5,.8);hill.position.set(s.x,GROUND,s.y);shadowy(hill);scene.add(hill);
-    addCol(s.x-70,s.y-30,s.x+70,s.y+30,28);
+  {const s=P('seacandle'),hill=new T.Mesh(new T.SphereGeometry(55,24,12,0,Math.PI*2,0,Math.PI/2),lam(0x5f8f52));hill.scale.set(5.5,1.05,3);hill.position.set(s.x,GROUND,s.y);shadowy(hill);scene.add(hill);
+    addCol(s.x-260,s.y-120,s.x+260,s.y+120,58);
     const tw=new T.Group(),wm=lam(0xeef0f0);const sh=new T.Mesh(new T.CylinderGeometry(2.2,3.4,42,16).translate(0,21,0),wm);tw.add(sh);
     const deck=new T.Mesh(new T.CylinderGeometry(7,6,4,20),new T.MeshLambertMaterial({color:0xdfe7ea,emissive:0xffe6a8,emissiveIntensity:0}));deck.position.y=40;tw.add(deck);EMISSIVE.push(deck.material);
     const lamp=new T.Mesh(new T.SphereGeometry(1.4,10,8),new T.MeshBasicMaterial({color:0xfff2c0}));lamp.position.y=45;tw.add(lamp);
-    tw.traverse(o=>{if(o.isMesh)shadowy(o);});tw.position.set(s.x,GROUND+27,s.y);scene.add(tw);}
+    tw.traverse(o=>{if(o.isMesh)shadowy(o);});tw.position.set(s.x,GROUND+57,s.y);scene.add(tw);}
   // 岩：稲村ヶ崎・照ヶ崎・烏帽子岩と、磯・岩の混じる浜の沖の岩礁
   const R=mulberry(77),rocks=[];const rockAt=(x,y,n,rad,sz)=>{for(let i=0;i<n;i++){const a=R()*6.28,r=Math.sqrt(R())*rad,px=x+Math.cos(a)*r,py=y+Math.sin(a)*r;if(!isLand(px,py)&&!rectAt(px,py))rocks.push([px,py,sz*(.5+R())]);}};
-  for(const g of SH.GSPOTS)if(g.type==='iso'||g.bottomType==='sand_rock')rockAt(g.x,g.y+6,26,22,1.6);
-  for(const id of['inamura','terugasaki'])rockAt(P(id).x,P(id).y+10,30,30,2.2);
+  for(const g of SH.GSPOTS)if(g.type==='iso'||g.bottomType==='sand_rock')rockAt(g.x,g.y+12,40,45,1.6);
+  for(const id of['inamura','terugasaki'])rockAt(P(id).x,P(id).y+20,45,60,2.2);
   {const e=P('eboshi');const rk=new T.Mesh(new T.ConeGeometry(6,22,7).translate(0,9,0),lam(0x5c5650));rk.scale.set(1,1,.7);rk.rotation.z=.12;rk.position.set(e.x,0,e.y);shadowy(rk);scene.add(rk);rockAt(e.x,e.y,10,14,2.5);}
   for(const part of byTile(rocks)){const im=new T.InstancedMesh(new T.IcosahedronGeometry(1,0),lam(0x6b665e),part.length);
     part.forEach(([x,y,sz],i)=>{dummy.position.set(x,.2,y);dummy.rotation.set(R()*3,R()*3,R()*3);dummy.scale.set(sz*1.3,sz*.8,sz);dummy.updateMatrix();im.setMatrixAt(i,dummy.matrix);});shadowy(fitInstances(im));scene.add(im);}}
@@ -747,7 +750,7 @@ const UNIT=16;
 const SH_JR=STATIONS.filter(s=>s.region==='shonan'&&s.jr),SH_KAMAKURA=SH.toGame(35.3215,139.5530);
 function zoneAt(x,y){const d=(a,b)=>Math.hypot(x-a,y-b);
   // 湘南：鎌倉の旧市街は低い家と緑、JRの駅前は中くらいのビル、江の島は小さな店、ほかは住宅地
-  if(SH.inShonan(x,y)){if(d(SH_KAMAKURA[0],SH_KAMAKURA[1])<330)return'yamate';for(const st of SH_JR)if(d(st.x,st.y)<170)return'kannai';if(pip(SH.ENOSHIMA,x,y))return'china';return'res';}
+  if(SH.inShonan(x,y)){if(d(SH_KAMAKURA[0],SH_KAMAKURA[1])<990)return'yamate';for(const st of SH_JR)if(d(st.x,st.y)<500)return'kannai';if(pip(SH.ENOSHIMA,x,y))return'china';return'res';}
   if(d(2520,3000)<150)return'china';if(d(2100,1725)<400)return'mm';if(d(1620,1035)<330)return'station';if(d(2400,2790)<360)return'kannai';if(d(2805,3405)<330)return'yamate';
   for(let k=0;k<INDUSTRY.length;k++)if(pip(INDUSTRY[k],x,y))return'ind';return'res';}
 const ZM={mm:3,station:3,kannai:2,china:1,yamate:1,res:1,ind:4};
@@ -756,7 +759,7 @@ function okSpot(cx,cy,half){
   if(onRoad(cx,cy,half)||inOSM(cx,cy))return false;
   if(SH.inShonan(cx,cy)){if(!SH.isLand(cx,cy)||nearCoast(cx,cy,18+half))return false;
     // 砂浜・国道134号・松林の帯には建てない。線路・川の上にも建てない
-    if(SH.lineDist(SH.COAST,cx,cy)<62+half||SH.lineDist(SH.JR,cx,cy)<7+half||SH.lineDist(SH.ENODEN,cx,cy)<6+half)return false;
+    if(SH.lineDist(SH.COAST,cx,cy)<190+half||SH.lineDist(SH.JR,cx,cy)<7+half||SH.lineDist(SH.ENODEN,cx,cy)<6+half)return false;
     if(SH.RIVERS.some(r=>SH.lineDist(r.pts,cx,cy)<r.half+8+half))return false;
     if(keepPts.some(p=>Math.hypot(p.x-cx,p.y-cy)<14+half))return false;if(LANDMARK_KEEP.some(([a,b,r])=>Math.hypot(a-cx,b-cy)<r+half))return false;return true;}
   if(!(pip(LAND,cx,cy)||pip(DAIKOKU,cx,cy)))return false;
@@ -1192,12 +1195,12 @@ function nearestStation(){const rg=regionAt(S.x,S.y);let best=null,bd=1e9;for(co
 /* 運賃と所要時間（ゲーム上の目安）。横浜の中はバス、湘南の中は電車（JR・江ノ電・小田急）とバス、横浜駅⇔湘南のJRの駅は電車 */
 const LINE_LABEL={jr:'JR',enoden:'江ノ電',odakyu:'小田急',bus:'バス'};
 function fare(s){const cur=nearestStation()[0];const d=Math.hypot(s.x-cur.x,s.y-cur.y);
-  if(cur.region!==s.region){const kx=SH.toGame(35.319,139.55)[0],sx=s.region==='shonan'?s.x:cur.x,km=25+(kx-sx)*SC/1000;return{yen:Math.round((200+km*16)/10)*10,min:Math.round(20+km*1.1),mode:'電車'};}
-  if(s.region==='shonan'){const km=d*SC/1000,bus=s.line==='bus'||cur.line==='bus';return{yen:Math.round((150+km*(bus?40:22))/10)*10,min:Math.round((bus?6:4)+km*(bus?3:2)),mode:bus?'バス':LINE_LABEL[s.line]||'電車'};}
+  if(cur.region!==s.region){const kx=SH.toGame(35.319,139.55)[0],sx=s.region==='shonan'?s.x:cur.x,km=25+(kx-sx)/1000;return{yen:Math.round((200+km*16)/10)*10,min:Math.round(20+km*1.1),mode:'電車'};}
+  if(s.region==='shonan'){const km=d/1000,bus=s.line==='bus'||cur.line==='bus';return{yen:Math.round((150+km*(bus?40:22))/10)*10,min:Math.round((bus?6:4)+km*(bus?3:2)),mode:bus?'バス':LINE_LABEL[s.line]||'電車'};}
   return{yen:220+(s.far||cur.far?110:0)+(d>3600?110:0),min:Math.round(8+d/400*1.5),mode:'バス'};}
 // いまの駅・バス停から行ける行き先
 // 湘南のバスは近くの駅・バス停（約3km以内）だけ。電車の駅どうしはどこへでも
-function routesFrom(cur){return STATIONS.map((s,i)=>({s,i})).filter(({s})=>s!==cur&&(s.region===cur.region&&(s.region!=='shonan'||(cur.line!=='bus'&&s.line!=='bus')||Math.hypot(s.x-cur.x,s.y-cur.y)<1000)||(cur.jr&&s.jr&&s.region!==cur.region&&(cur.n==='横浜駅'||s.n==='横浜駅'))));}
+function routesFrom(cur){return STATIONS.map((s,i)=>({s,i})).filter(({s})=>s!==cur&&(s.region===cur.region&&(s.region!=='shonan'||(cur.line!=='bus'&&s.line!=='bus')||Math.hypot(s.x-cur.x,s.y-cur.y)<3000)||(cur.jr&&s.jr&&s.region!==cur.region&&(cur.n==='横浜駅'||s.n==='横浜駅'))));}
 let busWait={};
 function renderTab(){
   for(const b of document.querySelectorAll('#tabs button[data-t]'))b.classList.toggle('on',b.dataset.t===tab);
@@ -1323,7 +1326,7 @@ function renderSpotList(sb){const rg=regionAt(S.x,S.y),mon=gameDate().getMonth()
     const ng=g&&(g.accessStatus==='unverified'||g.accessStatus==='protected'),hr=g?SH.hoursOf(g,mon):sp.hours;
     const lines=g?[`${SH.AREA_LABEL[g.area]}・${SH.TYPE_LABEL[g.type]}・<em class="${ng?'ng':''}">${SH.STATUS_LABEL[g.accessStatus]}</em>`,hr?`利用時間 ${SH.fmtH(hr[0])}〜${SH.fmtH(hr[1])}（${mon}月）`:'',
       g.targetSpecies.length?`魚：${g.targetSpecies.join('・')}`:'',g.fishingMethods.length?`釣り方：${g.fishingMethods.join('・')}`:'',g.prohibitedMethods.length?`<em class="ng">禁止：${g.prohibitedMethods.join('・')}</em>`:'',
-      g.hazards.length?`注意：${g.hazards.join('・')}`:'',sp.id===selSpot?esc(g.notes):'',`最寄り：${best?best.n:'—'}（約${Math.round(bd*SC/100)/10}km）`]
+      g.hazards.length?`注意：${g.hazards.join('・')}`:'',sp.id===selSpot?esc(g.notes):'',`最寄り：${best?best.n:'—'}（約${Math.round(bd/100)/10}km）`]
       :[sp.hours?`営業時間 ${sp.hours[0]}:00〜${sp.hours[1]}:00`:'岸壁の公園',`最寄り：${best?best.n:'—'}`];
     h+=`<button class="item${sp.id===selSpot?' on':''}${ng?' dim':''}" data-sp="${sp.id}"><div class="tx"><b>${esc(sp.n)}</b>${lines.filter(Boolean).map(l=>`<span>${l}</span>`).join('')}</div></button>`;if(sp.id===selSpot)h+=spotNavHtml(sp);}
   sb.innerHTML=h+'</div>';drawMapCv($('mapCv'));
@@ -1353,12 +1356,12 @@ function drawMap2D(c,labels){c.lineJoin='round';c.lineCap='round';
   if(labels){c.textAlign='center';c.textBaseline='middle';c.font=`900 ${44*SC}px ${FONT}`;c.fillStyle='rgba(19,38,59,.6)';for(const[n,x,y]of AREAS)c.fillText(n,x,y);}}
 const MAPC=document.createElement('canvas');MAPC.width=480;MAPC.height=780;
 {const c=MAPC.getContext('2d');c.fillStyle='#2a7aa3';c.fillRect(0,0,480,780);c.scale(.1,.1);drawMap2D(c,false);}
-// 湘南のミニマップ用（x:-6100〜2800, y:8200〜10700）
-const MAPC2=document.createElement('canvas');MAPC2.width=890;MAPC2.height=250;
-{const c=MAPC2.getContext('2d');c.fillStyle='#2a7aa3';c.fillRect(0,0,890,250);c.scale(.1,.1);c.translate(6100,-8200);drawMap2D(c,false);}
+// 湘南のミニマップ用（x:-23000〜3500, y:8200〜15700。等倍）
+const MAPC2=document.createElement('canvas');MAPC2.width=2650;MAPC2.height=750;
+{const c=MAPC2.getContext('2d');c.fillStyle='#2a7aa3';c.fillRect(0,0,2650,750);c.scale(.1,.1);c.translate(23000,-8200);drawMap2D(c,false);}
 // いる地域の地図（横浜は縦長、湘南は横長）
-function drawMapCv(cvs){const sh=regionAt(S.x,S.y)==='shonan';const B=sh?{x0:-6100,x1:2800,y0:8300,y1:10300}:{x0:1500,x1:4800,y0:0,y1:7800};
-  const w=cvs.clientWidth||320,h=sh?Math.max(170,w*.55):w*1.2;cvs.style.height=h+'px';const d=Math.min(window.devicePixelRatio||1,2);cvs.width=Math.round(w*d);cvs.height=Math.round(h*d);
+function drawMapCv(cvs){const sh=regionAt(S.x,S.y)==='shonan';const B=sh?{x0:-23000,x1:3500,y0:8300,y1:14300}:{x0:1500,x1:4800,y0:0,y1:7800};
+  const w=cvs.clientWidth||320,h=sh?Math.max(170,w*.4):w*1.2;cvs.style.height=h+'px';const d=Math.min(window.devicePixelRatio||1,2);cvs.width=Math.round(w*d);cvs.height=Math.round(h*d);
   const c=cvs.getContext('2d');const sc=Math.min(w/(B.x1-B.x0),h/(B.y1-B.y0));const ox=w/2-(B.x0+B.x1)/2*sc,oy=h/2-(B.y0+B.y1)/2*sc;
   c.setTransform(d,0,0,d,0,0);c.fillStyle='#2a7aa3';c.fillRect(0,0,w,h);c.setTransform(d*sc,0,0,d*sc,d*ox,d*oy);drawMap2D(c,true);
   if(sh)for(const r of SH.GRESTRICTED){c.fillStyle='rgba(224,74,59,.35)';c.beginPath();c.arc(r.x,r.y,Math.max(r.gr,60),0,7);c.fill();}
@@ -1368,7 +1371,7 @@ function drawMapCv(cvs){const sh=regionAt(S.x,S.y)==='shonan';const B=sh?{x0:-61
   c.fillStyle='#e04a3b';c.beginPath();c.arc(S.x,S.y,90,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=24;c.stroke();}
 const miniC=$('mini').getContext('2d');let miniT=0;
 function drawMini(){const c=miniC,W=208,R=W/2,z=2.6;c.save();c.clearRect(0,0,W,W);c.beginPath();c.arc(R,R,R,0,7);c.clip();c.fillStyle='#2a7aa3';c.fillRect(0,0,W,W);
-  c.translate(R,R);c.rotate(yaw);c.scale(z,z);c.translate(-S.x*.1,-S.y*.1);c.drawImage(MAPC,0,0);c.drawImage(MAPC2,-610,820);
+  c.translate(R,R);c.rotate(yaw);c.scale(z,z);c.translate(-S.x*.1,-S.y*.1);c.drawImage(MAPC,0,0);c.drawImage(MAPC2,-2300,820);
   for(const sp of SPOTS){c.fillStyle='#1b7d82';c.beginPath();c.arc(sp.x*.1,sp.y*.1,3,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=.8;c.stroke();}
   for(const s of STATIONS){c.fillStyle='#2f6fb0';c.fillRect(s.x*.1-1.6,s.y*.1-1.6,3.2,3.2);}
   for(const s of SIGHTS){c.fillStyle=S.stamps[s.id]?'#f6f2e8':'#f1b746';c.beginPath();c.arc(s.x*.1,s.y*.1,2,0,7);c.fill();}
@@ -1572,10 +1575,11 @@ const GEO=window.HamaGeo,MD=window.HamaMapData,GEOD=window.HamaGeoData||{files:{
 const MAPD=MD.create(GEO.SHONAN);
 for(const[f,o]of Object.entries(GEOD.files||{})){try{MD.addGeoJSON(MAPD,{features:o.features},{name:f,layer:o.layer||undefined});}catch(e){console.warn('地図データの読み込みに失敗',f,e);}}
 function buildNet(){const t0=performance.now();
-  const land=(x,y)=>(isLand(x,y)||!!rectAt(x,y))&&!colAt(x,y,1);
+  // 道はなるべく陸の縁から3m以上内側を通す（狭い岸壁・防波堤の端を通って海に落ちないように。無理なら縁も通る）
+  const land=(x,y)=>(isLand(x,y)||!!rectAt(x,y))&&!colAt(x,y,1),inner=(x,y)=>land(x,y)&&land(x+3,y)&&land(x-3,y)&&land(x,y+3)&&land(x,y-3);
   const trunks=[{pts:ROAD,w:20,kind:'primary',name:'幹線道路（おおよそ）'},...ROADS2.map(p=>({pts:p,w:12,kind:'secondary',name:'道路（おおよそ）'})),{pts:SH.R134,w:12,kind:'primary',name:'国道134号（おおよそ）'}];
   const targets=SPOTS.map(sp=>({id:sp.id,x:sp.x,y:sp.y,name:sp.n,car:!sp.sh||sp.sh.type==='port'||sp.sh.type==='breakwater'}));
-  const fb=NV.fallback(trunks,targets,land,{cell:8,radius:1500});
+  const fb=NV.fallback(trunks,targets,land,{cell:8,radius:1500,strict:inner});
   let roads=fb.roads,lots=fb.lots,bikeParks=[],fuel=[];const osm=[];
   for(const[name,D]of Object.entries(OSM_SET)){if(!D||!D.roads||!D.roads.length)continue;const B=osmBox(D);osm.push({name,D,B});
     // OSM の範囲の中は OSM の道・駐車場を使う（代わりの道・推定駐車場は外す）
@@ -1620,9 +1624,9 @@ if(/geodebug/.test(location.hash))for(const f of GSHHS_COAST.map(pts=>({pts}))){
 function onRoad(cx,cy,half){const M=NET.M,c=M.cell;for(let x=cx-half-2;x<=cx+half+2;x+=c)for(let y=cy-half-2;y<=cy+half+2;y+=c)if(M.at(x,y))return true;return false;}
 // 路面：岩場（磯）・階段（江の島）は乗ったまま進めない。砂浜・公園・舗装路
 function surfaceAt(x,y){const sh=SH.inShonan(x,y);const rc=NET.M.at(x,y);
-  if(sh){for(const g of ISO_SPOTS)if(Math.hypot(x-g.x,y-g.y)<22)return'rock';if(pip(SH.ENOSHIMA,x,y)&&!(rc&&rc.car))return'steps';}
+  if(sh){for(const g of ISO_SPOTS)if(Math.hypot(x-g.x,y-g.y)<40)return'rock';if(pip(SH.ENOSHIMA,x,y)&&!(rc&&rc.car))return'steps';}
   if(rc&&rc.car)return'paved';
-  if(sh?SH.lineDist(SH.COAST,x,y)<24:lineDist(BEACH,x,y)<35)return'sand';
+  if(sh?SH.lineDist(SH.COAST,x,y)<60:lineDist(BEACH,x,y)<35)return'sand';
   if(rc)return rc.surface||'paved';
   if(!sh&&PARKS.some(([a,b,rx,ry])=>((x-a)/rx)**2+((y-b)/ry)**2<1))return'grass';
   return'paved';}
@@ -1676,7 +1680,7 @@ function rideMsg(m){if(rideMsgT>0)return;rideMsgT=2.5;toast(m);}
 function rideStep(dt,mx,my){const o=RIDE.o,sp=RIDE.sp,st=RIDE.st,car=sp.kind==='car';rideMsgT-=dt;
   const surf=car?'paved':surfaceAt(S.x,S.y);const rc=NET.M.at(S.x,S.y);const lim=car?(rc&&rc.car?KIND_LIMIT[rc.kind]||8:3):null;
   const th=Math.abs(my)>.08?clamp(-my,-1,1):0;
-  const before={v:st.v,h:st.h};VH.ride(o,st,{throttle:th,steer:Math.abs(mx)>.08?-mx:0},{surface:surf,limit:lim,slope:0},dt,S);
+  const before={v:st.v,h:st.h};VH.ride(o,st,{throttle:th,steer:Math.abs(mx)>.08?-mx:0},{surface:surf,limit:lim,slope:0,sc:GEO.regionAt(S.x,S.y).sc},dt,S);
   const nx=S.x+Math.sin(st.h)*st.v*dt,ny=S.y+Math.cos(st.h)*st.v*dt;const fwd=(car?2.3:.8)*Math.sign(st.v||1);const fx=nx+Math.sin(st.h)*fwd,fy=ny+Math.cos(st.h)*fwd;
   let ok;if(car)ok=carOk(nx,ny)&&carOk(fx,fy);else{const s2=surfaceAt(fx,fy);ok=walk(nx,ny)&&walk(fx,fy)&&!VH.BLOCKED.includes(s2);if(!ok&&VH.BLOCKED.includes(s2))rideMsg(`${SURF_LABEL[s2]}は乗ったまま進めない。降りて歩こう`);}
   if(ok){S.x=nx;S.y=ny;}
@@ -1703,7 +1707,8 @@ function spotNav(sp){const nl=NV.nearestLot(NET.lots,sp.x,sp.y);const ne=RT.near
   if(nl){const p=NV.plan(NET.G,NET.lots,[nl.lot.x,nl.lot.y],[sp.x,sp.y],'walk');walkLen=p.len;}
   const bp=NET.bikeParks.length?NET.bikeParks.reduce((a,b)=>Math.hypot(b.x-sp.x,b.y-sp.y)<Math.hypot(a.x-sp.x,a.y-sp.y)?b:a):null;
   return{lot:nl&&nl.lot,lotD:nl&&nl.d,road:ne,walkLen,bike:bp&&Math.hypot(bp.x-sp.x,bp.y-sp.y)<800?bp:null,missing:NET.missing.find(m=>m.id===sp.id)};}
-const realM=m=>m*SC>=1000?`${(m*SC/1000).toFixed(1)}km`:`${Math.round(m*SC/10)*10}m`;
+// ゲームの距離 → 実際の距離の表示（湘南は等倍、横浜は×3）
+const realM=(m,x,y)=>{const r=m*GEO.regionAt(x==null?S.x:x,y==null?S.y:y).sc;return r>=1000?`${(r/1000).toFixed(1)}km`:`${Math.round(r/10)*10}m`;};
 
 /* 地図（拡大・移動できる）：道・駐車場・釣り場・停めた乗り物・ルート */
 const NAVV={z:0,cx:0,cy:0,gshhs:true};let navDrag=null;
@@ -1733,7 +1738,7 @@ function drawNav(cvs){const w=cvs.clientWidth||320,h=Math.round(Math.min(420,w*1
   c.setTransform(d,0,0,d,0,0);c.font=`700 10px ${FONT}`;c.textAlign='right';c.textBaseline='bottom';c.fillStyle='rgba(19,38,59,.85)';
   c.fillText(NET.osm.some(o=>o.D.meta&&o.D.meta.fictional)?'架空のテスト用データ（実在の地図ではない）':NET.osm.length?'© OpenStreetMap contributors':'道路はおおよそ（実在の道路データではない）',w-6,h-4);
   // 縮尺（実際の距離）
-  const sb=GEO.scaleBar({z},110);c.fillStyle='rgba(19,38,59,.85)';c.fillRect(8,h-12,sb.px,3);c.textAlign='left';c.fillText(sb.label,8,h-15);if(NAVV.gshhs){c.fillStyle='#7a3fb0';c.fillText('紫の点線：GSHHS/GSHHG の海岸線（実在・粗い概形）',8,14);}}
+  const sb=GEO.scaleBar({z},110,GEO.regionAt(NAVV.cx,NAVV.cy).sc);c.fillStyle='rgba(19,38,59,.85)';c.fillRect(8,h-12,sb.px,3);c.textAlign='left';c.fillText(sb.label,8,h-15);if(NAVV.gshhs){c.fillStyle='#7a3fb0';c.fillText('紫の点線：GSHHS/GSHHG の海岸線（実在・粗い概形）',8,14);}}
 function bindNav(cvs){const redraw=()=>drawNav(cvs);
   cvs.onpointerdown=e=>{navDrag={x:e.clientX,y:e.clientY,cx:NAVV.cx,cy:NAVV.cy};try{cvs.setPointerCapture(e.pointerId);}catch(_){}};
   cvs.onpointermove=e=>{if(!navDrag)return;NAVV.cx=navDrag.cx-(e.clientX-navDrag.x)/NAVV.z;NAVV.cy=navDrag.cy-(e.clientY-navDrag.y)/NAVV.z;redraw();};
@@ -1747,8 +1752,8 @@ const wmCv=$('wmCv');
 function openWorld(){if(F.st!=='idle'&&F.st!=='wait'){toast('釣りの最中です');return;}if(F.st==='wait')reelIn();closeSheet();$('wmap').hidden=false;
   const w=innerWidth,h=innerHeight;WM.v=GEO.view(S.x,S.y,WM.v?WM.v.z:.12,w,h);WM.sel=null;$('wmInfo').hidden=true;drawWorld();}
 function closeWorld(){$('wmap').hidden=true;}
-function wmFitRegion(id){setWmMode(id==='kanto'?'kanto':'game');if(id==='kanto'){kantoFit();return;}const b=id==='shonan'?{x0:GEO.SHONAN.bounds.x0,x1:GEO.SHONAN.bounds.x1,y0:GEO.SHONAN.bounds.y0,y1:GEO.SHONAN.bounds.y0+2200}:{x0:1500,x1:4800,y0:0,y1:7800};const v=GEO.fit(b,innerWidth,innerHeight,40);WM.v.cx=v.cx;WM.v.cy=v.cy;WM.v.z=v.z;drawWorld();}
-let WM_ZMIN=.02;const WM_ZMAX=3;
+function wmFitRegion(id){setWmMode(id==='kanto'?'kanto':'game');if(id==='kanto'){kantoFit();return;}const b=id==='shonan'?{x0:GEO.SHONAN.bounds.x0,x1:GEO.SHONAN.bounds.x1,y0:GEO.SHONAN.bounds.y0,y1:GEO.SHONAN.bounds.y0+6600}:{x0:1500,x1:4800,y0:0,y1:7800};const v=GEO.fit(b,innerWidth,innerHeight,40);WM.v.cx=v.cx;WM.v.cy=v.cy;WM.v.z=v.z;drawWorld();}
+let WM_ZMIN=.005;const WM_ZMAX=3;
 function drawWorld(){if($('wmap').hidden)return;const w=innerWidth,h=innerHeight,d=Math.min(window.devicePixelRatio||1,2);const v=WM.v;v.w=w;v.h=h;
   if(WM.mode==='kanto'){drawKanto(w,h,d);return;}
   if(wmCv.width!==Math.round(w*d)||wmCv.height!==Math.round(h*d)){wmCv.width=Math.round(w*d);wmCv.height=Math.round(h*d);}
@@ -1765,7 +1770,7 @@ function drawWorld(){if($('wmap').hidden)return;const w=innerWidth,h=innerHeight
   // 現在地：向きつきの矢印
   const hd=RIDE?RIDE.st.h:P.rotation.y;c.save();c.translate(S.x,S.y);c.rotate(-hd+Math.PI);c.scale(px,px);c.fillStyle='#e04a3b';c.strokeStyle='#fff';c.lineWidth=2.5;c.beginPath();c.moveTo(0,-14);c.lineTo(9,9);c.lineTo(0,4);c.lineTo(-9,9);c.closePath();c.fill();c.stroke();c.restore();
   // 縮尺・出典
-  c.setTransform(d,0,0,d,0,0);const sb=GEO.scaleBar(v,120);const by=h-(14+(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sab'))||0));
+  c.setTransform(d,0,0,d,0,0);const sb=GEO.scaleBar(v,120,GEO.regionAt(v.cx,v.cy).sc);const by=h-(14+(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sab'))||0));
   c.fillStyle='rgba(246,242,232,.9)';c.fillRect(8,by-30,Math.max(sb.px,60)+16,28);c.fillStyle='#13263b';c.fillRect(16,by-10,sb.px,3);c.font=`700 11px ${FONT}`;c.textAlign='left';c.textBaseline='alphabetic';c.fillText(sb.label+'（実際の距離）',16,by-14);
   // 出典・注意は縮尺の上の行に（重ならないように）
   const at=(NET.osm.length?'© OpenStreetMap contributors・':'道路はおおよそ・駐車場は推定・')+(WM.lyr.gshhs?'紫の点線：GSHHS/GSHHG（実在・粗い）':'');c.font=`700 10px ${FONT}`;const tw=c.measureText(at).width;
@@ -1799,7 +1804,7 @@ const KANTO_BBOX=[138.4,34.85,140.9,37.2];// 表示の初期範囲（伊豆・�
 function kantoInit(){if(KT.init)return KT.init;KT.init=(async()=>{try{const r=await fetch(KT.base+'index.json');if(!r.ok)throw new Error('index.json '+r.status);KT.index=await r.json();
     KT.ts=HamaTiles.open(KT.base+KT.index.archive);await KT.ts.ready;KT.status='ok';try{const g=await fetch(KT.base+'regions.json');if(g.ok)KT.regions=(await g.json()).regions||[];}catch(e){}}
   catch(e){KT.status='missing';KT.err=String(e.message||e);console.info('[関東地図] タイルなし：'+KT.err);}drawWorld();})();return KT.init;}
-function setWmMode(m){WM.mode=m;WM_ZMIN=m==='kanto'?.002:.02;$('wmKanto').hidden=m!=='kanto';document.querySelector('.wmLyr').hidden=m==='kanto';$('wmInfo').hidden=true;if(m==='kanto')kantoInit();}
+function setWmMode(m){WM.mode=m;WM_ZMIN=m==='kanto'?.0008:.005;$('wmKanto').hidden=m!=='kanto';document.querySelector('.wmLyr').hidden=m==='kanto';$('wmInfo').hidden=true;if(m==='kanto')kantoInit();}
 function kantoFit(){const b=KT.ts&&KT.ts.header?KT.ts.header.bounds:KANTO_BBOX;const bb=[Math.max(b[0],KANTO_BBOX[0]),Math.max(b[1],KANTO_BBOX[1]),Math.min(b[2],KANTO_BBOX[2]),Math.min(b[3],KANTO_BBOX[3])];
   const p0=GEO.toGame(bb[3],bb[0]),p1=GEO.toGame(bb[1],bb[2]);const v=GEO.fit({x0:p0[0],x1:p1[0],y0:p0[1],y1:p1[1]},innerWidth,innerHeight,30);Object.assign(WM.v,{cx:v.cx,cy:v.cy,z:v.z});drawWorld();}
 // タイル → ゲーム座標の Path2D（レイヤーごと）。一度作ったらキャッシュ
@@ -1817,7 +1822,7 @@ const ROADW={motorway:3.2,trunk:3,primary:2.6,secondary:2.2,tertiary:2,residenti
 function drawKanto(w,h,d){const c=wmCv.getContext('2d'),v=WM.v,z=v.z,px=1/z;c.setTransform(d,0,0,d,0,0);c.fillStyle='#2a7aa3';c.fillRect(0,0,w,h);c.setTransform(...GEO.canvasMatrix(v,d));
   const[la0,lo0]=GEO.toLatLon(v.cx-w/2/z,v.cy+h/2/z),[la1,lo1]=GEO.toLatLon(v.cx+w/2/z,v.cy-h/2/z);
   let note='';
-  if(KT.status==='ok'){const H=KT.ts.header;const mpp=GEO.SC/z;let tz=Math.round(HamaTiles.zoomFor(mpp,(la0+la1)/2,512));tz=Math.max(H.minZoom,Math.min(16,tz));
+  if(KT.status==='ok'){const H=KT.ts.header;const mpp=1/z;let tz=Math.round(HamaTiles.zoomFor(mpp,(la0+la1)/2,512));tz=Math.max(H.minZoom,Math.min(16,tz));
     let list=null;while(tz>=H.minZoom&&!(list=HamaTiles.tilesForBBox([lo0,la0,lo1,la1],tz,64)))tz--;list=list||[];
     const tiles=[];for(const[zz,x,y]of list){let t=KT.ts.peek(zz,x,y);if(t===undefined){KT.pending++;KT.ts.tile(zz,x,y).then(()=>{KT.pending--;kRedraw();},()=>{KT.pending--;});
         // 読み込み中は親のタイル（低詳細）で代わりに描く
@@ -2025,7 +2030,7 @@ function updSound(dt){SND.update(dt);ambT-=dt;if(ambT<=0){ambT=.5;const sea=rect
 function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;const t=now/1000;update(dt,t);render(dt,t);updUI();updSound(dt);requestAnimationFrame(frame);}
 
 /* ===== 開始 ===== */
-function start(fromSave,where){const ld=fromSave&&load();if(ld){TK.migrate(ld,TACKLE);TK.migrateGear(ld,TACKLE);}S=ld?Object.assign(fresh(),ld):fresh();if(!ld)S.base=today0();VH.migrate(S);restoreRide();
+function start(fromSave,where){const ld=fromSave&&load();if(ld){TK.migrate(ld,TACKLE);TK.migrateGear(ld,TACKLE);migrateMap(ld);}S=ld?Object.assign(fresh(),ld):fresh();if(!ld)S.base=today0();VH.migrate(S);restoreRide();
   if(where==='hiratsuka'){const p=hiratsukaStart();S.x=p[0];S.y=p[1];}
   F.st='idle';N=null;$('title').hidden=true;updMoney();lastClock='';updClock();yaw=0;updChunks(true);if(!walk(S.x,S.y)){S.x=2130;S.y=1880;updChunks(true);}snapCam();save();
   if(!ld)setTimeout(()=>toast(where==='hiratsuka'?'平塚の海岸から。メニュー→乗り物で自転車や車も買える':'まずは釣り場へ。歩くか、青い丸看板のバス停からバスで'),500);}
@@ -2038,7 +2043,7 @@ addEventListener('pointerdown',()=>SND.init(),{once:true});
 function updSndBtn(){const b=$('sndBtn');b.textContent=SND.on?'音':'消音';b.style.opacity=SND.on?1:.6;}
 $('sndBtn').onclick=()=>{SND.init();SND.setOn(!SND.on);updSndBtn();};updSndBtn();
 const hotS=hot&&hot.data&&hot.data.S;
-if(hotS&&hotS.money!=null){TK.migrate(hotS,TACKLE);TK.migrateGear(hotS,TACKLE);S=Object.assign(fresh(),hotS);VH.migrate(S);restoreRide();$('title').hidden=true;}
+if(hotS&&hotS.money!=null){TK.migrate(hotS,TACKLE);TK.migrateGear(hotS,TACKLE);migrateMap(hotS);S=Object.assign(fresh(),hotS);VH.migrate(S);restoreRide();$('title').hidden=true;}
 else if(load())$('contBtn').hidden=false;
 updMoney();updClock();updChunks(true);snapCam();requestAnimationFrame(frame);
 })();

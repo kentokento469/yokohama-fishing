@@ -30,3 +30,8 @@
 - 試験：架空の tests/fixtures/kanto-test.osm.pbf → data/tiles/test/（#tilestest）。tests/tiles.test.js 8件。
 - ゲーム：tiles.js、ワールドマップ「関東」（ズーム選択・親タイル代替・地域検索・タップ情報）。
 - 未対応：3Dフィールドへの実在タイル描画（湘南は距離1/3なので建物・道路の幅が1/3になる。縮尺の決定が必要）。kanto.pmtiles の配信先（100MB超で git 不可）。
+
+## 湘南を等倍に（ユーザー決定「等倍でいい、移動ツールがある」）
+- geo.js SHONAN.sc=1、bounds x -22800〜3300・y 8300〜15500。shonan.js は R0.sc を使う（川幅・堤防幅・規制半径が実寸）。
+- index.html：砂浜帯60m・建物を置かない海岸帯190m・磯40m・江の島の丘（約520×240m、高さ約58m）・湘南のバス3km・運賃/距離の表示・ミニマップ（MAPC2 2650×750）・海の平面拡大・乗り物の消費（env.sc）。
+- 横浜は1/3のまま。セーブ移行 migrateMap（mapv 2）。

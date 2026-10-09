@@ -53,7 +53,7 @@ function layerOfProps(p){if(p.category==='coastline')return'coastline';if(p.cate
 function roadsForGraph(M){return M.layers.roads.features.filter(f=>f.road&&f.real).map(f=>Object.assign({id:f.id,pts:f.pts,name:f.name,approx:false},f.road,{nodes:f.road.nodes&&f.road.nodes.length===f.pts.length?f.road.nodes:null}));}
 
 /* 線どうしのずれ（実際のメートル）：a の各頂点から b の線までの距離の統計 */
-function lineOffset(a,b){const ds=[];for(const p of a){let d=1e18;for(const L of b)for(let i=0;i<L.length-1;i++){const q=L[i],r=L[i+1],dx=r[0]-q[0],dy=r[1]-q[1],l=dx*dx+dy*dy;let t=l?((p[0]-q[0])*dx+(p[1]-q[1])*dy)/l:0;t=t<0?0:t>1?1:t;d=Math.min(d,Math.hypot(p[0]-q[0]-dx*t,p[1]-q[1]-dy*t));}ds.push(d*GEO.SC);}
+function lineOffset(a,b){const ds=[];for(const p of a){let d=1e18;for(const L of b)for(let i=0;i<L.length-1;i++){const q=L[i],r=L[i+1],dx=r[0]-q[0],dy=r[1]-q[1],l=dx*dx+dy*dy;let t=l?((p[0]-q[0])*dx+(p[1]-q[1])*dy)/l:0;t=t<0?0:t>1?1:t;d=Math.min(d,Math.hypot(p[0]-q[0]-dx*t,p[1]-q[1]-dy*t));}ds.push(d*GEO.SHONAN.sc);}
   ds.sort((x,y)=>x-y);const avg=ds.reduce((s,v)=>s+v,0)/(ds.length||1);return{n:ds.length,mean:avg,median:ds[ds.length>>1]||0,max:ds[ds.length-1]||0};}
 
 /* 読み込んだ GeoJSON の検査（import_geo.mjs とテストで使う） */
