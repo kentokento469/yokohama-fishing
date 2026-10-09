@@ -1,0 +1,309 @@
+{
+ "_note": "テスト用の架空データ（Overpass API の JSON と同じ形）。実在の地図ではない。",
+ "version": 0.6,
+ "generator": "test-fixture",
+ "elements": [
+  {
+   "type": "way",
+   "id": 1,
+   "nodes": [
+    1001,
+    1002,
+    1003
+   ],
+   "geometry": [
+    {
+     "lat": 35.312,
+     "lon": 139.349
+    },
+    {
+     "lat": 35.3115,
+     "lon": 139.355
+    },
+    {
+     "lat": 35.312,
+     "lon": 139.361
+    }
+   ],
+   "tags": {
+    "natural": "coastline"
+   }
+  },
+  {
+   "type": "way",
+   "id": 2,
+   "nodes": [
+    2001,
+    2002,
+    2003
+   ],
+   "geometry": [
+    {
+     "lat": 35.315,
+     "lon": 139.35
+    },
+    {
+     "lat": 35.315,
+     "lon": 139.355
+    },
+    {
+     "lat": 35.315,
+     "lon": 139.36
+    }
+   ],
+   "tags": {
+    "highway": "primary",
+    "name": "テスト海岸通り"
+   }
+  },
+  {
+   "type": "way",
+   "id": 3,
+   "nodes": [
+    2010,
+    2002
+   ],
+   "geometry": [
+    {
+     "lat": 35.32,
+     "lon": 139.355
+    },
+    {
+     "lat": 35.315,
+     "lon": 139.355
+    }
+   ],
+   "tags": {
+    "highway": "residential"
+   }
+  },
+  {
+   "type": "way",
+   "id": 4,
+   "nodes": [
+    2020,
+    2010
+   ],
+   "geometry": [
+    {
+     "lat": 35.32,
+     "lon": 139.35
+    },
+    {
+     "lat": 35.32,
+     "lon": 139.355
+    }
+   ],
+   "tags": {
+    "highway": "residential",
+    "oneway": "yes"
+   }
+  },
+  {
+   "type": "way",
+   "id": 5,
+   "nodes": [
+    2003,
+    2030
+   ],
+   "geometry": [
+    {
+     "lat": 35.315,
+     "lon": 139.36
+    },
+    {
+     "lat": 35.3122,
+     "lon": 139.36
+    }
+   ],
+   "tags": {
+    "highway": "footway",
+    "surface": "sand"
+   }
+  },
+  {
+   "type": "way",
+   "id": 6,
+   "nodes": [
+    2001,
+    2020
+   ],
+   "geometry": [
+    {
+     "lat": 35.315,
+     "lon": 139.35
+    },
+    {
+     "lat": 35.32,
+     "lon": 139.35
+    }
+   ],
+   "tags": {
+    "highway": "cycleway"
+   }
+  },
+  {
+   "type": "way",
+   "id": 7,
+   "nodes": [
+    3001,
+    3002,
+    3003,
+    3004,
+    3001
+   ],
+   "geometry": [
+    {
+     "lat": 35.319,
+     "lon": 139.351
+    },
+    {
+     "lat": 35.319,
+     "lon": 139.352
+    },
+    {
+     "lat": 35.318,
+     "lon": 139.352
+    },
+    {
+     "lat": 35.318,
+     "lon": 139.351
+    },
+    {
+     "lat": 35.319,
+     "lon": 139.351
+    }
+   ],
+   "tags": {
+    "building": "yes",
+    "building:levels": "3"
+   }
+  },
+  {
+   "type": "way",
+   "id": 8,
+   "nodes": [
+    3011,
+    3012,
+    3013,
+    3014,
+    3011
+   ],
+   "geometry": [
+    {
+     "lat": 35.319,
+     "lon": 139.356
+    },
+    {
+     "lat": 35.319,
+     "lon": 139.358
+    },
+    {
+     "lat": 35.317,
+     "lon": 139.358
+    },
+    {
+     "lat": 35.317,
+     "lon": 139.356
+    },
+    {
+     "lat": 35.319,
+     "lon": 139.356
+    }
+   ],
+   "tags": {
+    "amenity": "parking",
+    "capacity": "40"
+   }
+  },
+  {
+   "type": "node",
+   "id": 4001,
+   "lat": 35.316,
+   "lon": 139.359,
+   "tags": {
+    "amenity": "bicycle_parking"
+   }
+  },
+  {
+   "type": "way",
+   "id": 9,
+   "nodes": [
+    1004,
+    1005
+   ],
+   "geometry": [
+    {
+     "lat": 35.32,
+     "lon": 139.353
+    },
+    {
+     "lat": 35.311,
+     "lon": 139.353
+    }
+   ],
+   "tags": {
+    "waterway": "river",
+    "name": "テスト川"
+   }
+  },
+  {
+   "type": "way",
+   "id": 10,
+   "nodes": [
+    1006,
+    1007
+   ],
+   "geometry": [
+    {
+     "lat": 35.3118,
+     "lon": 139.358
+    },
+    {
+     "lat": 35.31,
+     "lon": 139.358
+    }
+   ],
+   "tags": {
+    "man_made": "breakwater",
+    "access": "no"
+   }
+  },
+  {
+   "type": "way",
+   "id": 11,
+   "nodes": [
+    3021,
+    3022,
+    3023,
+    3024,
+    3021
+   ],
+   "geometry": [
+    {
+     "lat": 35.318,
+     "lon": 139.361
+    },
+    {
+     "lat": 35.318,
+     "lon": 139.362
+    },
+    {
+     "lat": 35.317,
+     "lon": 139.362
+    },
+    {
+     "lat": 35.317,
+     "lon": 139.361
+    },
+    {
+     "lat": 35.318,
+     "lon": 139.361
+    }
+   ],
+   "tags": {
+    "amenity": "parking"
+   }
+  }
+ ]
+}
