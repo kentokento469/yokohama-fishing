@@ -43,10 +43,12 @@ function createSchool(opt){const rng=opt.rng||Math.random;const s={fish:[],t:0,r
   let sum=0;for(const[,w]of opt.cand)sum+=w;s.target=sum<=0?0:opt.count||Math.round(clamp(sum/8,AI.minCount,8))+(opt.nabura?4:0);
   for(let i=0;i<s.target;i++)spawn(s,true);return s;}
 function spawn(s,initial){const o=s.opt,rng=s.rng;if(!o.cand.length)return null;const id=pickWeighted(o.cand,rng);const p=speciesParams(id);
-  const lx=s.lureX!=null?s.lureX:o.maxDist;const x=initial?2+rng()*(o.maxDist+8):clamp(lx+(rng()-.5)*16,2,o.maxDist+10),D=o.depthAt(x);const[a,b]=SIM.layerRange(SIM.LAYER[id]||'mid',D);
+  const lx=s.lureX!=null?s.lureX:o.maxDist;const px=()=>initial?2+rng()*(o.maxDist+8):clamp(lx+(rng()-.5)*16,2,o.maxDist+10);
+  // 底の魚は好きな底質（岩・砂・泥・海藻）の上にいやすい（段階6）
+  let x=px();if(o.bottomAt&&SIM.BOTTOM_PREF[id])for(let k=0;k<4&&SIM.bottomFactor(id,o.bottomAt(x))<1;k++)x=px();const D=o.depthAt(x);const[a,b]=SIM.layerRange(SIM.LAYER[id]||'mid',D);
   let z=a+(b-a)*rng();if(o.nabura&&p.school&&rng()<.7){z=Math.min(z,3);}
   const f={n:s.nextId++,id,p,x,y:(rng()-.5)*2*AI.spreadY,z,hx:x,state:'cruise',interest:0,tState:0,lostT:0,fastT:0,wary:0,
-    act:clamp((o.activity||1)*(.6+.8*rng())*(o.nabura&&p.school?1.8:1),.1,2.5),caution:clamp(p.caution*(.75+.5*rng()),0,1),
+    act:clamp((o.activity||1)*(.6+.8*rng())*(o.nabura&&p.school?1.8:1),.1,2.5),caution:clamp(p.caution*(.75+.5*rng())*(o.cautionMul||1),0,1),
     size:o.sizeOf?o.sizeOf(id,rng):20,heading:rng()*6.283};
   s.fish.push(f);return f;}
 
@@ -61,9 +63,10 @@ function trigMul(p,c){let m=1;for(const k of['jerk','twitch','fall','stop','bott
 
 /* 1ステップ進める。L はルアー（fishing-sim の状態）、env: {light: 0〜1（夜は暗い）}。戻り値はイベントの配列 */
 function stepSchool(s,L,dt,env){const ev=[],rng=s.rng,o=s.opt;s.t+=dt;if(dt<=0||!L)return ev;env=env||{};
-  const light=env.light==null?1:env.light;const c=lureCues(s,L,dt);
+  // 目で見える距離は明るさと濁り（vis）、側線は濁っていても届く
+  const light=env.vis!=null?env.vis:env.light==null?1:env.light;const c=lureCues(s,L,dt);
   const it=L.rig&&L.rig.item;const loud=it?(it.noiseLevel||0)/200+(it.actionIntensity||0)/300:0;
-  const lx=L.dist,ly=L.side||0,lz=L.depth;s.lureX=lx;
+  const lx=L.dist,ly=SIM.lateral?SIM.lateral(L):L.side||0,lz=L.depth;s.lureX=lx;
   for(const f of s.fish){if(f.gone)continue;const p=f.p;f.tState+=dt;
     const dx=lx-f.x,dy=ly-f.y,dz=lz-f.z;const dist=Math.hypot(dx,dy,dz*AI.vertVision);
     // 気づく距離：目（明るさで変わる）＋ 側線（動いているルアーの波動。暗くても効く）

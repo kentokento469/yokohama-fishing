@@ -17,7 +17,7 @@
 - `data/equipment_catalog_400.json` — ユーザー提供の架空の釣具カタログ（ロッド・リール・ルアー・ジグ各100）。IDはセーブ互換のため変えない。
 - `data/tackle-data.js` — 上から400件を書き出した自動生成ファイル（`python3 tools/build_tackle.py`）。直接編集しない。
 - `tackle.js` — 釣具の所持（`S.tk`）・装備（ルアー `S.eq`、ロッド `S.rodId`、リール `S.reelId`）・購入・ロスト・ロッドの適合重量・リールの一致・飛距離・糸の強さ・巻き速度・Lv（図鑑2種ごと）・検索（`window.HamaTackle`）。
-- `fish-ai.js` — 魚のAI。`fight.js` — フッキングとファイト。
+- `fish-ai.js` — 魚のAI。`fight.js` — フッキングとファイト。`sound.js` — 効果音と環境音。
 - `tests/*.test.js` — 動作テスト。`node --test tests/*.test.js` で実行。
 - `docs/split-plan.md` — ファイル分割の計画。
 
@@ -26,7 +26,9 @@
 1. 土台：水深とルアー深度を別管理、沈下、泳層との一致度 ← 済
 2. ロッド操作 ← 済。長押しで巻く／押した指を上下で巻き速度（0〜2.5m/s、`S.spd`）／上フリックでジャーク／短タップでトゥイッチ／離すとフリーフォール／押して速度0でテンションフォール。PCはスペース・↑↓・J。待ち中は画面下に水中ビュー（ルアーと海底のみ。魚は見せない）。ドラグはファイト中の＋−（段階5）
 3. ルアー別の動作 ← 済。カタログのルアー・ジグ200件を釣具店で販売（検索・種類・並び替え・詳細・購入・装備・持ち物）。仕掛けの分類は sabiki / isome / lure / egi / worm（ワーム）。フローティング・サスペンド・リップで潜る・水面・ジグのフォール姿勢を `rigFromItem` で表現。ロッド・リール200件は段階5で取り込む（今は既存の竿4本に適合重量 `ROD_FIT` を持たせている）。
-4. 魚AI ← 済。`fish-ai.js`（`window.HamaFishAI`）。ルアー釣りの1投ごとに魚の個体を置き、cruise→notice→approach→chase→bite/short/refuse→wary/flee・giveup。魚種ごとの視界・速さ・好む速さ・警戒心・きっかけ（`BASE`/`OVR`）、調整値 `AI`。魚の位置は見せない（水面近くの気配だけ）。URL末尾 `#fishdebug` で水中ビューに魚の位置を表示（調整用）　5. フッキング・ファイト・ドラグ ← 済。`fight.js`（`window.HamaFight`：`hookSet` / `createFight` / `stepFight`、調整値 `FT`）。長押しで巻く／赤で離すはそのまま、巻いている間にドラグ（`S.dragKg`、既定は糸の強さの4割）を超えると糸が出る。ロッド・リール200件も釣具店へ（`S.rodId`/`S.reelId`、最初はLv1シーバスロッド＋ライトスピニング）。古いセーブの竿番号 `S.rod` は `TK.migrateGear` で置き換え　6. 環境（潮流・水温・天候・地形）
+4. 魚AI ← 済。`fish-ai.js`（`window.HamaFishAI`）。ルアー釣りの1投ごとに魚の個体を置き、cruise→notice→approach→chase→bite/short/refuse→wary/flee・giveup。魚種ごとの視界・速さ・好む速さ・警戒心・きっかけ（`BASE`/`OVR`）、調整値 `AI`。魚の位置は見せない（水面近くの気配だけ）。URL末尾 `#fishdebug` で水中ビューに魚の位置を表示（調整用）　5. フッキング・ファイト・ドラグ ← 済。`fight.js`（`window.HamaFight`：`hookSet` / `createFight` / `stepFight`、調整値 `FT`）。長押しで巻く／赤で離すはそのまま、巻いている間にドラグ（`S.dragKg`、既定は糸の強さの4割）を超えると糸が出る。ロッド・リール200件も釣具店へ（`S.rodId`/`S.reelId`、最初はLv1シーバスロッド＋ライトスピニング）。古いセーブの竿番号 `S.rod` は `TK.migrateGear` で置き換え　6. 環境 ← 済。`fishing-sim.js` の段階6部分：日ごとの天気 `weatherOf`、水温 `waterTemp`（月別の目安 `SST`）、濁り `turbidity`、潮流 `currentAt`（ルアーは糸を緩めるとドリフト）、明るさ `lightOf`、距離ごとの底質 `SPOT_ENV.bottoms` と `bottomAt`（岩・海藻・砂・泥。海藻帯は `weedRate` で海藻が掛かる）、魚の適水温 `TEMP_PREF`・好む底質 `BOTTOM_PREF`。雨は空・霧・雨筋で表示
+- 音：`sound.js`（`window.HamaSound`）。Web Audio API で合成（音ファイルなし）。最初のタップで有効、右上「音」で消音（localStorage `hama-tsuri-sound`）
+- 釣り場の範囲：釣り場の印から40m以内の岸壁の際・桟橋なら投げられる（`spotAt`）。投げる向きは自由（画面ドラッグ／スティック）。竿は歩いている間も持つ
 - サビキと青イソメは今の抽選＋待ちのまま（深度表示のみ）。リアルな操作はルアーとエギに入れる。
 
 ## 設計方針（ユーザーが決めたこと）
