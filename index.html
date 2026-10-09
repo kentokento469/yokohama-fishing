@@ -59,6 +59,8 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
 #tens[data-hi="1"]{background:var(--signal)}
 .lim{position:absolute;left:87%;top:0;bottom:0;width:2px;background:rgba(255,255,255,.8)}
 #distb{height:100%;width:0;background:var(--brass);border-radius:7px}
+#lureP{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(160px + env(safe-area-inset-bottom,0px));width:min(62vw,360px);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px 8px;pointer-events:none}
+#lureCv{width:100%;height:78px;display:block;border-radius:8px}
 .overlay{position:fixed;inset:0;display:grid;place-items:center;background:rgba(6,16,30,.5);padding:20px}
 .card{width:min(88vw,360px);background:var(--paper);color:var(--ink);border-radius:20px;padding:18px 18px 16px;text-align:center;box-shadow:0 10px 0 rgba(8,20,36,.45);animation:pop .26s cubic-bezier(.3,1.6,.6,1)}
 @keyframes pop{from{transform:scale(.75);opacity:0}}
@@ -142,6 +144,7 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
   <div class="lbl"><span>寄せ</span><span id="fbD">あと 30m</span></div>
   <div class="bar"><div id="distb"></div></div>
 </div>
+<div id="lureP" hidden><canvas id="lureCv" aria-label="水中のルアーの位置"></canvas></div>
 <div id="toast" role="status"></div>
 
 <div id="result" class="overlay" hidden>
@@ -315,7 +318,7 @@ const AREAS=S2([[500,110],[520,300],[680,500],[740,880],[930,1110],[1000,1440],[
 /* ===== 状態 ===== */
 const SAVE_KEY='hama-tsuri-v2';
 function today0(){const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();}
-function fresh(){return{money:1500,rod:0,bait:'sabiki',isome:10,lure:0,egi:0,dex:{},stamps:{},base:today0(),day:0,min:6*60+30,x:2130,y:1880,tip:{}};}
+function fresh(){return{money:1500,rod:0,bait:'sabiki',isome:10,lure:0,egi:0,spd:.8,dex:{},stamps:{},base:today0(),day:0,min:6*60+30,x:2130,y:1880,tip:{}};}
 let S=fresh();
 function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(e){}}
 function load(){try{const s=localStorage.getItem(SAVE_KEY);return s?JSON.parse(s):null;}catch(e){return null;}}
@@ -357,12 +360,14 @@ joy.addEventListener('pointerup',joyEnd);joy.addEventListener('pointercancel',jo
 const KEYMAP={ArrowLeft:'l',KeyA:'l',ArrowRight:'r',KeyD:'r',ArrowUp:'u',KeyW:'u',ArrowDown:'d',KeyS:'d',ShiftLeft:'sh',ShiftRight:'sh'};
 addEventListener('keydown',e=>{if(KEYMAP[e.code]){K[KEYMAP[e.code]]=1;e.preventDefault();return;}
   if(e.repeat)return;
-  if(e.code==='Space'||e.code==='Enter'){if(!$('result').hidden){keep(true);return;}if(!$('sight').hidden){closeSight();return;}if(!$('title').hidden)return;e.preventDefault();mainDown();}
+  if(e.code==='Space'||e.code==='Enter'){if(!$('result').hidden){keep(true);return;}if(!$('sight').hidden){closeSight();return;}if(!$('title').hidden)return;e.preventDefault();spaceT=lureWait()?performance.now():0;mainDown();}
+  else if(e.code==='KeyJ')rodAction('jerk');
   else if(e.code==='KeyE'&&!$('viewBtn').hidden)openSight();
   else if(e.code==='KeyB'&&!$('baitBtn').hidden)cycleBait();
   else if(e.code==='KeyM'){if($('sheet').hidden)openMenu();else closeSheet();}
   else if(e.code==='Escape'){closeSheet();}});
-addEventListener('keyup',e=>{if(KEYMAP[e.code])K[KEYMAP[e.code]]=0;if(e.code==='Space'||e.code==='Enter')mainUp();});
+let spaceT=0;
+addEventListener('keyup',e=>{if(KEYMAP[e.code])K[KEYMAP[e.code]]=0;if(e.code==='Space'||e.code==='Enter'){if(spaceT&&performance.now()-spaceT<200)rodAction('twitch');spaceT=0;mainUp();}});
 addEventListener('blur',()=>{K.l=K.r=K.u=K.d=K.sh=0;mainUp();});
 const cv=$('cv');let did=null,dlx=0,dly=0,yaw=0,pitch=.3,yawT=null;
 cv.addEventListener('pointerdown',e=>{did=e.pointerId;dlx=e.clientX;dly=e.clientY;try{cv.setPointerCapture(did);}catch(_){}});
@@ -786,14 +791,21 @@ function mainDown(){
       if(!spotOpen(sp)){toast(`営業時間外です（${sp.hours[0]}:00〜${sp.hours[1]}:00）`);return;}
       if(stock()<=0){toast(`${BAIT[S.bait].n}がありません。釣具店で買えます`);return;}
       F.st='aim';F.t=0;F.spot=sp;F.ox=S.x;F.oy=S.y;F.angOff=0;F.ang=sp.dir;F.pw=0;yawT=yawFor(sp.dir);break;}
-    case'wait':reelIn('仕掛けを回収した');break;
+    case'wait':if(lureWait())F.reelHold=true;else reelIn('仕掛けを回収した');break;
     case'bite':hook();break;
     case'fight':F.hold=true;break;
   }}
 function mainUp(){
   if(F.st==='aim'){const[tx,ty,D]=aimTarget();F.tx=tx;F.ty=ty;F.d0=Math.max(4,Math.round(D));if(S.bait==='isome')S.isome--;F.st='fly';F.t=0;}
+  if(F.st==='wait')F.reelHold=false;
   if(F.st==='fight')F.hold=false;}
-function reelIn(msg){F.st='idle';F.t=0;if(msg)toast(msg);}
+function reelIn(msg){F.st='idle';F.t=0;F.reelHold=false;if(msg)toast(msg);}
+/* ルアー・エギの操作（段階2）：長押しで巻く／押した指を上下で巻き速度／上にはじくとジャーク／短くタップでトゥイッチ／離すとフォール */
+const SPD_MAX=2.5,MODE_LABEL={fall:'フリーフォール',tfall:'テンションフォール',retrieve:'ただ巻き',jerk:'ジャーク',twitch:'トゥイッチ',bottom:'着底'};
+function lureWait(){return F.st==='wait'&&F.lure&&SIM.isLureBait(F.lure.bait);}
+function lurePos(){const L=F.lure,ux=(F.tx-F.ox)/F.d0,uy=(F.ty-F.oy)/F.d0;return[F.ox+ux*L.dist-uy*L.side,F.oy+uy*L.dist+ux*L.side];}
+function rodAction(kind){if(!lureWait())return;const L=F.lure;if(kind==='jerk')SIM.jerk(L);else SIM.twitch(L);F.rodKick=0;buzz(kind==='jerk'?18:8);
+  if(L.depth<.6){const p=lurePos();splash(p[0],p[1],kind==='jerk'?6:3,1.2);ripple(p[0],p[1],.8,.6);}}
 function candidates(){const h=hourF(),sp=F.spot,out=[];let sum=0;const mon=gameDate().getMonth()+1;
   const inN=N&&N.spot===sp&&Math.hypot(F.tx-N.x,F.ty-N.y)<N.r+4;F.nabura=!!inN;
   const tet=inTetra(F.tx,F.ty);const dist=Math.hypot(F.tx-F.ox,F.ty-F.oy);const far=dist/castMax();
@@ -804,33 +816,41 @@ function startWait(){F.st='wait';F.t=0;F.noFishTip=false;const c=candidates();F.
   const rf=(.5+.9*Math.abs(td.s)*ti.amp)*ti.boost*(F.nabura?3.2:1);
   ripple(F.tx,F.ty,1.5,1);splash(F.tx,F.ty,8,1.6);
   // 水中：着水点の水深・底質と、仕掛け／ルアーの深度（fishing-sim.js）
-  F.env=SIM.envAt(F.spot.id,Math.hypot(F.tx-F.ox,F.ty-F.oy),c.tet);F.lure=SIM.makeLure(S.bait,F.env);
+  F.env=SIM.envAt(F.spot.id,Math.hypot(F.tx-F.ox,F.ty-F.oy),c.tet);F.lure=SIM.makeLure(S.bait,F.env,{dist:F.d0,tipH:groundY(F.ox,F.oy)+1.6});F.reelHold=false;F.trail=[];F.trailT=0;F.rodKick=9;
   if(c.sum<=0){F.biteAt=1e9;F.rate0=0;return;}
   const mean=9/(rf*clamp(c.sum/40,.35,1.6));F.rate0=1/mean;F.biteAt=1.5+Math.min(28,-Math.log(1-rnd())*mean);}
 function pickFish(c=F.cand){let r=rnd()*c.sum;for(const[id,w]of c.out){r-=w;if(r<=0)return id;}return c.out[c.out.length-1][0];}
-function hook(){F.st='fight';F.t=0;F.hold=false;F.dist=F.d0;F.ten=.3;F.stam=1;F.surge=0;F.slack=0;F.ph=rnd()*6;$('fight').hidden=false;toast('掛かった！ 長押しで巻く・赤くなったら離す');}
+function hook(){if(F.lure&&SIM.isLureBait(F.lure.bait)){const p=lurePos();F.tx=p[0];F.ty=p[1];F.d0=Math.max(4,Math.round(F.lure.dist));}F.reelHold=false;F.st='fight';F.t=0;F.hold=false;F.dist=F.d0;F.ten=.3;F.stam=1;F.surge=0;F.slack=0;F.ph=rnd()*6;$('fight').hidden=false;toast('掛かった！ 長押しで巻く・赤くなったら離す');}
 function endFight(){$('fight').hidden=true;F.hold=false;}
 function fishPos(){const k=clamp(F.dist/F.d0,0,1.3);const px=-Math.sin(F.ang),py=Math.cos(F.ang);const sw=F.st==='fight'?Math.sin(F.t*2.2+F.ph)*Math.min(6,F.d0*.15)*k:0;return[F.ox+(F.tx-F.ox)*k+px*sw,F.oy+(F.ty-F.oy)*k+py*sw];}
 let fxT=0;
+// アタリの波紋：ウキ釣りは着水点、ルアーは浅いところにあるときだけその位置に出る
+function biteFx(sz,life){if(lureWaitOrBite()){if(F.lure.depth<1.5){const p=lurePos();ripple(p[0],p[1],sz,life);}}else ripple(F.tx,F.ty,sz,life);}
+function lureWaitOrBite(){return(F.st==='wait'||F.st==='bite')&&F.lure&&SIM.isLureBait(F.lure.bait);}
 function updateFishing(dt){
   if(F.st==='idle')return;F.t+=dt;
   if(F.st==='aim'){F.pw=1-Math.abs(((F.t*.8)%2)-1);F.angOff=clamp(F.angOff+(jx+(K.r-K.l))*dt*1.1,-1,1);F.ang=F.spot.dir+F.angOff;yawT=yawFor(F.ang);return;}
   if(F.st==='fly'){if(F.t>=.9)startWait();return;}
   if(F.st==='wait'){
-    const L=F.lure;SIM.stepLure(L,dt);let id=null;
-    if(SIM.isLureBait(S.bait)){
+    const L=F.lure;let id=null;
+    if(SIM.isLureBait(L.bait)){
+      if(K.u||K.d)S.spd=clamp(S.spd+(K.u-K.d)*dt*.8,0,SPD_MAX);
+      SIM.stepLure(L,dt,{hold:F.reelHold,reel:S.spd});F.rodKick+=dt;
+      F.trailT-=dt;if(F.trailT<=0){F.trailT=.1;F.trail.push([L.dist,L.depth]);if(F.trail.length>90)F.trail.shift();}
+      if(L.home){reelIn('ルアーを回収した');return;}
       // ルアー：深度と魚の泳層が合うほどアタリが出る。底の岩で止めると根掛かりしやすい
       if(rnd()<1-Math.exp(-dt*SIM.snagRate(L))){snag('根掛かりした…（ルアーが底の岩に掛かった）');return;}
-      if(L.onBottom&&L.bottomT>6&&!S.tip.rest){S.tip.rest=1;toast('着底。止めたままだと食いが落ちる… 回収して投げ直そう');}
+      if(L.onBottom&&L.bottomT>6&&!S.tip.rest){S.tip.rest=1;toast('着底。巻くか、しゃくって誘おう（止めたままだと食いが落ちる）');}
       if(F.cand.sum>0&&F.t>SIM.TUNE.minBiteTime&&rnd()<1-Math.exp(-dt*SIM.lureBiteRate(L,F.rate0,F.cand.out)))id=pickFish(SIM.presentWeights(L,F.cand.out));
     }else{
+      SIM.stepLure(L,dt);
       if(F.cand.tet&&rnd()<dt*.01){snag('根掛かりした…（仕掛けがテトラの間に入った）');return;}
       if(F.t>=F.biteAt)id=pickFish();}
     if(id){const f=FISH[id];F.fish=id;F.size=Math.round((f.L[0]+(f.L[1]-f.L[0])*Math.pow(rnd(),1.8))*10)/10;F.wkg=f.a*Math.pow(F.size,3)/1000;
-      F.P=Math.max(.25,.3+F.wkg*1.05*(f.ff||1)*(f.blue?1.15:1));F.st='bite';F.t=0;buzz(40);ripple(F.tx,F.ty,.8,.5);}
+      F.P=Math.max(.25,.3+F.wkg*1.05*(f.ff||1)*(f.blue?1.15:1));F.st='bite';F.t=0;F.reelHold=false;buzz(40);biteFx(.8,.5);}
     else if(F.t>15&&!F.noFishTip&&F.cand.sum<=0){F.noFishTip=true;toast('アタリがない… この仕掛けで狙える魚がいないかも');}
     return;}
-  if(F.st==='bite'){fxT-=dt;if(fxT<=0){fxT=.22;ripple(F.tx,F.ty,.7,.45);}if(F.t>1.05){F.st='idle';toast(S.bait==='isome'?'エサだけ取られた…':'アタリを逃した…');}return;}
+  if(F.st==='bite'){fxT-=dt;if(fxT<=0){fxT=.22;biteFx(.7,.45);}if(F.t>1.05){F.st='idle';toast(S.bait==='isome'?'エサだけ取られた…':'アタリを逃した…');}return;}
   if(F.st==='fight'){
     const lim=RODS[S.rod].lim;
     if(rnd()<dt*.45)F.surge=Math.max(F.surge,F.P*(.45+rnd()*.5));F.surge*=Math.pow(.25,dt);
@@ -877,8 +897,17 @@ $('sgOk').onclick=closeSight;$('viewBtn').onclick=openSight;
 let toastT=0;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),2400);}
 function updMoney(){$('money').textContent='¥'+S.money.toLocaleString();}
 const mainBtn=$('mainBtn');
-mainBtn.addEventListener('pointerdown',e=>{e.preventDefault();try{mainBtn.setPointerCapture(e.pointerId);}catch(_){}mainDown();});
-mainBtn.addEventListener('pointerup',mainUp);mainBtn.addEventListener('pointercancel',mainUp);mainBtn.addEventListener('contextmenu',e=>e.preventDefault());
+// ルアー操作中のボタン：押した指を上下にずらすと巻き速度、素早く上にはじくとジャーク、短いタップでトゥイッチ
+let pd=null;
+mainBtn.addEventListener('pointerdown',e=>{e.preventDefault();try{mainBtn.setPointerCapture(e.pointerId);}catch(_){}const now=performance.now();
+  pd={id:e.pointerId,lure:lureWait(),y0:e.clientY,yl:e.clientY,tl:now,t0:now,spd0:S.spd,move:0,jerked:false};mainDown();});
+mainBtn.addEventListener('pointermove',e=>{if(!pd||e.pointerId!==pd.id||!pd.lure||!lureWait())return;const now=performance.now();
+  const v=(pd.yl-e.clientY)/Math.max(1,now-pd.tl);pd.move=Math.max(pd.move,Math.abs(e.clientY-pd.y0));
+  if(v>1.1&&!pd.jerked&&pd.y0-e.clientY>30){pd.jerked=true;S.spd=pd.spd0;rodAction('jerk');}
+  else if(!pd.jerked)S.spd=clamp(pd.spd0+(pd.y0-e.clientY)*.012,0,SPD_MAX);
+  pd.yl=e.clientY;pd.tl=now;});
+const mainEnd=e=>{if(pd&&e.pointerId===pd.id){if(pd.lure&&!pd.jerked&&pd.move<10&&performance.now()-pd.t0<200)rodAction('twitch');pd=null;}mainUp();};
+mainBtn.addEventListener('pointerup',mainEnd);mainBtn.addEventListener('pointercancel',mainEnd);mainBtn.addEventListener('contextmenu',e=>e.preventDefault());
 function cycleBait(){if(F.st!=='idle')return;const o=['sabiki','isome','lure','egi'];S.bait=o[(o.indexOf(S.bait)+1)%4];save();}
 $('baitBtn').onclick=cycleBait;
 let uiKey='';
@@ -887,6 +916,7 @@ function updUI(){
   if(F.st==='idle'&&nearSpot){st='ready';txt='投げる<small>長押しで飛距離</small>';}
   else if(F.st==='aim'){st='aim';txt='離して投げる<small>スティックで方向</small>';p=F.pw;}
   else if(F.st==='fly'){st='busy';txt='…';}
+  else if(lureWaitOrBite()&&F.st==='wait'){st='wait';txt=`巻く<small>${S.spd.toFixed(1)}m/s・上下で調整</small>`;p=S.spd/SPD_MAX;}
   else if(F.st==='wait'){st='wait';txt='待つ<small>タップで回収</small>';}
   else if(F.st==='bite'){st='bite';txt='合わせ！';}
   else if(F.st==='fight'){st='fight';txt='巻く<small>長押し</small>';p=1-clamp(F.dist/F.d0,0,1);}
@@ -899,7 +929,7 @@ function updUI(){
   if(F.spot&&F.st!=='idle'){const sp=F.spot;
     if(F.st==='aim'){const tg=aimTarget();const it=inTetra(tg[0],tg[1]);Tt=`飛距離 ${Math.round(tg[2])}m・水深 ${Math.round(SIM.waterDepth(sp.id,tg[2],it))}m`;const inN=N&&Math.hypot(tg[0]-N.x,tg[1]-N.y)<N.r+4;Sb=inN?'ナブラの中！ 青物のチャンス':it?'テトラ際：根魚が多いが根掛かり注意':tg[2]<14?'足元の際：根魚・タコのポイント':sp.n;warn=it&&!inN;}
     else if(F.st==='wait'){const L=F.lure,D=L.waterDepth,bt=BOTTOM_LABEL[L.bottomType];
-      if(SIM.isLureBait(S.bait)){Tt=(F.nabura?'ナブラ直撃！ ':'')+`ルアー ${L.depth.toFixed(1)}m・${L.onBottom?'着底':'フォール中'}`;Sb=`水深 ${D.toFixed(1)}m・${bt}・${Math.round(F.d0)}m先`;}
+      if(SIM.isLureBait(L.bait)){const md=SIM.lureState(L);Tt=(F.nabura?'ナブラ直撃！ ':'')+`ルアー ${L.depth.toFixed(1)}m・${MODE_LABEL[md]||''}`+(md==='retrieve'?` ${S.spd.toFixed(1)}m/s`:'');Sb=`水深 ${D.toFixed(1)}m・${bt}・残り ${Math.round(L.dist)}m`;}
       else{Tt=F.nabura?'ナブラ直撃！':'アタリを待っています';Sb=`${BAIT[S.bait].n}・${L.kind==='float'?`タナ ${L.depth.toFixed(1)}m`:L.onBottom?`底 ${D.toFixed(1)}m`:`沈下中 ${L.depth.toFixed(1)}m`}・${bt}・${Math.round(F.d0)}m先`;}}
     else if(F.st==='fight'){const rk=F.cand&&F.cand.tet&&FISH[F.fish].rock;Tt='ファイト中';Sb=rk?'テトラに潜られる前に巻き切れ':'テンションが赤になったら指を離す';warn=!!rk;}
     else if(F.st==='bite'){Tt='アタリ！';Sb='すぐにボタンをタップ';}
@@ -961,6 +991,7 @@ function renderTab(){
 <p><b>バス</b>　バス停（青い丸看板）に立ってMENUの「移動」から乗ります。便によって待ち時間があり、時計が進みます。</p>
 <p><b>釣り場</b>　青い魚マークが釣り場です。横浜市では海づり施設などを除き、ふ頭・防波堤は釣り禁止なので、釣れるのは実在の6か所だけ。海づり施設は6:00〜19:00の営業です。</p>
 <p><b>投げる</b>　ボタンを長押しすると飛距離ゲージが往復し、指を離すと投げます。長押し中にスティックを左右に倒すと方向を変えられます。足元（14m以内）は根魚やタコ、遠投はキスやカレイが多くなります。</p>
+<p><b>ルアーとエギ</b>　投げたら沈んでいきます（上の表示でルアーの深さと水深を確認）。ボタン長押しで巻き、押したまま指を上下にずらすと巻く速さが変わります。指を素早く上にはじくとジャーク（大きくしゃくる）、短くタップでトゥイッチ。指を離すとフォール、押したまま速さ0でテンションフォール。速い巻きとジャークは青物、しゃくった後のフォールはイカ、底をゆっくりは根魚に効きます。パソコンはスペース長押しで巻く・↑↓で速さ・Jでジャーク・スペース短押しでトゥイッチ。</p>
 <p><b>やり取り</b>　長押しで巻く。テンションが赤くなったら指を離して糸切れを防ぎ、離しすぎると針が外れます。竿のしなりがテンションの目安です。重い魚ほど引きが強くなります。</p>
 <p><b>季節と潮</b>　魚には旬があり、旬を外れるとほとんど釣れません。左上の曲線は今日の潮の目安で、潮が動いている時間ほど釣れやすく、大潮は活性が上がります。</p>
 <p><b>テトラ帯</b>　末広・杉田・金沢の岸際にあります。根魚が多い一方、ゆるめると潜られて根掛かりします。</p>
@@ -1072,6 +1103,21 @@ function poseFishing(t){
   else if(st==='bite'){rx=-.85+Math.sin(t*30)*.05;}
   ME.shR.rotation.set(rx,0,.12);ME.elR.rotation.x=re;ME.shL.rotation.set(lx,0,.35);ME.elL.rotation.x=le;ME.chest.rotation.x=lean;
   if(st!=='idle'){ME.hipL.rotation.x=-.1;ME.hipR.rotation.x=.15;ME.knL.rotation.x=.12;ME.knR.rotation.x=.08;}}
+/* 水中ビュー：横から見た水中（左が足元、右が沖）。ルアーの位置と軌跡、海底だけを描き、魚は見せない */
+const lureCv=$('lureCv'),lureCx=lureCv.getContext('2d');let lureCvW=0;
+function drawLureView(){const show=lureWaitOrBite();const pnl=$('lureP');if(pnl.hidden===show)pnl.hidden=!show;if(!show)return;
+  const L=F.lure,w=lureCv.clientWidth||300,h=lureCv.clientHeight||78,d=Math.min(window.devicePixelRatio||1,2);
+  if(lureCvW!==w){lureCvW=w;lureCv.width=Math.round(w*d);lureCv.height=Math.round(h*d);}
+  const c=lureCx;c.setTransform(d,0,0,d,0,0);const X=Math.max(F.d0+4,10),Y=Math.max(SIM.waterDepth(F.spot.id,X,F.cand.tet),L.waterDepth)*1.12+.5;
+  const px=x=>x/X*w,py=y=>(y+.5)/Y*h;
+  const g=c.createLinearGradient(0,0,0,h);g.addColorStop(0,'#2b7aa6');g.addColorStop(1,'#0d2a44');c.fillStyle=g;c.fillRect(0,0,w,h);
+  c.fillStyle='rgba(255,255,255,.35)';c.fillRect(0,py(0)-1,w,1.5);
+  c.beginPath();c.moveTo(0,h);for(let i=0;i<=24;i++){const x=i/24*X;c.lineTo(px(x),py(L.depthAt?L.depthAt(x):L.waterDepth));}c.lineTo(w,h);c.closePath();
+  c.fillStyle=L.bottomType==='rock'?'#6b6458':L.bottomType==='sand'?'#c9b98a':'#7d6e58';c.fill();
+  c.strokeStyle='rgba(241,183,70,.5)';c.lineWidth=1.5;c.beginPath();F.trail.forEach(([x,y],i)=>{i?c.lineTo(px(x),py(y)):c.moveTo(px(x),py(y));});c.stroke();
+  c.strokeStyle='rgba(246,242,232,.45)';c.lineWidth=1;c.beginPath();c.moveTo(0,py(-L.tipH*.3));c.lineTo(px(L.dist),py(L.depth));c.stroke();
+  c.fillStyle='#f1b746';c.beginPath();c.arc(px(L.dist),py(L.depth),4.5,0,7);c.fill();c.strokeStyle='#13263b';c.lineWidth=1.5;c.stroke();
+  c.fillStyle='rgba(246,242,232,.85)';c.font=`700 11px ${FONT}`;c.textBaseline='top';c.textAlign='right';c.fillText(`水深 ${L.waterDepth.toFixed(1)}m`,w-6,4);}
 function updRod(t){
   const show=!!nearSpot||F.st!=='idle';rodMesh.visible=reel.visible=show;lineObj.visible=show&&F.st!=='idle'&&F.st!=='aim';bobber.visible=false;jig.visible=false;
   if(!show)return;
@@ -1080,6 +1126,8 @@ function updRod(t){
   const L=S.bait==='lure'||S.bait==='egi'?2.9:3.6;let el=62*Math.PI/180,bend=0;
   if(F.st==='aim'){el=(60+F.pw*65)*Math.PI/180;bend=-.15-F.pw*.25;}
   else if(F.st==='fly'){const k=F.t/.9;el=(k<.18?lerp(125,22,k/.18):lerp(22,40,(k-.18)/.82))*Math.PI/180;bend=k<.35?.8*Math.sin(k/.35*Math.PI):.12*Math.sin(k*45)*(1-k);}
+  else if(F.st==='wait'&&lureWaitOrBite()){const big=F.lure.lastAction==='jerk',kick=F.rodKick<.45?Math.sin(F.rodKick/.45*Math.PI):0;
+    el=(36+(F.reelHold?6:0)+kick*(big?48:16))*Math.PI/180;bend=.04+(F.reelHold?.1+S.spd*.06:0)+kick*(big?.45:.2)+(F.reelHold?.015*Math.sin(t*18):0);}
   else if(F.st==='wait'){el=38*Math.PI/180;bend=.05+.02*Math.sin(t*2);}
   else if(F.st==='bite'){el=40*Math.PI/180;bend=.3+.25*Math.sin(t*38);}
   else if(F.st==='fight'){el=(52+(F.hold?6:0))*Math.PI/180;bend=clamp(F.ten/RODS[S.rod].lim,0,1.15)*1.0+.04*Math.sin(t*22);}
@@ -1089,19 +1137,21 @@ function updRod(t){
   if(F.st==='fly'){const k=clamp(F.t/.9,0,1);ex=lerp(_t0.x,F.tx,k);ez=lerp(_t0.z,F.ty,k);ey=lerp(_t0.y,.05,k)+Math.sin(k*Math.PI)*Math.min(18,F.d0*.35);}
   else if(F.st==='fight'){const fp=fishPos();ex=fp[0];ez=fp[1];ey=.02;}
   else if(F.st==='idle'||F.st==='aim'){ex=_t0.x;ez=_t0.z;ey=_t0.y-1.2;}
+  else if(lureWaitOrBite()){const p=lurePos();ex=p[0];ez=p[1];ey=.03;}
   else{ex=F.tx;ez=F.ty;ey=.03;}
   _g.set(ex,ey,ez);_v.subVectors(_g,_t0).normalize();
   _tp.copy(_t0);if(bend>0){_tp.addScaledVector(_v,L*.4*bend);_tp.y-=L*.15*bend;}else{_tp.x-=dx*L*-bend*.35;_tp.z-=dz*L*-bend*.35;_tp.y-=L*-bend*.1;}
   _c.subVectors(_t0,_b).multiplyScalar(.55).add(_b);
   rodMesh.geometry.dispose();rodMesh.geometry=new T.TubeGeometry(new T.QuadraticBezierCurve3(_b.clone(),_c.clone(),_tp.clone()),16,.016,6,false);
   reel.position.set(_h.x+(-dz)*.06,_h.y-.08,_h.z+dx*.06);reel.rotation.y=-a;
-  const tension=F.st==='fight'?clamp(F.ten/RODS[S.rod].lim,0,1):F.st==='bite'?.6:F.st==='fly'?.9:.08;const sag=(1-tension)*Math.min(4,F.d0*.08+.3);
+  const tension=F.st==='fight'?clamp(F.ten/RODS[S.rod].lim,0,1):F.st==='bite'?.6:F.st==='fly'?.9:lureWaitOrBite()&&(F.reelHold||F.rodKick<.5)?.75:.08;const sag=(1-tension)*Math.min(4,F.d0*.08+.3);
   const pa=lineGeo.attributes.position.array;
   for(let i=0;i<32;i++){const k=i/31;let y=lerp(_tp.y,ey,k)-Math.sin(k*Math.PI)*sag;if(F.st!=='fly')y=Math.max(y,.02);pa[i*3]=lerp(_tp.x,ex,k);pa[i*3+1]=y;pa[i*3+2]=lerp(_tp.z,ez,k);}
   lineGeo.attributes.position.needsUpdate=true;
   const art=S.bait==='lure'||S.bait==='egi';
   if(F.st==='idle'||F.st==='aim'){const o=art?jig:bobber;o.visible=true;o.position.set(ex,ey,ez);}
   else if(F.st==='fly'){const o=art?jig:bobber;o.visible=true;o.position.set(ex,ey,ez);}
+  else if(lureWaitOrBite()&&F.lure.depth<.4){jig.visible=true;jig.position.set(ex,.02,ez);}
   else if((F.st==='wait'||F.st==='bite')&&!art){bobber.visible=true;const sink=F.st==='bite'?-.08+Math.sin(t*30)*.03:Math.sin(t*3)*.015;bobber.position.set(ex,.02+sink,ez);}
   // 釣り中は竿・ウキを見やすく少し大きめに
   const sc=Math.max(1,camera.position.distanceTo(bobber.position)/12);bobber.scale.setScalar(sc);}
@@ -1172,7 +1222,7 @@ function render(dt,t){
   if(aiming){const tg=aimTarget();const inN=N&&Math.hypot(tg[0]-N.x,tg[1]-N.y)<N.r+4,it=inTetra(tg[0],tg[1]);const cc=inN?0xf1b746:it?0xff9d86:0xffffff;
     const rs=Math.max(1,tg[2]/25);aimRing.material.color.setHex(cc);aimRing2.material.color.setHex(cc);aimRing.position.set(tg[0],.05,tg[1]);aimRing2.position.set(tg[0],.04,tg[1]);aimRing.scale.setScalar(rs);aimRing2.scale.setScalar(rs*(1+Math.sin(t*6)*.12));
     const D=castMax();const pa=aimLineGeo.attributes.position.array;pa[0]=F.ox;pa[1]=.1;pa[2]=F.oy;pa[3]=F.ox+Math.cos(F.ang)*D;pa[4]=.1;pa[5]=F.oy+Math.sin(F.ang)*D;aimLineGeo.attributes.position.needsUpdate=true;aimLine.computeLineDistances();}
-  updRod(t);updFX(dt,t);
+  updRod(t);updFX(dt,t);drawLureView();
   renderer.render(scene,camera);
   miniT-=dt;if(miniT<=0){miniT=.08;drawMini();}}
 function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;const t=now/1000;update(dt,t);render(dt,t);updUI();requestAnimationFrame(frame);}

@@ -45,6 +45,51 @@ test('底で止めたままだとアタリが減り、岩の底では根掛か�
 
 test('深度に応じて釣れる魚の割合が変わる',()=>{
   const cand=[['kasago',10],['iwashi',10]];
-  const top=SIM.presentWeights({depth:1,waterDepth:12},cand),bot=SIM.presentWeights({depth:12,waterDepth:12},cand);
+  const top=SIM.presentWeights({kind:'float',depth:1,waterDepth:12},cand),bot=SIM.presentWeights({kind:'float',depth:12,waterDepth:12},cand);
   const share=(p,id)=>p.out.find(o=>o[0]===id)[1]/p.sum;
   assert.ok(share(top,'iwashi')>.9);assert.ok(share(bot,'kasago')>.8);});
+
+/* ===== 段階2：ロッド操作 ===== */
+const env10={waterDepth:10,bottomType:'sand'};
+const lureAt=(depth,bait='lure',dist=40)=>{const L=SIM.makeLure(bait,{waterDepth:30,bottomType:'sand'},{dist,tipH:4});L.depth=depth;return L;};
+const runC=(L,sec,dt,ctrl)=>{for(let t=0;t<sec-1e-9;t+=dt)SIM.stepLure(L,dt,ctrl);return L;};
+
+test('ただ巻き：速く巻くほどルアーは浅いところを通る',()=>{
+  const slow=runC(lureAt(8),6,1/60,{hold:true,reel:.5}),fast=runC(lureAt(8),6,1/60,{hold:true,reel:2});
+  assert.ok(fast.depth<slow.depth-1,`slow ${slow.depth} fast ${fast.depth}`);
+  assert.ok(fast.dist<slow.dist,'速く巻くほど手前に寄る');});
+
+test('巻くとルアーが手前に寄り、足元まで来ると回収できる',()=>{
+  const L=runC(lureAt(3,'lure',20),60,1/60,{hold:true,reel:1.2});assert.ok(L.home,`dist ${L.dist}`);});
+
+test('ジャーク：0.5秒で0.8m以上跳ね上がり、トゥイッチは小さい',()=>{
+  const a=lureAt(8),b=lureAt(8);SIM.jerk(a);SIM.twitch(b);runC(a,.5,1/60,{hold:false});runC(b,.5,1/60,{hold:false});
+  const fallOnly=runC(lureAt(8),.5,1/60,{hold:false});
+  assert.ok(fallOnly.depth-a.depth>.8,`jerk ${a.depth} vs fall ${fallOnly.depth}`);
+  assert.ok(a.depth<b.depth,'ジャークの方が大きく上がる');
+  assert.equal(a.lastAction,'jerk');});
+
+test('テンションフォールはフリーフォールよりゆっくり沈み、手前に寄る',()=>{
+  const free=runC(lureAt(2),3,1/60,{hold:false}),ten=runC(lureAt(2),3,1/60,{hold:true,reel:0});
+  assert.ok(ten.depth<free.depth);assert.ok(ten.dist<free.dist);assert.equal(free.dist,40);});
+
+test('巻くのを止めると沈み、着底したら巻くと底を離れる',()=>{
+  const L=SIM.makeLure('lure',env10,{dist:30,tipH:4});runC(L,10,1/60,{hold:false});assert.ok(L.onBottom);
+  runC(L,1.5,1/60,{hold:true,reel:1.5});assert.ok(!L.onBottom&&L.depth<10);});
+
+test('巻きながらでもフレームレートが違ってもほぼ同じ動き',()=>{
+  const a=runC(lureAt(6),5,1/120,{hold:true,reel:1}),b=runC(lureAt(6),5,1/20,{hold:true,reel:1});
+  assert.ok(Math.abs(a.depth-b.depth)<.1&&Math.abs(a.dist-b.dist)<.1,`${a.depth},${a.dist} vs ${b.depth},${b.dist}`);});
+
+test('ルアーは水面より上に出ない',()=>{const L=runC(lureAt(.5),5,1/60,{hold:true,reel:2.5});assert.ok(L.depth>=0);});
+
+test('青物は速い巻きに、イカはしゃくった後のフォールに反応しやすい',()=>{
+  const fast=runC(lureAt(3),1,1/60,{hold:true,reel:2}),slow=runC(lureAt(3),1,1/60,{hold:true,reel:.3});
+  assert.ok(SIM.actionAppeal('saba',fast)>SIM.actionAppeal('saba',slow)*1.3);
+  const eFall=lureAt(5,'egi');SIM.jerk(eFall);runC(eFall,1.2,1/60,{hold:false});
+  const eReel=runC(lureAt(5,'egi'),1.2,1/60,{hold:true,reel:1});
+  assert.ok(SIM.actionAppeal('aoriika',eFall)>SIM.actionAppeal('aoriika',eReel)*4);});
+
+test('岩の底を引きずると、止めているより根掛かりしやすい',()=>{
+  const L=SIM.makeLure('lure',{waterDepth:5,bottomType:'rock'},{dist:30});runC(L,6,1/60,{hold:false});const rest=SIM.snagRate(L);
+  L.reel=.5;assert.ok(SIM.snagRate(L)>rest);});
