@@ -268,26 +268,31 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
   </div>
 </div>
 
+<script>
+// 起動時などのエラーを画面に出す（スマホでも原因がわかるように）
+addEventListener('error',e=>{try{let d=document.getElementById('bootErr');if(!d){d=document.createElement('div');d.id='bootErr';d.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;z-index:99;background:#7a1f1f;color:#fff;font:12px/1.5 sans-serif;padding:8px 10px;border-radius:10px;white-space:pre-wrap';document.body.appendChild(d);}
+  d.textContent+='エラー：'+(e.message||'')+'（'+String(e.filename||'').split('/').pop()+':'+(e.lineno||'')+'）\n再読み込みしても直らないときはこの画面を送ってください\n';}catch(_){}});
+</script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
-<script src="fishing-sim.js"></script>
-<script src="fish-ai.js"></script>
-<script src="data/tackle-data.js"></script>
-<script src="tackle.js"></script>
-<script src="fight.js"></script>
-<script src="sound.js"></script>
-<script src="data/fish/species.js"></script>
-<script src="data/fish/images.js"></script>
-<script src="geo.js"></script>
-<script src="data/shonan-spots.js"></script>
-<script src="shonan.js"></script>
-<script src="osm-convert.js"></script>
-<script src="mapdata.js"></script>
-<script src="data/geo/geo-data.js"></script>
-<script src="tiles.js"></script>
-<script src="routing.js"></script>
-<script src="nav.js"></script>
-<script src="vehicles.js"></script>
-<script src="data/osm/index.js"></script>
+<script src="fishing-sim.js?v=202610091136"></script>
+<script src="fish-ai.js?v=202610091136"></script>
+<script src="data/tackle-data.js?v=202610091136"></script>
+<script src="tackle.js?v=202610091136"></script>
+<script src="fight.js?v=202610091136"></script>
+<script src="sound.js?v=202610091136"></script>
+<script src="data/fish/species.js?v=202610091136"></script>
+<script src="data/fish/images.js?v=202610091136"></script>
+<script src="geo.js?v=202610091136"></script>
+<script src="data/shonan-spots.js?v=202610091136"></script>
+<script src="shonan.js?v=202610091136"></script>
+<script src="osm-convert.js?v=202610091136"></script>
+<script src="mapdata.js?v=202610091136"></script>
+<script src="data/geo/geo-data.js?v=202610091136"></script>
+<script src="tiles.js?v=202610091136"></script>
+<script src="routing.js?v=202610091136"></script>
+<script src="nav.js?v=202610091136"></script>
+<script src="vehicles.js?v=202610091136"></script>
+<script src="data/osm/index.js?v=202610091136"></script>
 <script>
 (()=>{
 'use strict';
