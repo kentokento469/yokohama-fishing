@@ -69,7 +69,7 @@ function bottomAt(spotId,dist,tetra){if(tetra)return'rock';const e=SPOT_ENV[spot
 function onSlope(spotId,dist){const e=SPOT_ENV[spotId]||DEFAULT_ENV;return dist>e.slope*.15&&dist<e.slope*.85;}
 /* cond: {current: 左右方向の潮の流れ m/s（正負で向き）} */
 function envAt(spotId,dist,tetra,cond){cond=cond||{};return{waterDepth:waterDepth(spotId,dist,tetra),bottomType:bottomAt(spotId,dist,tetra),depthAt:d=>waterDepth(spotId,d,tetra),
-  bottomAt:d=>bottomAt(spotId,d,tetra),current:cond.current||0};}
+  bottomAt:d=>bottomAt(spotId,d,tetra),current:cond.current||0,currentAlong:cond.currentAlong||0,snagMul:cond.snagMul||1};}
 
 /* ===== 天気・水温・濁り・潮流・明るさ（段階6） ===== */
 const WEATHER_LABEL={sunny:'晴れ',cloudy:'くもり',rain:'雨',windy:'強風'};
@@ -94,11 +94,11 @@ function underwaterVis(light,turb){return light*(1-.6*turb);}
 /* 魚ごとの適水温（℃）。外れるほど活性が落ちる（3℃で約1/3） */
 const TEMP_PREF={kataku:[14,25],iwashi:[14,24],konoshiro:[12,27],sappa:[16,27],aji:[16,26],saba:[15,24],sayori:[10,20],kamasu:[17,26],inada:[16,25],warasa:[16,24],
   seabass:[12,26],tachiuo:[18,27],haze:[17,28],kisu:[18,28],ishimochi:[14,26],makogarei:[8,17],hirame:[12,22],magochi:[18,28],kasago:[10,24],murasoi:[12,24],
-  mebaru:[8,18],ainame:[8,18],kurodai:[12,28],mejina:[13,24],umitanago:[9,18],kawahagi:[15,26],bora:[12,28],anago:[14,25],gonzui:[18,28],kusafugu:[14,27],
+  mebaru:[8,18],ainame:[8,18],kurodai:[12,28],kibire:[14,30],mejina:[13,24],umitanago:[9,18],kawahagi:[15,26],bora:[12,28],anago:[14,25],gonzui:[18,28],kusafugu:[14,27],
   soushi:[20,28],akaei:[18,28],sumiika:[13,22],aoriika:[18,27],madako:[16,26]};
 function tempFactor(id,T){const p=TEMP_PREF[id];if(!p)return 1;const out=T<p[0]?p[0]-T:T>p[1]?T-p[1]:0;return Math.max(.15,Math.exp(-out/2.7));}
 /* 魚ごとの好む底質（底の魚だけ）。合っていれば多く、合わなければ少ない */
-const BOTTOM_PREF={kasago:['rock','weed'],murasoi:['rock'],mebaru:['rock','weed'],ainame:['rock','weed'],kurodai:['rock','weed'],mejina:['rock','weed'],kawahagi:['rock','weed'],
+const BOTTOM_PREF={kibire:['sand','mud'],kasago:['rock','weed'],murasoi:['rock'],mebaru:['rock','weed'],ainame:['rock','weed'],kurodai:['rock','weed'],mejina:['rock','weed'],kawahagi:['rock','weed'],
   umitanago:['weed','rock'],hirame:['sand'],magochi:['sand'],kisu:['sand'],haze:['mud','sand'],makogarei:['mud','sand'],anago:['mud'],ishimochi:['mud','sand'],akaei:['mud','sand'],
   madako:['rock','sand'],sumiika:['sand','weed'],aoriika:['weed'],gonzui:['rock','weed']};
 function bottomFactor(id,b){const p=BOTTOM_PREF[id];if(!p)return 1;return p[0]===b?1.5:p.includes(b)?1.15:.55;}
@@ -117,7 +117,7 @@ function makeLure(bait,env,opt){opt=opt||{};const r=opt.item?rigFromItem(opt.ite
   return{bait,kind:r.kind,rig:r,depth:0,vy:0,vh:0,iv:0,ih:0,side:0,vs:0,onBottom:false,touched:false,bottomT:0,t:0,
     dist:opt.dist||20,tipH:opt.tipH||4,home:false,sinceAction:99,lastAction:null,mode:'fall',reel:0,events:[],touchT:99,walkDir:1,
     sinkRate:r.sinkRate||0,tau:r.tau||.5,tana:r.tana||0,depthAt:env.depthAt||null,waterDepth:env.waterDepth,bottomType:env.bottomType,
-    bottomAt:env.bottomAt||null,cur:env.current||0,dside:0,drifting:false,weeded:false};}
+    bottomAt:env.bottomAt||null,cur:env.current||0,curA:env.currentAlong||0,snagMul:env.snagMul||1,dside:0,drifting:false,weeded:false};}
 // ロッド操作：ジャーク（大きくしゃくる）とトゥイッチ（小さく鋭く）
 function jerk(L){if(L.kind!=='sink'||L.home)return;const r=L.rig;L.iv-=r.move==='top'?0:r.jerkUp;L.ih+=r.jerkPull/IMPULSE_TAU;
   if(r.move==='top'){L.walkDir=-L.walkDir;L.vs+=L.walkDir*2.2;L.events.push({type:r.type==='popper'?'pop':'splash',power:1});}else L.vs+=(Math.random()<.5?-1:1)*(r.move==='lip'?2.4:1.6);
@@ -146,6 +146,8 @@ function stepLure(L,dt,ctrl){if(dt<=0)return L;L.t+=dt;L.sinceAction+=dt;
   /* 潮流（段階6）：糸を張って巻いていないほど、ルアーは流れに乗って横へ流される（ドリフト）。
      糸が流れに押されてふくらむので、沈むのも少し遅くなる。底にあるときはほとんど流されない */
   const cur=L.cur||0;L.drifting=false;
+  // 沖向き・岸向きの流れ（河口の川の流れは沖へ、砂浜の寄せ波は岸へ）も、糸を緩めているほどルアーを運ぶ
+  if(L.curA&&!L.home){const free=hold&&reel>0?Math.max(0,1-reel/.8)*.4:1;L.dist=Math.max(0,L.dist+L.curA*free*(L.onBottom?.1:1)*dt);}
   if(cur&&r.move!=='top'||cur&&!hold){const free=hold&&reel>0?Math.max(0,1-reel/.8)*.4:1;const ds=cur*free*(L.onBottom?.15:1)*dt;L.dside=clamp(L.dside+ds,-20,20);
     if(!hold&&!L.onBottom&&Math.abs(cur)>.1){L.drifting=true;}
     if((L.mode==='fall'||L.mode==='tfall')&&vyT>0)vyT*=1-Math.min(.35,Math.abs(cur)*.8);}
@@ -179,7 +181,7 @@ function lureSpeed(L){return Math.hypot(L.vy+L.iv,L.vh+L.ih);}
 const LAYER={
   kataku:'upper',iwashi:'upper',konoshiro:'upper',sappa:'upper',aji:'mid',saba:'upper',sayori:'top',kamasu:'mid',
   inada:'upper',warasa:'mid',seabass:'mid',tachiuo:'mid',haze:'bottom',kisu:'bottom',ishimochi:'bottom',makogarei:'bottom',
-  hirame:'lower',magochi:'bottom',kasago:'bottom',murasoi:'bottom',mebaru:'mid',ainame:'bottom',kurodai:'lower',mejina:'mid',
+  hirame:'lower',magochi:'bottom',kasago:'bottom',murasoi:'bottom',mebaru:'mid',ainame:'bottom',kurodai:'lower',kibire:'lower',mejina:'mid',
   umitanago:'mid',kawahagi:'bottom',bora:'upper',anago:'bottom',gonzui:'bottom',kusafugu:'lower',soushi:'mid',akaei:'bottom',
   sumiika:'bottom',aoriika:'mid',madako:'bottom'};
 // 層の範囲 [浅い側, 深い側]（m）
@@ -239,7 +241,7 @@ function lureBiteRate(L,base,cand){let sumW=0;for(const[,w]of cand)sumW+=w;if(su
 // 根掛かり：岩の底に触れている間だけ。引きずると掛かりやすい
 // 海藻帯の底に触れると海藻が掛かる（ルアーは失わないが、回収するまで魚は食わない）
 function weedRate(L){return L.onBottom&&L.bottomType==='weed'&&!L.weeded?(L.reel>.05?.12:.05):0;}
-function snagRate(L){if(!(L.onBottom&&L.bottomType==='rock'))return 0;return TUNE.snagRockPerSec*(L.reel>.05?TUNE.snagDragMul:1);}
+function snagRate(L){if(!(L.onBottom&&L.bottomType==='rock'))return 0;return TUNE.snagRockPerSec*(L.reel>.05?TUNE.snagDragMul:1)*(L.snagMul||1);}
 
 const API={bottomAt,onSlope,WEATHER_LABEL,weatherOf,SST,waterTemp,turbidity,currentAt,lightOf,underwaterVis,TEMP_PREF,tempFactor,BOTTOM_PREF,bottomFactor,weatherFactor,cautionMul,lateral,weedRate,rigFromItem,baitClassOf,gearAppeal,RIGS,SPOT_ENV,LAYER,TUNE,isLureBait,waterDepth,bottomType,envAt,makeLure,stepLure,jerk,twitch,lureState,lureSpeed,styleOf,actionAppeal,layerRange,rangeMatch,presentWeights,lureBiteRate,snagRate};
 if(typeof module!=='undefined'&&module.exports)module.exports=API;else root.HamaSim=API;

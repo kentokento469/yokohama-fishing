@@ -298,6 +298,7 @@ const FISH={
  mebaru:{n:'メバル',L:[12,26],a:.015,kg:2500,bait:['isome','lure'],tm:'night',mo:MO([11,5]),rock:1,near:1,sh:{a:.3,bk:'#3d3a36',bl:'#b9ad98',pat:'bars',eye:1.6},d:'大きな目が特徴。夜の常夜灯まわりやテトラ帯で小魚を待ち伏せする。'},
  ainame:{n:'アイナメ',L:[15,40],a:.011,kg:2500,bait:['isome'],tm:'day',mo:MO([10,3]),rock:1,near:1,sh:{a:.22,bk:'#7a5a36',bl:'#d9c7a8',pat:'mottle'},d:'岩礁帯の根魚。秋から冬の産卵期には、オスが鮮やかな黄色に色づくことがある。'},
  kurodai:{n:'クロダイ',L:[25,52],a:.017,kg:900,bait:['isome'],tm:'any',mo:ALL,rock:1,near:1,sh:{a:.38,bk:'#3f4952',bl:'#c9cdd0',pat:'bars'},d:'東京湾の港湾部に多い。警戒心が強く、岸壁やテトラの際をていねいに探って狙う。'},
+ kibire:{n:'キビレ',L:[20,45],a:.017,kg:800,bait:['isome','lure'],tm:'any',mo:MO([4,11]),near:1,sh:{a:.38,bk:'#5c6670',bl:'#d6dadb',pat:'bars'},d:'クロダイの仲間で、腹びれ・尻びれが黄色い。河口や汽水域を好み、ルアーにもよく反応する。'},
  mejina:{n:'メジナ',L:[18,38],a:.017,kg:1000,bait:['isome'],tm:'day',mo:MO([10,3]),rock:1,near:1,sh:{a:.38,bk:'#2f3a40',bl:'#5f6e74',pat:'plain'},d:'磯釣りで人気の魚。関西ではグレと呼ばれるが、関東ではメジナの名が一般的。'},
  umitanago:{n:'ウミタナゴ',L:[12,25],a:.016,kg:600,bait:['isome'],tm:'day',mo:MO([11,5]),near:1,sh:{a:.4,bk:'#8d7a6a',bl:'#e8ddd2',pat:'plain'},d:'卵ではなく子どもを産む胎生の魚。冬から春の岸壁でよく釣れる。'},
  kawahagi:{n:'カワハギ',L:[12,28],a:.018,kg:3000,bait:['isome'],tm:'day',mo:MO([6,11]),rock:1,sh:{a:.5,bk:'#8e8a6e',bl:'#d8d4b8',pat:'mottle'},d:'エサ取りの名人と呼ばれ、硬い口でエサだけをかじり取る。肝が絶品。'},
@@ -312,7 +313,7 @@ const FISH={
  madako:{n:'マダコ',L:[20,50],a:.015,kg:2000,bait:['egi'],tm:'day',mo:MO([6,9]),near:1,ff:.8,unit:'全長',sh:{a:.6,bk:'#9a6a52',bl:'#e4c3ae',pat:'mottle',shape:'octo'},d:'東京湾は夏のタコ釣りで知られる。エギやタコ用の仕掛けで岸壁の際を探る。'}
 };
 // ワーム（ジグヘッド）で釣れる魚
-for(const id of['aji','seabass','hirame','magochi','kasago','murasoi','mebaru','ainame','kurodai','haze'])FISH[id].bait.push('worm');
+for(const id of['kibire','aji','seabass','hirame','magochi','kasago','murasoi','mebaru','ainame','kurodai','haze'])FISH[id].bait.push('worm');
 const FISH_IDS=Object.keys(FISH);
 const BOTTOM_LABEL={sand:'砂地',mud:'泥底',rock:'岩・テトラ',weed:'海藻帯'};
 const TM_LABEL={day:'日中',night:'夜',dd:'朝夕マズメ',dn:'夕方〜夜',dawn:'早朝',any:'時間を問わない'};
@@ -549,6 +550,7 @@ ribbon(BEACH,70,GROUND+.05,flatMat(0xe8d39b));
 /* 湘南：砂浜（海岸線の陸側）、川、国道134号、JR東海道線・江ノ電 */
 {const sand=flatMat(0xe2cf9c),water=flatMat(0x2f6f8f);ribbon(SH.COAST,24,GROUND+.05,sand,-12);
   for(const r of SH.RIVERS){ribbon(r.pts,r.half*2+3,GROUND+.06,sand);ribbon(r.pts,r.half*2,GROUND+.09,water);}
+  ribbon(SH.COAST,4,.06,flatMat(0xf4f7f8,{transparent:true,opacity:.5}),5);
   ribbon(SH.R134,18,GROUND+.04,paveMat);ribbon(SH.R134,12,GROUND+.07,asphMat);dashes(SH.R134,0,5,6,.16,GROUND+.1,whiteLine);
   for(const rl of[SH.JR,SH.ENODEN]){ribbon(rl,rl===SH.JR?8:5,GROUND+.05,flatMat(0x8d8478));for(const o of[-.75,.75])ribbon(rl,.15,GROUND+.12,flatMat(0x4a4a4a),o);}}
 ribbon(YAMASHITA,55,GROUND+.05,flatMat(0xffffff,{map:grassTex}));ribbon(YAMASHITA,6,GROUND+.08,paveMat,-22);
@@ -847,7 +849,8 @@ function eqItem(){return S.eq&&TK.owned(S,S.eq)>0?TBYID.get(S.eq):null;}
 function eqAny(){return S.eq?TBYID.get(S.eq):null;}
 function rodOf(){return TBYID.get(S.rodId);}
 function reelOf(){return TBYID.get(S.reelId);}
-function castMax(){const it=SIM.isLureBait(S.bait)&&eqAny();return it?Math.max(6,TK.castMax(it,rodOf())):TK.baitCast(BAIT[S.bait].max,rodOf());}
+// 大磯港西防波堤のように「足元のみ」の釣り場では、投げずに足元（8m）まで
+function castMax(){const it=SIM.isLureBait(S.bait)&&eqAny();const m=it?Math.max(6,TK.castMax(it,rodOf())):TK.baitCast(BAIT[S.bait].max,rodOf());const sp=F.spot||nearSpot;return sp&&sp.sh&&sp.sh.footOnly?Math.min(8,m):m;}
 // ルアーを巻ける最高速（リールの巻き取り量で決まる）
 function spdMax(){return TK.reelMaxSpeed(reelOf());}
 // ドラグ：未設定なら糸の強さの4割。リールの最大ドラグまで
@@ -894,14 +897,20 @@ function candidates(){const h=hourF(),sp=F.spot,out=[];let sum=0;const mon=gameD
   const inN=N&&N.spot===sp&&Math.hypot(F.tx-N.x,F.ty-N.y)<N.r+4;F.nabura=!!inN;
   const tet=inTetra(F.tx,F.ty);const dist=Math.hypot(F.tx-F.ox,F.ty-F.oy);const far=dist/castMax();
   const E=envNow(sp),bot=SIM.bottomAt(sp.id,dist,tet);
-  for(const id in sp.w){const f=FISH[id];if(!f.bait.includes(S.bait))continue;let w=sp.w[id]*tmul(f.tm,h)*(f.mo[mon]?1:.12)*SIM.tempFactor(id,E.T)*SIM.bottomFactor(id,bot)*SIM.weatherFactor(id,E.w,E.turb,E.cur);
+  // 湘南：その釣り場の釣り方に合う仕掛けか（合わなければ半分）、ナブラには回遊魚の群れ（イナダ・サバ）が入る、
+  // 砂浜は波が立つとヒラメ・シーバス（サラシ）、高すぎるとキスが渋い、河口は濁るとシーバスとキビレ
+  const g=sp.sh,ws=Object.assign({},sp.w);if(g&&inN){ws.inada=(ws.inada||0)+8;ws.saba=(ws.saba||0)+8;ws.warasa=(ws.warasa||0)+1;}
+  for(const id in ws){const f=FISH[id];if(!f.bait.includes(S.bait))continue;let w=ws[id]*tmul(f.tm,h)*(f.mo[mon]?1:.12)*SIM.tempFactor(id,E.T)*SIM.bottomFactor(id,bot)*SIM.weatherFactor(id,E.w,E.turb,E.cur);
+    if(g){w*=SH.methodFit(g,S.bait);if(g.type==='beach'){if((id==='hirame'||id==='seabass')&&E.wave>=.6&&E.wave<=1.6)w*=1.35;if(id==='kisu'&&E.wave>1.2)w*=.6;}
+      if(g.type==='river'&&E.turb>.6&&(id==='seabass'||id==='kibire'))w*=1.4;}
     if(inN&&f.blue)w*=6;if(tet&&f.rock)w*=2.5;if(f.near)w*=dist<14?1.8:.55;if(f.far)w*=.3+far*1.2;if((id==='inada'||id==='warasa')&&!inN)w*=.3;out.push([id,w]);sum+=w;}
   return{out,sum,tet};}
 function startWait(){F.st='wait';F.t=0;F.noFishTip=false;const c=candidates();F.cand=c;const ti=tideInfo(),td=tideAt(hourF(),ti);
   const rf=(.5+.9*Math.abs(td.s)*ti.amp)*ti.boost*(F.nabura?3.2:1);
   ripple(F.tx,F.ty,1.5,1);splash(F.tx,F.ty,8,1.6);SND.play('splash',{size:SIM.isLureBait(S.bait)?.5:.8});
   // 水中：着水点の水深・底質と、仕掛け／ルアーの深度（fishing-sim.js）
-  {const E=envNow(F.spot);F.env=SIM.envAt(F.spot.id,Math.hypot(F.tx-F.ox,F.ty-F.oy),c.tet,{current:E.cur});}F.lure=SIM.makeLure(S.bait,F.env,{dist:F.d0,tipH:groundY(F.ox,F.oy)+1.6,item:SIM.isLureBait(S.bait)?eqItem():null});F.reelHold=false;F.trail=[];F.trailT=0;F.rodKick=9;
+  {const E=envNow(F.spot),g=F.spot.sh,tg=g&&SH.TYPE_GAME[g.type];F.env=SIM.envAt(F.spot.id,Math.hypot(F.tx-F.ox,F.ty-F.oy),c.tet,{current:E.cur,
+    currentAlong:g?(g.type==='river'?E.flow:g.type==='beach'?-.06*E.wave:0):0,snagMul:tg?.5+tg.snagRisk:1});}F.lure=SIM.makeLure(S.bait,F.env,{dist:F.d0,tipH:groundY(F.ox,F.oy)+1.6,item:SIM.isLureBait(S.bait)?eqItem():null});F.reelHold=false;F.trail=[];F.trailT=0;F.rodKick=9;
   if(c.sum<=0){F.biteAt=1e9;F.rate0=0;return;}
   const mean=9/(rf*clamp(c.sum/40,.35,1.6));F.rate0=1/mean;F.biteAt=1.5+Math.min(28,-Math.log(1-rnd())*mean);
   // ルアー釣りは魚のAI（fish-ai.js）：着水点のまわりに魚の個体を置き、ルアーの動きに反応させる
@@ -1010,7 +1019,9 @@ let nTimer=0;
 function updateNabura(dt){
   if(N){N.life-=dt;if(N.life<=0)N=null;}
   nTimer-=dt;if(nTimer>0)return;nTimer=6;
-  if(N||!nearSpot)return;const sp=nearSpot,h=hourF();const mz=(h>=4.5&&h<7.5)||(h>=16&&h<18.5);if(rnd()>(mz?.3:.1))return;
+  if(N||!nearSpot)return;const sp=nearSpot,h=hourF();const mz=(h>=4.5&&h<7.5)||(h>=16&&h<18.5);
+  // 回遊魚の群れ：河口と港の中には入りにくい
+  const tk=sp.sh?{river:0,port:.4}[sp.sh.type]:1;if(rnd()>(mz?.3:.1)*(tk==null?1:tk))return;
   const mx=60;
   const wd=waterDir(S.x,S.y,sp.dir);
   for(let i=0;i<10;i++){const d=lerp(mx*.6,mx*.92,rnd()),a=wd+(rnd()-.5)*1.4;const x=S.x+Math.cos(a)*d,y=S.y+Math.sin(a)*d;
@@ -1114,18 +1125,20 @@ let busWait={};
 function renderTab(){
   for(const b of document.querySelectorAll('#tabs button[data-t]'))b.classList.toggle('on',b.dataset.t===tab);
   const sb=$('sb');let h='';
-  if(tab==='map'){const[cur,cd]=nearestStation();const atStop=cd<40;
-    h=`<canvas id="mapCv"></canvas><p class="sub">${atStop?`「${cur.n}」にいます。行き先を選んでください。待ち時間は便によって変わります。${cur.n==='横浜駅'?'湘南（鎌倉〜大磯）へはJRで行けます。':''}`:`電車やバスに乗るには、まず駅・バス停まで歩いてください。一番近いのは「${cur.n}」（約${Math.round(cd)}m）。`}</p><div class="list">`;
+  if(tab==='map'&&mapView==='spots'){renderSpotList(sb);
+  }else if(tab==='map'){const[cur,cd]=nearestStation();const atStop=cd<40;
+    h=`<div class="seg"><button data-mv="go" class="on">行き先</button><button data-mv="spots">釣り場一覧</button></div><canvas id="mapCv"></canvas><p class="sub">${atStop?`「${cur.n}」にいます。行き先を選んでください。待ち時間は便によって変わります。${cur.n==='横浜駅'?'湘南（鎌倉〜大磯）へはJRで行けます。':''}`:`電車やバスに乗るには、まず駅・バス停まで歩いてください。一番近いのは「${cur.n}」（約${Math.round(cd)}m）。`}</p><div class="list">`;
     for(const{s,i}of routesFrom(cur)){const f=fare(s);const sp=SPOTS.find(p=>Math.hypot(p.x-s.x,p.y-s.y)<(s.region==='shonan'?250:500));if(busWait[i]==null)busWait[i]=2+Math.floor(rnd()*(f.mode==='バス'?14:10));
       h+=`<button class="item${atStop?'':' dim'}" data-go="${i}" ${!atStop?'disabled':''}><div class="tx"><b>${s.n}</b><span>${f.mode}・次の便まで${busWait[i]}分・乗車約${f.min}分${sp?'・近くの釣り場：'+sp.n:''}</span></div><div class="pr">¥${f.yen}</div></button>`;}
     h+=`<button class="item" id="restBtn"><div class="tx"><b>ベンチでひと休み</b><span>時間を1時間進める（潮や時間帯を待つ）</span></div><div class="pr">無料</div></button></div>`;
     sb.innerHTML=h;drawMapCv($('mapCv'));
     sb.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>travel(+b.dataset.go));
+    sb.querySelectorAll('[data-mv]').forEach(b=>b.onclick=()=>{mapView=b.dataset.mv;renderTab();});
     $('restBtn').onclick=()=>{advance(60);busWait={};toast(`${fmtTime(S.min)}になった`);renderTab();};
   }else if(tab==='dex'){
     const got=FISH_IDS.filter(id=>S.dex[id]).length;const mon=gameDate().getMonth()+1;
     h=`<p class="sub">${got} / ${FISH_IDS.length} 種。未発見の魚には仕掛け・時間帯・旬のヒントが出ます。いまは${mon}月。</p><div class="dex">`;
-    FISH_IDS.forEach(id=>{const f=FISH[id],d=S.dex[id];const where=SPOTS.filter(s=>s.w[id]).map(s=>s.n.replace(/海づり施設|水際線緑地|水際線プロムナード|臨海緑地/,'')).join('・');
+    FISH_IDS.forEach(id=>{const f=FISH[id],d=S.dex[id];const yk=SPOTS.filter(s=>s.region==='yokohama'&&s.w[id]).map(s=>s.n.replace(/海づり施設|水際線緑地|水際線プロムナード|臨海緑地/,'')),sn=SPOTS.filter(s=>s.region==='shonan'&&s.w[id]).length;const where=[yk.join('・'),sn?`湘南${sn}か所`:''].filter(Boolean).join('・');
       h+=`<div class="dx"><canvas data-f="${id}" data-k="${d?1:0}"></canvas><b>${d?f.n:'？？？'}</b><span>${d?`最大 ${d.max.toFixed(1)}cm・${wtxt(d.kg||0)}・${d.c}匹`:`${f.bait.map(b=>BAIT[b].n).join('/')}・${TM_LABEL[f.tm]}`}</span><span>旬 ${seasonTxt(f)}${f.mo[mon]?'（いま）':''}・${where}</span></div>`;});
     sb.innerHTML=h+'</div>';sb.querySelectorAll('canvas[data-f]').forEach(c=>drawFishCanvas(c,c.dataset.f,c.dataset.k!=='1'));
   }else if(tab==='stamp'){
@@ -1218,6 +1231,26 @@ function renderShopList(){const el=$('shopList');if(!el)return;const lv=playerLv
     else{S.dragKg=null;if(!TK.reelMatch(rodOf(),reelOf()))msg+=t.cat==='rod'?'（いまのリールと種類が合わない）':'（いまのロッドと種類が合わない）';}
     toast(msg);save();renderTab();});
   const more=$('shopMore');if(more)more.onclick=()=>{shop.n+=20;renderShopList();};}
+/* 釣り場一覧：地域と種類で絞り込み。区分（公式開放・現地確認・釣り不可）、利用時間、釣り方、禁止事項、注意、最寄りの駅を表示 */
+let mapView='go',spotF={area:'',type:''},selSpot=null;
+function renderSpotList(sb){const rg=regionAt(S.x,S.y),mon=gameDate().getMonth()+1;
+  const areas=rg==='shonan'?Object.entries(SH.AREA_LABEL):[];const types=rg==='shonan'?Object.entries(SH.TYPE_LABEL):[];
+  let h=`<div class="seg"><button data-mv="go">行き先</button><button data-mv="spots" class="on">釣り場一覧</button></div><canvas id="mapCv"></canvas>`;
+  if(rg==='shonan')h+=`<div class="shopCtl"><select id="spA"><option value="">すべての地域</option>${areas.map(([k,n])=>`<option value="${k}" ${spotF.area===k?'selected':''}>${n}</option>`).join('')}</select>
+    <select id="spT"><option value="">すべての種類</option>${types.map(([k,n])=>`<option value="${k}" ${spotF.type===k?'selected':''}>${n}</option>`).join('')}</select></div>`;
+  h+=`<p class="sub">${rg==='shonan'?esc(SH.DATA.NOTICE):'横浜市では、海づり施設などを除き、ふ頭・防波堤での釣りは禁止されています。'}</p><div class="list">`;
+  for(const sp of SPOTS.filter(p=>p.region===rg)){const g=sp.sh;if(g&&((spotF.area&&g.area!==spotF.area)||(spotF.type&&g.type!==spotF.type)))continue;
+    let best=null,bd=1e9;for(const st of STATIONS)if(st.region===rg){const d=Math.hypot(st.x-sp.x,st.y-sp.y);if(d<bd){bd=d;best=st;}}
+    const ng=g&&(g.accessStatus==='unverified'||g.accessStatus==='protected'),hr=g?SH.hoursOf(g,mon):sp.hours;
+    const lines=g?[`${SH.AREA_LABEL[g.area]}・${SH.TYPE_LABEL[g.type]}・<em class="${ng?'ng':''}">${SH.STATUS_LABEL[g.accessStatus]}</em>`,hr?`利用時間 ${SH.fmtH(hr[0])}〜${SH.fmtH(hr[1])}（${mon}月）`:'',
+      g.targetSpecies.length?`魚：${g.targetSpecies.join('・')}`:'',g.fishingMethods.length?`釣り方：${g.fishingMethods.join('・')}`:'',g.prohibitedMethods.length?`<em class="ng">禁止：${g.prohibitedMethods.join('・')}</em>`:'',
+      g.hazards.length?`注意：${g.hazards.join('・')}`:'',sp.id===selSpot?esc(g.notes):'',`最寄り：${best?best.n:'—'}（約${Math.round(bd*SC/100)/10}km）`]
+      :[sp.hours?`営業時間 ${sp.hours[0]}:00〜${sp.hours[1]}:00`:'岸壁の公園',`最寄り：${best?best.n:'—'}`];
+    h+=`<button class="item${sp.id===selSpot?' on':''}${ng?' dim':''}" data-sp="${sp.id}"><div class="tx"><b>${esc(sp.n)}</b>${lines.filter(Boolean).map(l=>`<span>${l}</span>`).join('')}</div></button>`;}
+  sb.innerHTML=h+'</div>';drawMapCv($('mapCv'));
+  sb.querySelectorAll('[data-mv]').forEach(b=>b.onclick=()=>{mapView=b.dataset.mv;renderTab();});
+  sb.querySelectorAll('[data-sp]').forEach(b=>b.onclick=()=>{selSpot=selSpot===b.dataset.sp?null:b.dataset.sp;renderTab();});
+  if($('spA'))$('spA').onchange=e=>{spotF.area=e.target.value;renderTab();};if($('spT'))$('spT').onchange=e=>{spotF.type=e.target.value;renderTab();};}
 function travel(i){const s=STATIONS[i];const f=fare(s);if(S.money<f.yen){toast('お金が足りません');return;}const w=busWait[i]||5;S.money-=f.yen;advance(w+f.min);busWait={};S.x=s.x;S.y=s.y;N=null;closeSheet();updMoney();updChunks(true);snapCam();toast(`${w}分待って${f.mode}に乗り、${s.n}に到着（${fmtTime(S.min)}）`);save();}
 
 /* ===== 2D地図 ===== */
@@ -1251,6 +1284,7 @@ function drawMapCv(cvs){const sh=regionAt(S.x,S.y)==='shonan';const B=sh?{x0:-61
   if(sh)for(const r of SH.GRESTRICTED){c.fillStyle='rgba(224,74,59,.35)';c.beginPath();c.arc(r.x,r.y,Math.max(r.gr,60),0,7);c.fill();}
   for(const sp of SPOTS){const ng=sp.sh&&(sp.sh.accessStatus==='unverified'||sp.sh.accessStatus==='protected');c.fillStyle=ng?'#8a8f94':'#1b7d82';c.beginPath();c.arc(sp.x,sp.y,66,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=18;c.stroke();}
   for(const s of STATIONS){c.fillStyle='#2f6fb0';c.fillRect(s.x-36,s.y-36,72,72);c.strokeStyle='#fff';c.lineWidth=12;c.strokeRect(s.x-36,s.y-36,72,72);}
+  if(selSpot){const sp=SPOTS.find(p=>p.id===selSpot);if(sp){c.strokeStyle='#f1b746';c.lineWidth=30;c.beginPath();c.arc(sp.x,sp.y,170,0,7);c.stroke();}}
   c.fillStyle='#e04a3b';c.beginPath();c.arc(S.x,S.y,90,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=24;c.stroke();}
 const miniC=$('mini').getContext('2d');let miniT=0;
 function drawMini(){const c=miniC,W=208,R=W/2,z=2.6;c.save();c.clearRect(0,0,W,W);c.beginPath();c.arc(R,R,R,0,7);c.clip();c.fillStyle='#2a7aa3';c.fillRect(0,0,W,W);
@@ -1453,6 +1487,8 @@ function update(dt,t){
   if(F.st!=='idle')nearSpot=F.spot;
   nearSight=null;for(const s of SIGHTS)if(Math.hypot(s.x-S.x,s.y-S.y)<s.r){nearSight=s;break;}
   updateFishing(dt);updateNabura(dt);
+  // 磯の波：波が高めの日は、ときどき大波が足元を洗う（釣りを中断。高波の日はそもそも立てない）
+  if(F.st!=='idle'&&F.st!=='fight'&&F.spot&&F.spot.sh&&F.spot.sh.type==='iso'){const E=envNow(F.spot);if(E.wave>.9&&rnd()<dt*.02*(E.wave-.8)*10){splash(S.x,S.y,14,2.2);SND.play('splash',{size:1.3});buzz(60);F.st='idle';F.reelHold=false;toast('大波が足元を洗った！ 仕掛けを回収した。磯では波に注意');}}
   if(yawT!==null&&F.st!=='idle')yaw=angLerp(yaw,yawT,Math.min(1,dt*3));
   const gy=groundY(S.x,S.y);
   const target=F.st!=='idle'?Math.atan2(Math.cos(F.ang),Math.sin(F.ang)):(nearSpot&&!moving)?Math.atan2(Math.cos(idleDir),Math.sin(idleDir)):face;
