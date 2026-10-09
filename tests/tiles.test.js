@@ -1,0 +1,26 @@
+// 関東タイル：tiles.js（PMTiles・MVT の読み込み）と tools/kanto のパイプラインの出力（架空のテストデータ tests/fixtures/kanto-test.osm.pbf から作ったもの）
+const test=require('node:test');const assert=require('node:assert/strict');const path=require('path');
+const TL=require('../tiles.js');
+const dir=path.join(__dirname,'../data/tiles/test');const idx=require(path.join(dir,'index.json'));
+const ts=TL.open(path.join(dir,'kanto.pmtiles'));
+const tileAt=(lon,lat,z)=>[z,Math.floor(TL.lon2tx(lon,z)),Math.floor(TL.lat2ty(lat,z))];
+test('タイルIDはPMTilesの仕様どおり（ヒルベルト曲線）',()=>{assert.equal(TL.zxyToId(0,0,0),0);assert.equal(TL.zxyToId(1,0,0),1);assert.equal(TL.zxyToId(1,0,1),2);assert.equal(TL.zxyToId(1,1,1),3);assert.equal(TL.zxyToId(1,1,0),4);assert.equal(TL.zxyToId(2,0,0),5);});
+test('ヘッダーと索引：ズーム範囲・範囲・出典',async()=>{await ts.ready;const H=ts.header;assert.equal(H.minZoom,idx.minzoom);assert.equal(H.maxZoom,14);assert.equal(H.tileType,1);
+  assert.ok(Math.abs(H.bounds[0]-idx.bounds[0])<1e-4);assert.equal(ts.metadata.attribution,'© OpenStreetMap contributors');assert.ok(idx.not_in_osm.includes('水深'));});
+test('タイルを読み、レイヤーと属性が入っている。OSM の id を持つ',async()=>{const t=await ts.tile(...tileAt(139.345,35.33,14));const L=t.layers;
+  for(const k of['roads','buildings','poi','place','land','waterway'])assert.ok(L[k],k);
+  const b=L.buildings.features[0];assert.equal(b.props['building:levels'],'4');assert.equal(b.type,3);assert.match(b.props.id,/^w\d+$/);
+  assert.ok(L.poi.features.some(f=>f.props.kind==='parking'&&f.props.capacity==='40'));});
+test('陸地は海岸線の北側（陸が左）。海のタイルは無い',async()=>{const[z,x,y]=tileAt(139.35,35.31,14);const t=await ts.tile(z,x,y);const land=t.layers.land.features;
+  const inside=(lon,lat)=>{const px=(TL.lon2tx(lon,z)-x)*4096,py=(TL.lat2ty(lat,z)-y)*4096;let c=false;for(const f of land)for(const poly of f.geom)for(const r of poly)for(let i=0,j=r.length-1;i<r.length;j=i++){const[xi,yi]=r[i],[xj,yj]=r[j];if((yi>py)!==(yj>py)&&px<(xj-xi)*(py-yi)/(yj-yi)+xi)c=!c;}return c;};
+  assert.ok(inside(139.35,35.313),'北は陸');assert.ok(!inside(139.35,35.307),'南は海');
+  assert.equal(await ts.tile(...tileAt(139.35,35.25,14)),null);});
+test('島と河口（川の終点が海岸線の近く）',async()=>{const t=await ts.tile(...tileAt(139.3425,35.282,14));assert.ok(t.layers.land&&t.layers.coastline);
+  const m=await ts.tile(...tileAt(139.3502,35.3102,14));assert.ok(m.layers.shore.features.some(f=>f.props.kind==='estuary'&&f.props.name==='テスト川'));});
+test('低いズームは主要な地物だけ（LOD）：z8 に建物・歩道は無いが幹線道路はある',async()=>{const t=await ts.tile(...tileAt(139.35,35.33,8));const L=t.layers;
+  assert.ok(!L.buildings);assert.ok(L.roads.features.every(f=>['motorway','primary'].includes(f.props.kind)));});
+test('重複読み込みをしない・キャッシュする・最大ズームを超えたら親のタイル',async()=>{const k=tileAt(139.36,35.33,14);const s0=ts.stats.fetched;
+  const[a,b]=await Promise.all([ts.tile(...k),ts.tile(...k)]);assert.equal(a,b);await ts.tile(...k);assert.ok(ts.stats.fetched-s0<=1);
+  const over=await ts.tile(16,k[1]*4+1,k[2]*4+2);assert.equal(over,a);});
+test('地域索引（行政界）とレイヤー定義',()=>{const R=require(path.join(dir,'regions.json')).regions;assert.equal(R[0].name,'テスト市');assert.equal(R[0].level,7);
+  const L=require('../data/tiles/layers.json');for(const k of['land','coastline','roads','buildings','railway','water','shore','boundary','poi'])assert.ok(L.some(l=>l.id===k),k);});

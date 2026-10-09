@@ -1,0 +1,86 @@
+[
+ {
+  "id": "land",
+  "label": "陸地",
+  "geometry": "polygon",
+  "description": "海岸線（natural=coastline）からタイルごとに組み立てた陸。海はタイルが無い所"
+ },
+ {
+  "id": "coastline",
+  "label": "海岸線",
+  "geometry": "line",
+  "description": "natural=coastline（陸が進行方向の左）"
+ },
+ {
+  "id": "water",
+  "label": "水域",
+  "geometry": "polygon",
+  "description": "湖・池・川の面・貯水池・港内の水面など"
+ },
+ {
+  "id": "waterway",
+  "label": "河川（線）",
+  "geometry": "line",
+  "description": "川・運河・小川・水路"
+ },
+ {
+  "id": "shore",
+  "label": "岸の地物",
+  "geometry": "any",
+  "description": "砂浜・磯・桟橋・防波堤・突堤・護岸・港・マリーナ・釣り場・河口（釣りの判定用）"
+ },
+ {
+  "id": "landuse",
+  "label": "土地利用",
+  "geometry": "polygon",
+  "description": "住宅・商業・工業・農地・港湾など"
+ },
+ {
+  "id": "natural",
+  "label": "自然",
+  "geometry": "polygon",
+  "description": "森林・草地・湿地・岩・砂など"
+ },
+ {
+  "id": "park",
+  "label": "公園",
+  "geometry": "polygon",
+  "description": "公園・緑地・自然保護区"
+ },
+ {
+  "id": "roads",
+  "label": "道路",
+  "geometry": "line",
+  "description": "highway=*（歩道・自転車道を含む）"
+ },
+ {
+  "id": "railway",
+  "label": "鉄道",
+  "geometry": "line",
+  "description": "railway=*"
+ },
+ {
+  "id": "buildings",
+  "label": "建物",
+  "geometry": "polygon",
+  "description": "building=*"
+ },
+ {
+  "id": "boundary",
+  "label": "行政界",
+  "geometry": "line",
+  "description": "boundary=administrative（都県・市区町村）"
+ },
+ {
+  "id": "place",
+  "label": "地名",
+  "geometry": "point",
+  "description": "place=*"
+ },
+ {
+  "id": "poi",
+  "label": "施設",
+  "geometry": "point",
+  "description": "駅・駐車場・駐輪場・給油所・店・観光地など"
+ }
+]

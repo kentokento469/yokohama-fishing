@@ -151,6 +151,8 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
 .wmTop button,.wmZ button{border:1px solid var(--line);background:var(--panel);color:var(--paper);border-radius:12px;font-weight:900;min-width:44px;height:40px;font-size:14px;padding:0 10px}
 .wmZ{position:absolute;right:calc(12px + env(safe-area-inset-right,0px));top:calc(64px + env(safe-area-inset-top,0px));display:grid;gap:6px}.wmZ button{font-size:20px}
 .wmLyr{position:absolute;left:calc(12px + env(safe-area-inset-left,0px));top:calc(60px + env(safe-area-inset-top,0px));display:flex;flex-wrap:wrap;gap:4px;max-width:calc(100% - 90px)}
+.wmLyr[hidden]{display:none}#wmKanto{position:absolute;left:calc(12px + env(safe-area-inset-left,0px));top:calc(60px + env(safe-area-inset-top,0px));width:min(260px,calc(100% - 90px))}#wmKanto[hidden]{display:none}
+#wmQ{width:100%;font:inherit;font-size:16px;border:none;border-radius:12px;padding:8px 10px;background:rgba(246,242,232,.95);color:var(--ink)}#wmQR{display:grid;gap:4px;margin-top:4px;max-height:40vh;overflow:auto}#wmQR button{border:none;border-radius:10px;padding:7px 9px;text-align:left;background:rgba(246,242,232,.95);font-weight:700;font-size:13px;color:var(--ink)}
 .wmLyr label{background:rgba(246,242,232,.92);border-radius:999px;padding:4px 9px;font-size:11px;font-weight:700;display:flex;gap:4px;align-items:center;color:var(--ink)}
 #wmInfo{position:absolute;left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom,0px));background:var(--paper);color:var(--ink);border-radius:16px;padding:12px 14px;box-shadow:0 6px 18px rgba(0,0,0,.3);max-width:520px;margin:0 auto}
 #wmInfo b{display:block;font-size:15px}#wmInfo span{display:block;font-size:12px;color:var(--mute);line-height:1.5}#wmInfo .row2 button{margin-top:8px}
@@ -190,10 +192,11 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
 <div id="toast" role="status"></div>
 <div id="wmap" hidden role="dialog" aria-label="ワールドマップ">
   <canvas id="wmCv"></canvas>
-  <div class="wmTop"><b>ワールドマップ</b><button data-wr="yokohama">横浜</button><button data-wr="shonan">湘南</button><button id="wmX" aria-label="閉じる">✕</button></div>
+  <div class="wmTop"><b>ワールドマップ</b><button data-wr="yokohama">横浜</button><button data-wr="shonan">湘南</button><button data-wr="kanto">関東</button><button id="wmX" aria-label="閉じる">✕</button></div>
   <div class="wmZ"><button id="wmIn" aria-label="拡大">＋</button><button id="wmOut" aria-label="縮小">−</button><button id="wmMe" aria-label="現在地">◎</button></div>
   <div class="wmLyr"><label><input type="checkbox" data-wl="gshhs" checked>実在の海岸線</label><label><input type="checkbox" data-wl="roads" checked>道路</label><label><input type="checkbox" data-wl="lots" checked>駐車場</label></div>
   <div id="wmInfo" hidden></div>
+  <div id="wmKanto" hidden><input id="wmQ" type="search" placeholder="地域を探す（例：平塚市、千葉県）" aria-label="地域を探す"><div id="wmQR"></div></div>
 </div>
 
 <div id="result" class="overlay" hidden>
@@ -261,6 +264,7 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
 <script src="osm-convert.js"></script>
 <script src="mapdata.js"></script>
 <script src="data/geo/geo-data.js"></script>
+<script src="tiles.js"></script>
 <script src="routing.js"></script>
 <script src="nav.js"></script>
 <script src="vehicles.js"></script>
@@ -1743,9 +1747,10 @@ const wmCv=$('wmCv');
 function openWorld(){if(F.st!=='idle'&&F.st!=='wait'){toast('釣りの最中です');return;}if(F.st==='wait')reelIn();closeSheet();$('wmap').hidden=false;
   const w=innerWidth,h=innerHeight;WM.v=GEO.view(S.x,S.y,WM.v?WM.v.z:.12,w,h);WM.sel=null;$('wmInfo').hidden=true;drawWorld();}
 function closeWorld(){$('wmap').hidden=true;}
-function wmFitRegion(id){const b=id==='shonan'?{x0:GEO.SHONAN.bounds.x0,x1:GEO.SHONAN.bounds.x1,y0:GEO.SHONAN.bounds.y0,y1:GEO.SHONAN.bounds.y0+2200}:{x0:1500,x1:4800,y0:0,y1:7800};const v=GEO.fit(b,innerWidth,innerHeight,40);WM.v.cx=v.cx;WM.v.cy=v.cy;WM.v.z=v.z;drawWorld();}
-const WM_ZMIN=.02,WM_ZMAX=3;
+function wmFitRegion(id){setWmMode(id==='kanto'?'kanto':'game');if(id==='kanto'){kantoFit();return;}const b=id==='shonan'?{x0:GEO.SHONAN.bounds.x0,x1:GEO.SHONAN.bounds.x1,y0:GEO.SHONAN.bounds.y0,y1:GEO.SHONAN.bounds.y0+2200}:{x0:1500,x1:4800,y0:0,y1:7800};const v=GEO.fit(b,innerWidth,innerHeight,40);WM.v.cx=v.cx;WM.v.cy=v.cy;WM.v.z=v.z;drawWorld();}
+let WM_ZMIN=.02;const WM_ZMAX=3;
 function drawWorld(){if($('wmap').hidden)return;const w=innerWidth,h=innerHeight,d=Math.min(window.devicePixelRatio||1,2);const v=WM.v;v.w=w;v.h=h;
+  if(WM.mode==='kanto'){drawKanto(w,h,d);return;}
   if(wmCv.width!==Math.round(w*d)||wmCv.height!==Math.round(h*d)){wmCv.width=Math.round(w*d);wmCv.height=Math.round(h*d);}
   const c=wmCv.getContext('2d');c.setTransform(d,0,0,d,0,0);c.fillStyle='#2a7aa3';c.fillRect(0,0,w,h);c.setTransform(...GEO.canvasMatrix(v,d));
   const z=v.z,px=1/z;drawMap2D(c,false);
@@ -1777,7 +1782,7 @@ wmCv.addEventListener('pointerdown',e=>{try{wmCv.setPointerCapture(e.pointerId);
 wmCv.addEventListener('pointermove',e=>{const p=WM.ptr.get(e.pointerId);if(!p)return;const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;WM.moved+=Math.abs(dx)+Math.abs(dy);
   if(WM.ptr.size===2&&WM.pinch){const[a,b]=[...WM.ptr.values()];const nd=Math.hypot(a.x-b.x,a.y-b.y);const k=WM.pinch.z*nd/WM.pinch.d/WM.v.z;GEO.zoomAt(WM.v,(a.x+b.x)/2,(a.y+b.y)/2,k,WM_ZMIN,WM_ZMAX);}
   else if(WM.ptr.size===1){WM.v.cx-=dx/WM.v.z;WM.v.cy-=dy/WM.v.z;}drawWorld();});
-const wmUp=e=>{const had=WM.ptr.has(e.pointerId);WM.ptr.delete(e.pointerId);if(WM.ptr.size<2)WM.pinch=null;if(had&&WM.ptr.size===0&&WM.moved<8)wmShow(wmPick(e.clientX,e.clientY));};
+const wmUp=e=>{const had=WM.ptr.has(e.pointerId);WM.ptr.delete(e.pointerId);if(WM.ptr.size<2)WM.pinch=null;if(had&&WM.ptr.size===0&&WM.moved<8){if(WM.mode==='kanto')kantoTap(e.clientX,e.clientY);else wmShow(wmPick(e.clientX,e.clientY));}};
 wmCv.addEventListener('pointerup',wmUp);wmCv.addEventListener('pointercancel',e=>{WM.ptr.delete(e.pointerId);WM.pinch=null;});
 wmCv.addEventListener('wheel',e=>{e.preventDefault();GEO.zoomAt(WM.v,e.clientX,e.clientY,e.deltaY<0?1.2:1/1.2,WM_ZMIN,WM_ZMAX);drawWorld();},{passive:false});
 $('wmIn').onclick=()=>{GEO.zoomAt(WM.v,innerWidth/2,innerHeight/2,1.5,WM_ZMIN,WM_ZMAX);drawWorld();};$('wmOut').onclick=()=>{GEO.zoomAt(WM.v,innerWidth/2,innerHeight/2,1/1.5,WM_ZMIN,WM_ZMAX);drawWorld();};
@@ -1785,6 +1790,83 @@ $('wmMe').onclick=()=>{WM.v.cx=S.x;WM.v.cy=S.y;drawWorld();};$('wmX').onclick=cl
 document.querySelectorAll('[data-wr]').forEach(b=>b.onclick=()=>wmFitRegion(b.dataset.wr));
 document.querySelectorAll('[data-wl]').forEach(b=>b.onchange=()=>{WM.lyr[b.dataset.wl]=b.checked;drawWorld();});
 addEventListener('resize',()=>drawWorld());
+/* ===== 関東の実在地図（OpenStreetMap のタイル。tools/kanto で作る） =====
+   座標は geo.js の湘南と同じ変換（緯度経度 → ゲーム座標）。湘南はゲームの地形と同じ位置に重なる。横浜の手描き地図は緯度経度と対応していないので、ここには出さない。
+   タイルは表示の範囲と縮尺に合うズームだけを読み込む（遠くは低詳細、近くは高詳細）。タイルの枠で切って描くので継ぎ目は出ない。
+   置き場所：既定 data/tiles/（kanto.pmtiles・index.json・regions.json）。URL 末尾 #tilestest で架空のテストデータ（data/tiles/test/）、#tiles=URL で別の置き場所 */
+const KT={base:(location.hash.match(/tiles=([^&]+)/)||[])[1]||(/tilestest/.test(location.hash)?'data/tiles/test/':'data/tiles/'),ts:null,index:null,regions:[],status:'未確認',paths:new Map(),pending:0,fictional:/tilestest/.test(location.hash)};
+const KANTO_BBOX=[138.4,34.85,140.9,37.2];// 表示の初期範囲（伊豆・小笠原の島は含めない）
+function kantoInit(){if(KT.init)return KT.init;KT.init=(async()=>{try{const r=await fetch(KT.base+'index.json');if(!r.ok)throw new Error('index.json '+r.status);KT.index=await r.json();
+    KT.ts=HamaTiles.open(KT.base+KT.index.archive);await KT.ts.ready;KT.status='ok';try{const g=await fetch(KT.base+'regions.json');if(g.ok)KT.regions=(await g.json()).regions||[];}catch(e){}}
+  catch(e){KT.status='missing';KT.err=String(e.message||e);console.info('[関東地図] タイルなし：'+KT.err);}drawWorld();})();return KT.init;}
+function setWmMode(m){WM.mode=m;WM_ZMIN=m==='kanto'?.002:.02;$('wmKanto').hidden=m!=='kanto';document.querySelector('.wmLyr').hidden=m==='kanto';$('wmInfo').hidden=true;if(m==='kanto')kantoInit();}
+function kantoFit(){const b=KT.ts&&KT.ts.header?KT.ts.header.bounds:KANTO_BBOX;const bb=[Math.max(b[0],KANTO_BBOX[0]),Math.max(b[1],KANTO_BBOX[1]),Math.min(b[2],KANTO_BBOX[2]),Math.min(b[3],KANTO_BBOX[3])];
+  const p0=GEO.toGame(bb[3],bb[0]),p1=GEO.toGame(bb[1],bb[2]);const v=GEO.fit({x0:p0[0],x1:p1[0],y0:p0[1],y1:p1[1]},innerWidth,innerHeight,30);Object.assign(WM.v,{cx:v.cx,cy:v.cy,z:v.z});drawWorld();}
+// タイル → ゲーム座標の Path2D（レイヤーごと）。一度作ったらキャッシュ
+const KSTY={landuse:{residential:'#e8e2d4',commercial:'#eadbd6',industrial:'#ddd6e2',farmland:'#eef0d0',forest:'#c9dcb0',grass:'#d6e8c0',harbour:'#d8d8de',port:'#d8d8de',military:'#e2d4d4'},natural:'#c9dcb0',park:'#c4e2b4'};
+function kTilePaths(t){const k=t.z+'/'+t.x+'/'+t.y;let P=KT.paths.get(k);if(P)return P;P={};const ext=4096,n=2**t.z;
+  const pt=(px,py)=>{const lon=(t.x+px/ext)/n*360-180,m=Math.PI*(1-2*(t.y+py/ext)/n),lat=Math.atan(Math.sinh(m))*180/Math.PI;return GEO.toGame(lat,lon);};
+  for(const[name,L]of Object.entries(t.layers)){const arr=P[name]=[];for(const f of L.features){const p=new Path2D();let lp=null;
+      if(f.type===3){for(const poly of f.geom)for(const r of poly){r.forEach(([x,y],i)=>{const q=pt(x,y);i?p.lineTo(q[0],q[1]):p.moveTo(q[0],q[1]);});p.closePath();}}
+      else if(f.type===2){for(const l of f.geom)l.forEach(([x,y],i)=>{const q=pt(x,y);i?p.lineTo(q[0],q[1]):p.moveTo(q[0],q[1]);});}
+      else{const q=f.geom[0]&&f.geom[0][0];if(q)lp=pt(q[0],q[1]);}
+      arr.push({p,props:f.props,type:f.type,lp});}}
+  const b=HamaTiles.tileBounds(t.z,t.x,t.y);const a=GEO.toGame(b[3],b[0]),c=GEO.toGame(b[1],b[2]);P._rect=[a[0],a[1],c[0]-a[0],c[1]-a[1]];
+  KT.paths.set(k,P);if(KT.paths.size>400)KT.paths.delete(KT.paths.keys().next().value);return P;}
+const ROADW={motorway:3.2,trunk:3,primary:2.6,secondary:2.2,tertiary:2,residential:1.4,unclassified:1.4,service:1,living_street:1.2,pedestrian:1.2,footway:.8,path:.8,cycleway:.9,steps:.8,track:.8};
+function drawKanto(w,h,d){const c=wmCv.getContext('2d'),v=WM.v,z=v.z,px=1/z;c.setTransform(d,0,0,d,0,0);c.fillStyle='#2a7aa3';c.fillRect(0,0,w,h);c.setTransform(...GEO.canvasMatrix(v,d));
+  const[la0,lo0]=GEO.toLatLon(v.cx-w/2/z,v.cy+h/2/z),[la1,lo1]=GEO.toLatLon(v.cx+w/2/z,v.cy-h/2/z);
+  let note='';
+  if(KT.status==='ok'){const H=KT.ts.header;const mpp=GEO.SC/z;let tz=Math.round(HamaTiles.zoomFor(mpp,(la0+la1)/2,512));tz=Math.max(H.minZoom,Math.min(16,tz));
+    let list=null;while(tz>=H.minZoom&&!(list=HamaTiles.tilesForBBox([lo0,la0,lo1,la1],tz,64)))tz--;list=list||[];
+    const tiles=[];for(const[zz,x,y]of list){let t=KT.ts.peek(zz,x,y);if(t===undefined){KT.pending++;KT.ts.tile(zz,x,y).then(()=>{KT.pending--;kRedraw();},()=>{KT.pending--;});
+        // 読み込み中は親のタイル（低詳細）で代わりに描く
+        for(let up=1;up<=4&&t===undefined;up++)t=KT.ts.peek(zz-up,x>>up,y>>up);}if(t)tiles.push(t);}
+    const uniq=[...new Map(tiles.map(t=>[t.z+'/'+t.x+'/'+t.y,t])).values()].sort((a,b)=>a.z-b.z);
+    const each=(fn)=>{for(const t of uniq){const P=kTilePaths(t);c.save();c.beginPath();c.rect(...P._rect);c.clip();fn(P,t);c.restore();}};
+    each(P=>{c.fillStyle='#ece6d2';for(const f of P.land||[])c.fill(f.p);
+      for(const f of P.landuse||[]){c.fillStyle=KSTY.landuse[f.props.kind]||'#e6e0d0';c.fill(f.p);}
+      c.fillStyle=KSTY.natural;for(const f of P.natural||[])c.fill(f.p);c.fillStyle=KSTY.park;for(const f of P.park||[])c.fill(f.p);
+      c.fillStyle='#2a7aa3';for(const f of P.water||[])c.fill(f.p);
+      for(const f of P.shore||[]){if(f.type===3){c.fillStyle=f.props.kind==='beach'?'#ecd596':f.props.kind==='rocky'?'#b9b0a0':'#d0ccc4';c.fill(f.p);}else if(f.type===2){c.strokeStyle='#6c6a66';c.lineWidth=2.4*px;c.stroke(f.p);}}
+      c.strokeStyle='#2a7aa3';for(const f of P.waterway||[]){c.lineWidth=(f.props.kind==='river'?2.4:1)*px;c.stroke(f.p);}
+      c.strokeStyle='#5b6e7a';c.lineWidth=1.2*px;for(const f of P.coastline||[])c.stroke(f.p);
+      c.fillStyle='#cdbfa6';for(const f of P.buildings||[])c.fill(f.p);
+      c.lineCap='round';c.lineJoin='round';for(const f of P.roads||[]){const k=f.props.kind;c.strokeStyle=k==='motorway'||k==='trunk'?'#f0b35a':k==='primary'?'#f6d77a':/^(footway|path|steps|cycleway|track)$/.test(k)?'#b69a78':'#ffffff';c.lineWidth=(ROADW[k]||1)*px*(z>.3?1.6:1);c.stroke(f.p);}
+      c.setLineDash([4*px,3*px]);c.strokeStyle='#6b6b6b';c.lineWidth=1.4*px;for(const f of P.railway||[])c.stroke(f.p);
+      c.strokeStyle='rgba(122,63,176,.7)';for(const f of P.boundary||[]){c.lineWidth=(f.props.kind==='admin4'?2:1)*px;c.stroke(f.p);}c.setLineDash([]);});
+    // 点：河口・釣り場・駅・地名（タイルの枠では切らない）
+    c.textAlign='center';c.textBaseline='middle';const lab=(t,x,y,s,col)=>{c.font=`900 ${s*px}px ${FONT}`;c.lineWidth=3*px;c.strokeStyle='rgba(255,255,255,.9)';c.strokeText(t,x,y);c.fillStyle=col;c.fillText(t,x,y);};
+    const seen=new Set();for(const t of uniq){const P=kTilePaths(t);
+      for(const f of P.shore||[])if(f.lp&&!seen.has(f.props.id)){seen.add(f.props.id);c.fillStyle=f.props.kind==='estuary'?'#2a7aa3':'#1b7d82';c.beginPath();c.arc(f.lp[0],f.lp[1],5*px,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=1.5*px;c.stroke();}
+      for(const f of P.poi||[])if(f.lp&&f.props.kind==='station'&&!seen.has(f.props.id)){seen.add(f.props.id);c.fillStyle='#2f6fb0';c.fillRect(f.lp[0]-4*px,f.lp[1]-4*px,8*px,8*px);if(z>.03)lab(f.props.name||'',f.lp[0],f.lp[1]+11*px,10,'#2f6fb0');}
+      for(const f of P.place||[])if(f.lp&&f.props.name&&!seen.has(f.props.id)){seen.add(f.props.id);lab(f.props.name,f.lp[0],f.lp[1],f.props.kind==='city'?14:12,'#13263b');}}
+    note=(KT.fictional?'架空のテスト用データ（実在の地図ではない）・':'© OpenStreetMap contributors・')+`タイル z${tz}・${uniq.length}枚`+(KT.pending?'・読み込み中…':'');}
+  else{// タイルなし：GSHHS（湘南〜横浜の概形）だけ
+    if(FAR_LAND.length){c.fillStyle='#d3d8c6';for(const q of FAR_LAND){c.beginPath();poly2(c,q);c.fill();}}
+    c.fillStyle='#e4dfc8';c.beginPath();poly2(c,SH.LAND);poly2(c,SH.ENOSHIMA);c.fill();c.strokeStyle='#7a3fb0';c.lineWidth=2*px;c.setLineDash([6*px,4*px]);for(const l of GSHHS_COAST){pline2(c,l);c.stroke();}c.setLineDash([]);
+    note=KT.status==='missing'?'関東の実在地図（OSM）のタイルはまだありません。表示は湘南のゲーム地形と GSHHS の概形だけ':'読み込み中…';}
+  // 釣り場（湘南）と現在地（湘南にいるとき）
+  for(const sp of SPOTS)if(sp.sh){c.fillStyle='#1b7d82';c.beginPath();c.arc(sp.x,sp.y,6*px,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=1.5*px;c.stroke();fishGlyph(c,sp.x,sp.y,3.6*px);}
+  if(regionAt(S.x,S.y)==='shonan'){const hd=RIDE?RIDE.st.h:P.rotation.y;c.save();c.translate(S.x,S.y);c.rotate(-hd+Math.PI);c.scale(px,px);c.fillStyle='#e04a3b';c.strokeStyle='#fff';c.lineWidth=2.5;c.beginPath();c.moveTo(0,-14);c.lineTo(9,9);c.lineTo(0,4);c.lineTo(-9,9);c.closePath();c.fill();c.stroke();c.restore();}
+  else note+='・横浜の手描き地図は緯度経度と対応していないため現在地は出さない';
+  c.setTransform(d,0,0,d,0,0);const sb=GEO.scaleBar(v,120);const by=h-14;c.fillStyle='rgba(246,242,232,.9)';c.fillRect(8,by-30,Math.max(sb.px,60)+16,28);c.fillStyle='#13263b';c.fillRect(16,by-10,sb.px,3);
+  c.font=`700 11px ${FONT}`;c.textAlign='left';c.textBaseline='alphabetic';c.fillText(sb.label+'（実際の距離）',16,by-14);
+  c.font=`700 10px ${FONT}`;const tw=Math.min(w-20,c.measureText(note).width);c.fillStyle='rgba(19,38,59,.75)';c.fillRect(8,by-50,tw+12,16);c.fillStyle='#fff';c.fillText(note,14,by-38,w-24);}
+let kRaf=0;function kRedraw(){if(kRaf)return;kRaf=requestAnimationFrame(()=>{kRaf=0;if(!$('wmap').hidden&&WM.mode==='kanto')drawWorld();});}
+// 地図をタップ：その地点の緯度経度・地域、ゲームで行けるか
+function kantoTap(px,py){const[x,y]=GEO.screenToWorld(WM.v,px,py);const[lat,lon]=GEO.toLatLon(x,y);const box=$('wmInfo');
+  const rs=KT.regions.filter(r=>lon>=r.bbox[0]&&lon<=r.bbox[2]&&lat>=r.bbox[1]&&lat<=r.bbox[3]).sort((a,b)=>b.level-a.level||a.area_km2-b.area_km2);
+  const sp=SPOTS.filter(q=>q.sh).map(q=>[q,Math.hypot(q.x-x,q.y-y)]).sort((a,b)=>a[1]-b[1])[0];
+  const play=SH.inShonan(x,y)&&isLand(x,y);const nearSp=sp&&sp[1]<20/WM.v.z;
+  box.innerHTML=`<b>${nearSp?esc(sp[0].n):rs[0]?esc(rs[0].name):'この地点'}</b><span>北緯 ${lat.toFixed(4)}°・東経 ${lon.toFixed(4)}°${rs.length?'・'+rs.slice(0,2).map(r=>esc(r.name)).join(' / ')+'（範囲はおおよそ）':''}</span>
+    <span>${nearSp||play?'ゲームで行ける場所（湘南）':'この地域はまだ遊べません（地形・釣り場が未整備。OSM に水深・魚の情報は無い）'}</span>
+    <div class="row2">${nearSp||play?`<button class="btnA" id="kGo">ここへ行く</button>`:''}<button class="btnB" id="wmClose">閉じる</button></div>`;box.hidden=false;
+  if($('kGo'))$('kGo').onclick=()=>{const tx=nearSp?sp[0].x:x,ty=nearSp?sp[0].y:y;if(regionAt(S.x,S.y)!=='shonan'){toast('湘南へは電車で（移動→行き先）');return;}setDest({x:tx,y:ty,name:nearSp?sp[0].n:'選んだ地点',spot:nearSp?sp[0].id:undefined});const p=NAVR;toast(p&&!p.fail?`ルートを表示：約${fmtDur(p.time)}`:'ルートが見つからない');box.hidden=true;drawWorld();};
+  $('wmClose').onclick=()=>{box.hidden=true;};}
+$('wmQ').oninput=()=>{const q=$('wmQ').value.trim();const R=q?KT.regions.filter(r=>(r.name||'').includes(q)||(r.name_en||'').toLowerCase().includes(q.toLowerCase())).slice(0,8):[];
+  $('wmQR').innerHTML=R.map((r,i)=>`<button data-ri="${i}">${esc(r.name)}<small>（${r.level===4?'都県':r.level===7?'市・区':'町・区'}）</small></button>`).join('')||(q&&KT.status!=='ok'?'<button disabled>地域索引がありません（タイル未作成）</button>':'');
+  $('wmQR').querySelectorAll('[data-ri]').forEach(b=>b.onclick=()=>{const r=R[+b.dataset.ri];const p0=GEO.toGame(r.bbox[3],r.bbox[0]),p1=GEO.toGame(r.bbox[1],r.bbox[2]);const v=GEO.fit({x0:p0[0],x1:p1[0],y0:p0[1],y1:p1[1]},innerWidth,innerHeight,40);Object.assign(WM.v,{cx:v.cx,cy:v.cy,z:v.z});$('wmQR').innerHTML='';drawWorld();});};
 // 地図データの状況（取得済み・おおよそ・推定・未取得）
 function layerStatusHtml(){const ST={real:['実在','ok'],approx:['おおよそ（ゲーム用）','ap'],estimate:['推定（ゲーム用）','ap'],missing:['未取得','ng']};
   return`<details class="lyr"><summary>地図データの状況</summary><ul>${MAPD.summary().filter(l=>l.id!=='player').map(l=>{const[t,c]=ST[l.status];const real=MAPD.real(l.id).length;

@@ -27,6 +27,8 @@
 - `geo.js` — 共通の座標システム（`window.HamaGeo`）。緯度経度⇔ゲーム座標（湘南の原点固定）、地図表示の view（拡大・移動・回転）、縮尺バー。3D・ミニマップ・地図画面・今後の全画面マップで共有。
 - `mapdata.js` — 地図データのレイヤー管理（`window.HamaMapData`）。海岸線・陸地・道路・建物・河川・砂浜・駐車場・駐輪場・構造物・釣り場・現在地。地物の出どころ（実在 gshhs/osm、ゲーム用 game_approx/game_est）を区別し、ないものは空。GeoJSON の読み込みと検査。
 - `data/geo/` — 提供された地図データ（`src/` に GSHHS の海岸線・陸地の GeoJSON〈横浜〜大磯〉、エリア別の切り出し、取り込み範囲、manifest）。OSM は `tools/import_osm_geojson.py`（BBBike の GeoJSON）で `src/osm/` へ。`node tools/import_geo.mjs` で検査して `geo-data.js` を作る（結果は `VALIDATION.md`）。OSM の GeoJSON（`tools/fetch_osm_geojson.py` の出力）も `src/` に置けば取り込める。出典は `LICENSE_AND_SOURCES.md`。プレビューは `node tools/preview_map.mjs` → `docs/map-preview-*.svg`。
+- `tiles.js` — 関東の実在地図タイル（PMTiles v3・MVT）の読み込み（`window.HamaTiles`）。Range 読み込み・重複防止・LRU キャッシュ・親タイルでの代替。ワールドマップの「関東」で使う。
+- `tools/kanto/` — 関東全域 OSM のパイプライン（`fetch_master.py` 取得＋MD5検証、`build_tiles.py` 抽出・タイル化・索引、`layers.py` レイヤー定義）。マスターは `data-master/`（git に入れない）。説明は `tools/kanto/README.md`。
 - `osm-convert.js` — Overpass API（OpenStreetMap）の JSON をゲーム座標に変換（道路・海岸線・建物・駐車場・規制など）と道路網 `buildGraph`（`window.HamaOSMConvert`）。足りない属性は `est` 層（推定）に分ける。
 - `routing.js` — 道路網の A* 経路探索。徒歩・自転車・車で通れる道、一方通行、所要時間（`window.HamaRouting`）。
 - `nav.js` — OSM がないときの代わりの道路網（幹線＋各釣り場への取り付け道路。`approx:true`）、推定駐車場（`est:true`）、道のマス目 `raster`、行き方 `plan`（車→駐車場→徒歩、自転車→徒歩）（`window.HamaNav`）。

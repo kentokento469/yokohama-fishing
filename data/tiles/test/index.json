@@ -1,0 +1,114 @@
+{
+ "archive": "kanto.pmtiles",
+ "bytes": 18311,
+ "format": "PMTiles v3 / MVT (gzip) / Web Mercator",
+ "extent": 4096,
+ "buffer": 64,
+ "minzoom": 6,
+ "maxzoom": 14,
+ "bounds": [
+  139.29999,
+  35.28,
+  139.40001,
+  35.36
+ ],
+ "zooms": {
+  "6": {
+   "broken_coast": 1,
+   "tiles": 1,
+   "coastal": 0,
+   "land_by_neighbour": 0,
+   "unknown_as_land": 1
+  },
+  "7": {
+   "broken_coast": 1,
+   "tiles": 1,
+   "coastal": 0,
+   "land_by_neighbour": 0,
+   "unknown_as_land": 1
+  },
+  "8": {
+   "broken_coast": 1,
+   "tiles": 1,
+   "coastal": 0,
+   "land_by_neighbour": 0,
+   "unknown_as_land": 1
+  },
+  "9": {
+   "broken_coast": 1,
+   "tiles": 1,
+   "coastal": 0,
+   "land_by_neighbour": 0,
+   "unknown_as_land": 1
+  },
+  "10": {
+   "broken_coast": 1,
+   "tiles": 1,
+   "coastal": 0,
+   "land_by_neighbour": 0,
+   "unknown_as_land": 1
+  },
+  "11": {
+   "broken_coast": 2,
+   "tiles": 4,
+   "coastal": 0,
+   "land_by_neighbour": 0,
+   "unknown_as_land": 4
+  },
+  "12": {
+   "broken_coast": 2,
+   "tiles": 6,
+   "coastal": 1,
+   "land_by_neighbour": 19,
+   "unknown_as_land": 0
+  },
+  "13": {
+   "broken_coast": 3,
+   "tiles": 13,
+   "coastal": 2,
+   "land_by_neighbour": 30,
+   "unknown_as_land": 0
+  },
+  "14": {
+   "broken_coast": 3,
+   "tiles": 26,
+   "coastal": 5,
+   "land_by_neighbour": 53,
+   "unknown_as_land": 0
+  }
+ },
+ "features_by_layer": {
+  "boundary": 1,
+  "buildings": 1,
+  "coastline": 3,
+  "landuse": 1,
+  "place": 1,
+  "poi": 2,
+  "railway": 1,
+  "roads": 4,
+  "shore": 5,
+  "water": 1,
+  "waterway": 1
+ },
+ "extract_stats": {
+  "nodes": 51,
+  "ways": 16,
+  "relations": 1,
+  "areas": 7,
+  "features": 20,
+  "geom_errors": 0,
+  "estuaries": 1
+ },
+ "regions": 1,
+ "generated_at": "2026-10-09T10:53:40",
+ "master": null,
+ "attribution": "© OpenStreetMap contributors",
+ "license": "ODbL 1.0",
+ "not_in_osm": [
+  "海底地形",
+  "水深",
+  "魚の生息",
+  "潮汐",
+  "釣りの可否（規制は現地・管理者の情報で確認）"
+ ]
+}

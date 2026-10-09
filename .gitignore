@@ -1,0 +1,6 @@
+# 関東 OSM：マスター（元の PBF・517MB）と中間データはリポジトリに入れない（tools/kanto/README.md）
+data-master/
+data-build/
+data/tiles/*.pmtiles
+!data/tiles/test/*.pmtiles
+__pycache__/
