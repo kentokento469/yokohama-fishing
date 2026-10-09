@@ -36,6 +36,9 @@
 - `nav.js` — OSM がないときの代わりの道路網（幹線＋各釣り場への取り付け道路。`approx:true`）、推定駐車場（`est:true`）、道のマス目 `raster`、行き方 `plan`（車→駐車場→徒歩、自転車→徒歩）（`window.HamaNav`）。
 - `vehicles.js` — 自転車5種・車6種（架空の車名）とクーラー。購入・走行 `ride`・燃料・電池・体力・耐久・積載・給油・修理・駐車（`window.HamaVehicles`）。価格・性能・地形補正は `BIKES`/`CARS` で変える。セーブは `S.veh`。
 - `tools/fetch_osm.mjs` — OSM の取得と変換（`node tools/fetch_osm.mjs hiratsuka|all`、`--from-file`）。出力は `data/osm/`（説明は `data/osm/README.md`。ODbL）。
+- `terrain.js` — 国土地理院の標高タイルの復号と、緯度経度での高さ（`window.HamaTerrain`）。データは `tools/terrain/fetch_dem.py` → `data/terrain/`（未取得）。まだ3Dには使っていない。
+- `docs/ASSETS.md` — 素材とライセンスの一覧（素材を足したら追記）。
+- `legacy/2026-10-pre-visual/` — グラフィック改善前の遊べるコピー。
 - `tests/*.test.js` — 動作テスト。`node --test tests/*.test.js` で実行。
 - `docs/split-plan.md` — ファイル分割の計画。
 
@@ -80,6 +83,8 @@
 10. UI（シート、図鑑、釣具店、ミニマップ）、カメラ（建物にめり込まないよう距離を詰める）、メインループ
 
 ## 既知の課題・未確認
+
+- グラフィック改善（2026-10）：UI v2、画質3段階（設定タブ）、海のシェーダー、海づり施設の作り込み。詳細は docs/progress.md。
 
 - OSM の実データを取り込んだら：その範囲の陸・海岸線はまだ近似の `shonan.js` のまま（道・建物・駐車場だけ OSM に置き換わる）。OSM の道と近似の幹線はつながらない。起動時の道路網づくり（約0.5秒）はスマホでの確認が必要。
 - 走るのは時速22kmほど（6.2m/s）で、自転車（シティサイクル15km/h）より速い。バランスの見直し候補。
