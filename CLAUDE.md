@@ -26,7 +26,7 @@
 - `fish-ai.js` — 魚のAI。`fight.js` — フッキングとファイト。`sound.js` — 効果音と環境音。
 - `geo.js` — 共通の座標システム（`window.HamaGeo`）。緯度経度⇔ゲーム座標（湘南の原点固定）、地図表示の view（拡大・移動・回転）、縮尺バー。3D・ミニマップ・地図画面・今後の全画面マップで共有。
 - `mapdata.js` — 地図データのレイヤー管理（`window.HamaMapData`）。海岸線・陸地・道路・建物・河川・砂浜・駐車場・駐輪場・構造物・釣り場・現在地。地物の出どころ（実在 gshhs/osm、ゲーム用 game_approx/game_est）を区別し、ないものは空。GeoJSON の読み込みと検査。
-- `data/geo/` — 提供された地図データ（`src/` に GSHHS の海岸線・陸地の GeoJSON と manifest）。`node tools/import_geo.mjs` で検査して `geo-data.js` を作る（結果は `VALIDATION.md`）。OSM の GeoJSON（`tools/fetch_osm_geojson.py` の出力）も `src/` に置けば取り込める。出典は `LICENSE_AND_SOURCES.md`。プレビューは `node tools/preview_map.mjs` → `docs/map-preview-*.svg`。
+- `data/geo/` — 提供された地図データ（`src/` に GSHHS の海岸線・陸地の GeoJSON〈横浜〜大磯〉、エリア別の切り出し、取り込み範囲、manifest）。OSM は `tools/import_osm_geojson.py`（BBBike の GeoJSON）で `src/osm/` へ。`node tools/import_geo.mjs` で検査して `geo-data.js` を作る（結果は `VALIDATION.md`）。OSM の GeoJSON（`tools/fetch_osm_geojson.py` の出力）も `src/` に置けば取り込める。出典は `LICENSE_AND_SOURCES.md`。プレビューは `node tools/preview_map.mjs` → `docs/map-preview-*.svg`。
 - `osm-convert.js` — Overpass API（OpenStreetMap）の JSON をゲーム座標に変換（道路・海岸線・建物・駐車場・規制など）と道路網 `buildGraph`（`window.HamaOSMConvert`）。足りない属性は `est` 層（推定）に分ける。
 - `routing.js` — 道路網の A* 経路探索。徒歩・自転車・車で通れる道、一方通行、所要時間（`window.HamaRouting`）。
 - `nav.js` — OSM がないときの代わりの道路網（幹線＋各釣り場への取り付け道路。`approx:true`）、推定駐車場（`est:true`）、道のマス目 `raster`、行き方 `plan`（車→駐車場→徒歩、自転車→徒歩）（`window.HamaNav`）。
@@ -38,7 +38,7 @@
 ## 釣りリアル化の段階（ユーザーと合意した進め方）
 
 1. 土台：水深とルアー深度を別管理、沈下、泳層との一致度 ← 済
-2. ロッド操作 ← 済。長押しで巻く／押した指を上下で巻き速度（0〜2.5m/s、`S.spd`）／上フリックでジャーク／短タップでトゥイッチ／離すとフリーフォール／押して速度0でテンションフォール。PCはスペース・↑↓・J。待ち中は画面下に水中ビュー（ルアーと海底のみ。魚は見せない）。ドラグはファイト中の＋−（段階5）
+2. ロッド操作 ← 済。長押しで巻く／押した指を上下で巻き速度（0〜2.5m/s、`S.spd`）／上フリックでジャーク／短タップでトゥイッチ／離すとフリーフォール／押して速度0でテンションフォール。PCはスペース・↑↓・J（Mでワールドマップ、Nでメニュー）。待ち中は画面下に水中ビュー（ルアーと海底のみ。魚は見せない）。ドラグはファイト中の＋−（段階5）
 3. ルアー別の動作 ← 済。カタログのルアー・ジグ200件を釣具店で販売（検索・種類・並び替え・詳細・購入・装備・持ち物）。仕掛けの分類は sabiki / isome / lure / egi / worm（ワーム）。フローティング・サスペンド・リップで潜る・水面・ジグのフォール姿勢を `rigFromItem` で表現。ロッド・リール200件は段階5で取り込む（今は既存の竿4本に適合重量 `ROD_FIT` を持たせている）。
 4. 魚AI ← 済。`fish-ai.js`（`window.HamaFishAI`）。ルアー釣りの1投ごとに魚の個体を置き、cruise→notice→approach→chase→bite/short/refuse→wary/flee・giveup。魚種ごとの視界・速さ・好む速さ・警戒心・きっかけ（`BASE`/`OVR`）、調整値 `AI`。魚の位置は見せない（水面近くの気配だけ）。URL末尾 `#fishdebug` で水中ビューに魚の位置を表示（調整用）　5. フッキング・ファイト・ドラグ ← 済。`fight.js`（`window.HamaFight`：`hookSet` / `createFight` / `stepFight`、調整値 `FT`）。長押しで巻く／赤で離すはそのまま、巻いている間にドラグ（`S.dragKg`、既定は糸の強さの4割）を超えると糸が出る。ロッド・リール200件も釣具店へ（`S.rodId`/`S.reelId`、最初はLv1シーバスロッド＋ライトスピニング）。古いセーブの竿番号 `S.rod` は `TK.migrateGear` で置き換え　6. 環境 ← 済。`fishing-sim.js` の段階6部分：日ごとの天気 `weatherOf`、水温 `waterTemp`（月別の目安 `SST`）、濁り `turbidity`、潮流 `currentAt`（ルアーは糸を緩めるとドリフト）、明るさ `lightOf`、距離ごとの底質 `SPOT_ENV.bottoms` と `bottomAt`（岩・海藻・砂・泥。海藻帯は `weedRate` で海藻が掛かる）、魚の適水温 `TEMP_PREF`・好む底質 `BOTTOM_PREF`。雨は空・霧・雨筋で表示
 - 魚種ごとの行動（`fish-ai.js` の `beh`）：青物は群れで回遊し仲間と競って追う（school）、ヒラメ・マゴチ・根魚は底で待ち伏せ（ambush）、イカは抱きつき（hug、合わせの時間が長い）、タコは底で止めたエギに乗る（hold）、タチウオはショートバイトが多い（nibble）

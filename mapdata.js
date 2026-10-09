@@ -16,7 +16,8 @@ const LAYERS=[
 const SRC_LABEL={gshhs:'GSHHS（実在・概形）',osm:'OpenStreetMap（実在）',game_approx:'ゲーム用のおおよそ',game_est:'ゲーム用の推定',user:'提供資料（位置はおおよそ）'};
 const REAL_SRC=new Set(['gshhs','osm']);
 // fetch_osm.py が出す *_osm.geojson のファイル名（レイヤー名）→ ここでのレイヤー
-const OSM_FILE_LAYER={roads:'roads',buildings:'buildings',beaches:'beaches',waterways:'rivers',water:'rivers',parking:'parking',bicycle_parking:'bicycle_parking',coastal_structures:'structures',osm_coastline:'coastline'};
+// walking_paths・cycle_routes は roads の一部なので読まない（重複）。terrain・parks・landuse は今は使わない
+const OSM_FILE_LAYER={coastline:'coastline',waterways:'rivers',coastal_structures:'structures',roads:'roads',buildings:'buildings',beaches:'beaches',waterways:'rivers',water:'rivers',parking:'parking',bicycle_parking:'bicycle_parking',coastal_structures:'structures',osm_coastline:'coastline'};
 
 function create(region){const R=region||GEO.SHONAN;const L={};for(const[id,label,kind]of LAYERS)L[id]={id,label,kind,features:[]};
   const M={region:R,layers:L,sources:[],log:[],
@@ -36,11 +37,15 @@ function addGeoJSON(M,fc,opt){opt=opt||{};let n=0,skip=0;
     const layer=opt.layer||layerOfProps(props);if(!layer||!M.layers[layer]){skip++;continue;}
     const parts=g.type==='Point'?[[g.coordinates]]:g.type==='LineString'?[g.coordinates]:g.type==='Polygon'?[g.coordinates[0]]:g.type==='MultiLineString'?g.coordinates:g.type==='MultiPolygon'?g.coordinates.map(p=>p[0]):g.type==='MultiPoint'?g.coordinates.map(c=>[c]):[];
     parts.forEach((cs,i)=>{const ll=cs.map(c=>[c[1],c[0]]);const f={id:(ft.id||props.osm_id||'f'+n)+(parts.length>1?'#'+i:''),src:opt.src||srcOfProps(props),ll,kind:g.type.replace('Multi',''),props,name:props.name||(props.tags&&props.tags.name)||null};
-      if(layer==='roads'&&props.tags){const t=props.tags,k=OC&&OC.access(t.highway,t);if(k){Object.assign(f,{road:{kind:t.highway,car:k.car,bike:k.bike,foot:k.foot,oneway:OC.oneway(t),surface:OC.surfaceOf(t),bridge:t.bridge==='yes',layer:+(t.layer||0),nodes:props.osm_node_ids||null,w:(OC.ROAD_KIND[t.highway]||{}).w||4}});}}
+      const t=tagsOf(props);if(!f.name&&t.name)f.name=t.name;
+      // 道路：node id があればそれで、なければ同じ座標の頂点（OSM で共有されている点）でだけつなぐ。交差して見えるだけの橋・立体交差はつながない
+      if(layer==='roads'&&t.highway){const k=OC&&OC.access(t.highway,t);if(k){const nodes=props.osm_node_ids&&props.osm_node_ids.length===cs.length?props.osm_node_ids:cs.map(c=>'c'+(+c[0]).toFixed(7)+','+(+c[1]).toFixed(7));
+        Object.assign(f,{road:{kind:t.highway,car:k.car,bike:k.bike,foot:k.foot,oneway:OC.oneway(t),surface:OC.surfaceOf(t),bridge:t.bridge==='yes',layer:+(t.layer||0),nodes,w:(OC.ROAD_KIND[t.highway]||{}).w||4}});}}
       M.add(layer,f);n++;});}
   M.log.push(`${opt.name||'GeoJSON'}: ${n}件を読み込み${skip?`・${skip}件はレイヤー不明で除外`:''}`);return{n,skip};}
+function tagsOf(p){let t=p.tags||p.osm_tags||{};if(typeof t==='string'){try{t=JSON.parse(t);}catch(e){t={};}}return t;}
 function srcOfProps(p){const s=String(p.source||'');if(/GSHHS/i.test(s))return'gshhs';if(/OpenStreetMap|OSM/i.test(s))return'osm';return'user';}
-function layerOfProps(p){if(p.category==='coastline')return'coastline';if(p.category==='land')return'land';const t=p.tags||{};
+function layerOfProps(p){if(p.category==='coastline')return'coastline';if(p.category==='land')return'land';const t=tagsOf(p);
   if(t.highway)return'roads';if(t.natural==='coastline')return'coastline';if(t.natural==='beach')return'beaches';if(t.waterway||t.natural==='water')return'rivers';
   if(t.amenity==='parking')return'parking';if(t.amenity==='bicycle_parking')return'bicycle_parking';if(/^(pier|breakwater|groyne|embankment)$/.test(t.man_made||''))return'structures';if(t.building)return'buildings';return null;}
 

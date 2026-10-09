@@ -145,6 +145,15 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
 .spNav{background:#eef9f9;border:2px solid #7cc9cb;border-top:none;border-radius:0 0 12px 12px;margin-top:-9px;padding:8px 11px;display:grid;gap:3px}.spNav span{font-size:12px;color:var(--mute);line-height:1.5}.spNav .ng{color:var(--signal)}.spNav button{border:none;border-radius:10px;padding:9px;font-weight:900;margin-top:4px}
 .chk{display:flex;gap:6px;align-items:center;font-size:12px;margin:2px 0 8px}
 .lyr{background:#fff;border:2px solid #e3dccb;border-radius:12px;padding:8px 11px;margin-bottom:8px}.lyr summary{font-weight:900;font-size:13px}.lyr ul{list-style:none;margin:6px 0;padding:0;display:grid;gap:4px}.lyr li{font-size:12px;display:flex;flex-wrap:wrap;gap:6px;align-items:baseline}.lyr em{font-style:normal;font-weight:900;font-size:11px;border-radius:999px;padding:1px 8px}.lyr .ok{background:#d6f0e4;color:#1b6b4a}.lyr .ap{background:#f6ead0;color:#8a5a00}.lyr .ng{background:#f3dcd8;color:#a0362a}.lyr span{color:var(--mute)}
+#wmap{position:fixed;inset:0;z-index:40;background:#2a7aa3;touch-action:none}#wmCv{position:absolute;inset:0;width:100%;height:100%;display:block}
+.wmTop{position:absolute;left:calc(12px + env(safe-area-inset-left,0px));right:calc(12px + env(safe-area-inset-right,0px));top:calc(10px + env(safe-area-inset-top,0px));display:flex;gap:6px;align-items:center}
+.wmTop b{flex:1;color:var(--paper);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:14px}
+.wmTop button,.wmZ button{border:1px solid var(--line);background:var(--panel);color:var(--paper);border-radius:12px;font-weight:900;min-width:44px;height:40px;font-size:14px;padding:0 10px}
+.wmZ{position:absolute;right:calc(12px + env(safe-area-inset-right,0px));top:calc(64px + env(safe-area-inset-top,0px));display:grid;gap:6px}.wmZ button{font-size:20px}
+.wmLyr{position:absolute;left:calc(12px + env(safe-area-inset-left,0px));top:calc(60px + env(safe-area-inset-top,0px));display:flex;flex-wrap:wrap;gap:4px;max-width:calc(100% - 90px)}
+.wmLyr label{background:rgba(246,242,232,.92);border-radius:999px;padding:4px 9px;font-size:11px;font-weight:700;display:flex;gap:4px;align-items:center;color:var(--ink)}
+#wmInfo{position:absolute;left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom,0px));background:var(--paper);color:var(--ink);border-radius:16px;padding:12px 14px;box-shadow:0 6px 18px rgba(0,0,0,.3);max-width:520px;margin:0 auto}
+#wmInfo b{display:block;font-size:15px}#wmInfo span{display:block;font-size:12px;color:var(--mute);line-height:1.5}#wmInfo .row2 button{margin-top:8px}
 .row2{display:flex;gap:8px;margin-top:6px}.row2 button{flex:1;border:none;border-radius:10px;padding:9px;font-weight:900}
 .fine{font-size:11px;line-height:1.7;opacity:.7;margin:0}
 #fail{position:fixed;inset:0;display:grid;place-items:center;padding:24px;text-align:center;line-height:1.8}
@@ -158,7 +167,7 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
   <div id="clock"><div><b id="clk">6:30</b><span id="tideTx">—</span><span id="envTx">—</span></div><canvas id="tideCv" width="148" height="68"></canvas></div>
 </div>
 <div id="tr">
-  <div id="trRow"><div id="money" class="chip">¥1,500</div><button id="sndBtn" class="sq" aria-label="音のオン・オフ">音</button><button id="menuBtn" class="sq" aria-label="メニューを開く">MENU</button></div>
+  <div id="trRow"><div id="money" class="chip">¥1,500</div><button id="sndBtn" class="sq" aria-label="音のオン・オフ">音</button><button id="mapBtn" class="sq" aria-label="ワールドマップを開く">地図</button><button id="menuBtn" class="sq" aria-label="メニューを開く">MENU</button></div>
   <canvas id="mini" width="208" height="208" aria-label="周辺の地図"></canvas>
 </div>
 <div id="info" hidden><b id="infoT"></b><span id="infoS"></span></div>
@@ -179,6 +188,13 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
 </div>
 <div id="lureP" hidden><canvas id="lureCv" aria-label="水中のルアーの位置"></canvas></div>
 <div id="toast" role="status"></div>
+<div id="wmap" hidden role="dialog" aria-label="ワールドマップ">
+  <canvas id="wmCv"></canvas>
+  <div class="wmTop"><b>ワールドマップ</b><button data-wr="yokohama">横浜</button><button data-wr="shonan">湘南</button><button id="wmX" aria-label="閉じる">✕</button></div>
+  <div class="wmZ"><button id="wmIn" aria-label="拡大">＋</button><button id="wmOut" aria-label="縮小">−</button><button id="wmMe" aria-label="現在地">◎</button></div>
+  <div class="wmLyr"><label><input type="checkbox" data-wl="gshhs" checked>実在の海岸線</label><label><input type="checkbox" data-wl="roads" checked>道路</label><label><input type="checkbox" data-wl="lots" checked>駐車場</label></div>
+  <div id="wmInfo" hidden></div>
+</div>
 
 <div id="result" class="overlay" hidden>
   <div class="card">
@@ -228,7 +244,7 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
       <button id="contBtn" hidden>つづきから</button>
       <button id="hiraBtn">平塚の海岸からはじめる</button>
     </div>
-    <p class="fine">操作：左のスティックで歩く（大きく倒すと走る）、画面をドラッグで視点を回す、右の大きなボタンで釣り。パソコンは矢印キー／WASDで移動、マウスドラッグで視点、スペースで釣り、Eで名所、Vで乗り物に乗る・降りる、Mでメニュー。自転車・車はスティック（矢印キー）の上下でアクセル・ブレーキ、左右でハンドル。<br>街並みは実際の海岸線・道路・名所の配置をもとに、距離を約3分の1に縮めて再現したものです。建物は自動生成で、実物の形とは異なります。釣り場の営業時間や魚の種類はゲーム上の目安なので、出かけるときは各施設の最新情報を確認してください。横浜市では海づり施設などを除き、ふ頭・防波堤での釣りは禁止されています。湘南の釣り場の区分・利用時間・禁止事項もゲーム用の目安です。規制は変わるため、現地の最新の表示と管理者の案内を優先してください。</p>
+    <p class="fine">操作：左のスティックで歩く（大きく倒すと走る）、画面をドラッグで視点を回す、右の大きなボタンで釣り。パソコンは矢印キー／WASDで移動、マウスドラッグで視点、スペースで釣り、Eで名所、Vで乗り物に乗る・降りる、Mでワールドマップ、Nでメニュー。自転車・車はスティック（矢印キー）の上下でアクセル・ブレーキ、左右でハンドル。<br>街並みは実際の海岸線・道路・名所の配置をもとに、距離を約3分の1に縮めて再現したものです。建物は自動生成で、実物の形とは異なります。釣り場の営業時間や魚の種類はゲーム上の目安なので、出かけるときは各施設の最新情報を確認してください。横浜市では海づり施設などを除き、ふ頭・防波堤での釣りは禁止されています。湘南の釣り場の区分・利用時間・禁止事項もゲーム用の目安です。規制は変わるため、現地の最新の表示と管理者の案内を優先してください。</p>
   </div>
 </div>
 
@@ -430,8 +446,9 @@ addEventListener('keydown',e=>{if(e.target&&/^(INPUT|SELECT|TEXTAREA)$/.test(e.t
   else if(F.st==='fight'&&(e.code==='KeyQ'||e.code==='KeyE'))setDrag(e.code==='KeyE'?.2:-.2);
   else if(e.code==='KeyE'&&!$('viewBtn').hidden)openSight();
   else if(e.code==='KeyB'&&!$('baitBtn').hidden)cycleBait();
-  else if(e.code==='KeyM'){if($('sheet').hidden)openMenu();else closeSheet();}
-  else if(e.code==='Escape'){closeSheet();}});
+  else if(e.code==='KeyM'){if(!$('wmap').hidden)closeWorld();else if($('sheet').hidden&&$('title').hidden)openWorld();}
+  else if(e.code==='KeyN'){if($('sheet').hidden)openMenu();else closeSheet();}
+  else if(e.code==='Escape'){if(!$('wmap').hidden)closeWorld();else closeSheet();}});
 let spaceT=0;
 addEventListener('keyup',e=>{if(e.target&&/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName))return;if(KEYMAP[e.code])K[KEYMAP[e.code]]=0;if(e.code==='Space'||e.code==='Enter'){if(spaceT&&performance.now()-spaceT<200)rodAction('twitch');spaceT=0;mainUp();}});
 addEventListener('blur',()=>{K.l=K.r=K.u=K.d=K.sh=0;mainUp();});
@@ -1585,12 +1602,16 @@ buildNet();
 function clipPoly(poly,inside,cut){const out=[];for(let i=0;i<poly.length;i++){const a=poly[i],b=poly[(i+1)%poly.length];const ia=inside(a),ib=inside(b);if(ia)out.push(a);if(ia!==ib)out.push(cut(a,b));}return out;}
 const clipX=(poly,x,keepLess)=>clipPoly(poly,p=>keepLess?p[0]<=x:p[0]>=x,(a,b)=>{const t=(x-a[0])/(b[0]-a[0]);return[x,a[1]+(b[1]-a[1])*t];});
 const clipY=(poly,y)=>clipPoly(poly,p=>p[1]>=y,(a,b)=>{const t=(y-a[1])/(b[1]-a[1]);return[a[0]+(b[0]-a[0])*t,y];});
+// GSHHS の海岸線を湘南の範囲（緯度から変換できる所＝原点の緯度より南）だけに切る。横浜は手描きの地図で緯度経度と対応していないので重ねない
+const GSHHS_COAST=[];for(const f of MAPD.real('coastline')){let cur=[];const y0=GEO.SHONAN.y0;
+  for(let i=0;i<f.pts.length;i++){const p=f.pts[i],q=f.pts[i-1];if(q&&(q[1]>=y0)!==(p[1]>=y0)){const t=(y0-q[1])/(p[1]-q[1]);const m=[q[0]+(p[0]-q[0])*t,y0];if(p[1]>=y0)cur=[m];else{cur.push(m);if(cur.length>1)GSHHS_COAST.push(cur);cur=[];}}if(p[1]>=y0)cur.push(p);}
+  if(cur.length>1)GSHHS_COAST.push(cur);}
 const FAR_LAND=[];
 for(const f of MAPD.real('land')){let p=f.pts.slice(0,-1);p=clipY(p,GEO.SHONAN.y0);if(p.length<3)continue;
   for(const q of[clipX(p,SH.COAST[0][0],true),clipX(p,SH.COAST[SH.COAST.length-1][0],false)])if(q.length>=3)FAR_LAND.push(q);}
 if(FAR_LAND.length){const g=new T.ExtrudeGeometry(FAR_LAND.map(shp),{depth:8,bevelEnabled:false});g.rotateX(Math.PI/2);g.translate(0,GROUND,0);const m=new T.Mesh(g,[lam(0x8fa07a,{side:T.DoubleSide}),lam(0x9a978e,{side:T.DoubleSide})]);m.receiveShadow=true;scene.add(m);}
 // 調整用：URL の末尾に #geodebug で、GSHHS の海岸線を3Dに赤い線で重ねる（手描きの海岸線とのずれの確認）
-if(/geodebug/.test(location.hash))for(const f of MAPD.real('coastline')){const g=new T.BufferGeometry().setFromPoints(f.pts.map(([x,y])=>new V3(x,GROUND+.6,y)));scene.add(new T.Line(g,new T.LineBasicMaterial({color:0xe04a3b})));}
+if(/geodebug/.test(location.hash))for(const f of GSHHS_COAST.map(pts=>({pts}))){const g=new T.BufferGeometry().setFromPoints(f.pts.map(([x,y])=>new V3(x,GROUND+.6,y)));scene.add(new T.Line(g,new T.LineBasicMaterial({color:0xe04a3b})));}
 // 道の上には建物を建てない（okSpot から呼ぶ）
 function onRoad(cx,cy,half){const M=NET.M,c=M.cell;for(let x=cx-half-2;x<=cx+half+2;x+=c)for(let y=cy-half-2;y<=cy+half+2;y+=c)if(M.at(x,y))return true;return false;}
 // 路面：岩場（磯）・階段（江の島）は乗ったまま進めない。砂浜・公園・舗装路
@@ -1682,23 +1703,29 @@ const realM=m=>m*SC>=1000?`${(m*SC/1000).toFixed(1)}km`:`${Math.round(m*SC/10)*1
 
 /* 地図（拡大・移動できる）：道・駐車場・釣り場・停めた乗り物・ルート */
 const NAVV={z:0,cx:0,cy:0,gshhs:true};let navDrag=null;
-function drawNav(cvs){const w=cvs.clientWidth||320,h=Math.round(Math.min(420,w*1.05));cvs.style.height=h+'px';const d=Math.min(window.devicePixelRatio||1,2);cvs.width=Math.round(w*d);cvs.height=Math.round(h*d);
-  if(!NAVV.z){NAVV.z=w/1400;NAVV.cx=S.x;NAVV.cy=S.y;}const z=NAVV.z;const c=cvs.getContext('2d');
-  c.setTransform(d,0,0,d,0,0);c.fillStyle='#2a7aa3';c.fillRect(0,0,w,h);c.setTransform(d*z,0,0,d*z,d*(w/2-NAVV.cx*z),d*(h/2-NAVV.cy*z));drawMap2D(c,false);
-  const px=1/z;// 1ピクセル
+/* 地図の本体（地図画面・全画面ワールドマップで共通）。c はゲーム座標で描ける状態、z は1mあたりのピクセル */
+function drawMapBody(c,z,o){o=o||{};const px=1/z;
+  if(FAR_LAND.length){c.fillStyle='#d3d8c6';for(const q of FAR_LAND){c.beginPath();poly2(c,q);c.fill();}}
   for(const{D}of NET.osm){c.fillStyle='#cdbfa6';for(const b of D.buildings){c.beginPath();poly2(c,b.pts);c.fill();}c.strokeStyle='#5b6e7a';c.lineWidth=2*px;for(const l of D.coast){pline2(c,l);c.stroke();}}
-  if(NAVV.gshhs){c.strokeStyle='#7a3fb0';c.lineWidth=2.2*px;c.setLineDash([6*px,4*px]);for(const f of MAPD.real('coastline')){pline2(c,f.pts);c.stroke();}c.setLineDash([]);}
+  if(o.gshhs){c.strokeStyle='#7a3fb0';c.lineWidth=2.2*px;c.setLineDash([6*px,4*px]);for(const l of GSHHS_COAST){pline2(c,l);c.stroke();}c.setLineDash([]);}
   for(const r of NET.roads){if(r.pts.length<2)continue;c.lineCap='round';c.lineJoin='round';c.setLineDash(r.car?[]:[4*px,3*px]);c.strokeStyle=r.car?(r.approx?'#d9d4c7':'#ffffff'):'#a0805a';c.lineWidth=Math.max(r.w||4,(r.car?2.4:1.4)*px);pline2(c,r.pts);c.stroke();}c.setLineDash([]);
-  if(regionAt(S.x,S.y)==='shonan')for(const r of SH.GRESTRICTED){c.fillStyle='rgba(224,74,59,.3)';c.beginPath();c.arc(r.x,r.y,Math.max(r.gr,60),0,7);c.fill();}
+  if(o.all||regionAt(S.x,S.y)==='shonan')for(const r of SH.GRESTRICTED){c.fillStyle='rgba(224,74,59,.3)';c.beginPath();c.arc(r.x,r.y,Math.max(r.gr,60),0,7);c.fill();}
   const fs=11*px;c.font=`900 ${fs}px ${FONT}`;c.textAlign='center';c.textBaseline='middle';
-  for(const l of NET.lots){const s=8*px;c.fillStyle=l.est?'rgba(255,255,255,.85)':'#2f6fb0';c.strokeStyle='#2f6fb0';c.lineWidth=1.5*px;c.setLineDash(l.est?[2*px,1.5*px]:[]);c.fillRect(l.x-s,l.y-s,2*s,2*s);c.strokeRect(l.x-s,l.y-s,2*s,2*s);c.setLineDash([]);c.fillStyle=l.est?'#2f6fb0':'#fff';c.fillText('P',l.x,l.y+.5*px);}
+  if(!o.lotsMinZ||z>=o.lotsMinZ)for(const l of NET.lots){const s=8*px;c.fillStyle=l.est?'rgba(255,255,255,.85)':'#2f6fb0';c.strokeStyle='#2f6fb0';c.lineWidth=1.5*px;c.setLineDash(l.est?[2*px,1.5*px]:[]);c.fillRect(l.x-s,l.y-s,2*s,2*s);c.strokeRect(l.x-s,l.y-s,2*s,2*s);c.setLineDash([]);c.fillStyle=l.est?'#2f6fb0':'#fff';c.fillText('P',l.x,l.y+.5*px);}
   for(const b of NET.bikeParks){c.fillStyle='#6a4fa0';c.beginPath();c.arc(b.x,b.y,5*px,0,7);c.fill();}
-  for(const sp of SPOTS){const ng=sp.sh&&(sp.sh.accessStatus==='unverified'||sp.sh.accessStatus==='protected');c.fillStyle=ng?'#8a8f94':'#1b7d82';c.beginPath();c.arc(sp.x,sp.y,6*px,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=1.5*px;c.stroke();}
+  for(const sp of SPOTS){const ng=sp.sh&&(sp.sh.accessStatus==='unverified'||sp.sh.accessStatus==='protected');const r=(o.spotR||6)*px;c.fillStyle=ng?'#8a8f94':sp.id===o.sel?'#f1b746':'#1b7d82';c.beginPath();c.arc(sp.x,sp.y,r,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=1.5*px;c.stroke();if(o.spotR){fishGlyph(c,sp.x,sp.y,r*.62);}}
   for(const s of STATIONS){c.fillStyle='#2f6fb0';c.fillRect(s.x-4*px,s.y-4*px,8*px,8*px);}
   if(NAVR&&!NAVR.fail)for(const L of NAVR.legs){c.strokeStyle=L.mode==='car'?'#e04a3b':L.mode==='bike'?'#f1b746':'#13263b';c.lineWidth=4*px;c.setLineDash(L.mode==='walk'?[5*px,4*px]:[]);pline2(c,L.pts);c.stroke();}c.setLineDash([]);
   for(const o of S.veh.owned){const pk=S.veh.parked[o.uid];if(!pk)continue;const car=VH.specOf(o).kind==='car';c.fillStyle=car?'#e04a3b':'#f1b746';c.strokeStyle='#fff';c.lineWidth=1.5*px;c.beginPath();c.arc(pk.x,pk.y,7*px,0,7);c.fill();c.stroke();c.fillStyle='#fff';c.fillText(car?'車':'自',pk.x,pk.y+.5*px);}
   const ds=S.veh.dest;if(ds){c.fillStyle='#f1b746';c.strokeStyle='#13263b';c.lineWidth=2*px;c.beginPath();c.moveTo(ds.x,ds.y);c.lineTo(ds.x,ds.y-18*px);c.stroke();c.beginPath();c.moveTo(ds.x,ds.y-18*px);c.lineTo(ds.x+11*px,ds.y-14*px);c.lineTo(ds.x,ds.y-10*px);c.fill();}
   c.fillStyle='#e04a3b';c.beginPath();c.arc(S.x,S.y,6*px,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=2*px;c.stroke();
+}
+// 釣り場アイコンの魚の形
+function fishGlyph(c,x,y,r){c.fillStyle='#fff';c.beginPath();c.ellipse(x-r*.15,y,r*.75,r*.42,0,0,7);c.fill();c.beginPath();c.moveTo(x+r*.45,y);c.lineTo(x+r*.95,y-r*.4);c.lineTo(x+r*.95,y+r*.4);c.closePath();c.fill();}
+function drawNav(cvs){const w=cvs.clientWidth||320,h=Math.round(Math.min(420,w*1.05));cvs.style.height=h+'px';const d=Math.min(window.devicePixelRatio||1,2);cvs.width=Math.round(w*d);cvs.height=Math.round(h*d);
+  if(!NAVV.z){NAVV.z=w/1400;NAVV.cx=S.x;NAVV.cy=S.y;}const z=NAVV.z;const c=cvs.getContext('2d');
+  c.setTransform(d,0,0,d,0,0);c.fillStyle='#2a7aa3';c.fillRect(0,0,w,h);c.setTransform(d*z,0,0,d*z,d*(w/2-NAVV.cx*z),d*(h/2-NAVV.cy*z));drawMap2D(c,false);
+  drawMapBody(c,z,{gshhs:NAVV.gshhs});
   c.setTransform(d,0,0,d,0,0);c.font=`700 10px ${FONT}`;c.textAlign='right';c.textBaseline='bottom';c.fillStyle='rgba(19,38,59,.85)';
   c.fillText(NET.osm.some(o=>o.D.meta&&o.D.meta.fictional)?'架空のテスト用データ（実在の地図ではない）':NET.osm.length?'© OpenStreetMap contributors':'道路はおおよそ（実在の道路データではない）',w-6,h-4);
   // 縮尺（実際の距離）
@@ -1709,6 +1736,55 @@ function bindNav(cvs){const redraw=()=>drawNav(cvs);
   cvs.onpointerup=cvs.onpointercancel=()=>{navDrag=null;};
   cvs.onwheel=e=>{e.preventDefault();NAVV.z=clamp(NAVV.z*(e.deltaY<0?1.25:.8),.02,3);redraw();};
   $('nzIn').onclick=()=>{NAVV.z=clamp(NAVV.z*1.5,.02,3);redraw();};$('nzOut').onclick=()=>{NAVV.z=clamp(NAVV.z/1.5,.02,3);redraw();};$('nzMe').onclick=()=>{NAVV.cx=S.x;NAVV.cy=S.y;redraw();};redraw();}
+/* ===== 全画面ワールドマップ（Mキー・右上の「地図」・ミニマップをタップ） =====
+   3Dフィールドと同じゲーム座標（geo.js の view）で描く。ドラッグで移動、ピンチ・ホイール・＋−で拡大縮小、釣り場をタップで情報と「ここへ行く」 */
+const WM={v:null,sel:null,lyr:{gshhs:true,roads:true,lots:true},ptr:new Map(),pinch:null,moved:0};
+const wmCv=$('wmCv');
+function openWorld(){if(F.st!=='idle'&&F.st!=='wait'){toast('釣りの最中です');return;}if(F.st==='wait')reelIn();closeSheet();$('wmap').hidden=false;
+  const w=innerWidth,h=innerHeight;WM.v=GEO.view(S.x,S.y,WM.v?WM.v.z:.12,w,h);WM.sel=null;$('wmInfo').hidden=true;drawWorld();}
+function closeWorld(){$('wmap').hidden=true;}
+function wmFitRegion(id){const b=id==='shonan'?{x0:GEO.SHONAN.bounds.x0,x1:GEO.SHONAN.bounds.x1,y0:GEO.SHONAN.bounds.y0,y1:GEO.SHONAN.bounds.y0+2200}:{x0:1500,x1:4800,y0:0,y1:7800};const v=GEO.fit(b,innerWidth,innerHeight,40);WM.v.cx=v.cx;WM.v.cy=v.cy;WM.v.z=v.z;drawWorld();}
+const WM_ZMIN=.02,WM_ZMAX=3;
+function drawWorld(){if($('wmap').hidden)return;const w=innerWidth,h=innerHeight,d=Math.min(window.devicePixelRatio||1,2);const v=WM.v;v.w=w;v.h=h;
+  if(wmCv.width!==Math.round(w*d)||wmCv.height!==Math.round(h*d)){wmCv.width=Math.round(w*d);wmCv.height=Math.round(h*d);}
+  const c=wmCv.getContext('2d');c.setTransform(d,0,0,d,0,0);c.fillStyle='#2a7aa3';c.fillRect(0,0,w,h);c.setTransform(...GEO.canvasMatrix(v,d));
+  const z=v.z,px=1/z;drawMap2D(c,false);
+  const saveRoads=NET.roads,saveLots=NET.lots;if(!WM.lyr.roads)NET.roads=[];if(!WM.lyr.lots)NET.lots=[];
+  try{drawMapBody(c,z,{gshhs:WM.lyr.gshhs,spotR:z>.05?9:6,sel:WM.sel&&WM.sel.id,all:true,lotsMinZ:.08});}finally{NET.roads=saveRoads;NET.lots=saveLots;}
+  // 地名：低い倍率では地域名、高い倍率では釣り場の名前
+  c.textAlign='center';c.textBaseline='middle';c.lineJoin='round';
+  const label=(t,x,y,size,col)=>{c.font=`900 ${size*px}px ${FONT}`;c.lineWidth=3*px;c.strokeStyle='rgba(255,255,255,.9)';c.strokeText(t,x,y);c.fillStyle=col||'#13263b';c.fillText(t,x,y);};
+  if(z<.09){for(const[n,x,y]of AREAS)label(n,x,y,12,'rgba(19,38,59,.75)');}
+  if(z>=.12)for(const sp of SPOTS)label(sp.n,sp.x,sp.y-16*px,11);
+  if(z>=.06)for(const st of STATIONS)label(st.n,st.x,st.y+13*px,10,'#2f6fb0');
+  // 現在地：向きつきの矢印
+  const hd=RIDE?RIDE.st.h:P.rotation.y;c.save();c.translate(S.x,S.y);c.rotate(-hd+Math.PI);c.scale(px,px);c.fillStyle='#e04a3b';c.strokeStyle='#fff';c.lineWidth=2.5;c.beginPath();c.moveTo(0,-14);c.lineTo(9,9);c.lineTo(0,4);c.lineTo(-9,9);c.closePath();c.fill();c.stroke();c.restore();
+  // 縮尺・出典
+  c.setTransform(d,0,0,d,0,0);const sb=GEO.scaleBar(v,120);const by=h-(14+(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sab'))||0));
+  c.fillStyle='rgba(246,242,232,.9)';c.fillRect(8,by-30,Math.max(sb.px,60)+16,28);c.fillStyle='#13263b';c.fillRect(16,by-10,sb.px,3);c.font=`700 11px ${FONT}`;c.textAlign='left';c.textBaseline='alphabetic';c.fillText(sb.label+'（実際の距離）',16,by-14);
+  // 出典・注意は縮尺の上の行に（重ならないように）
+  const at=(NET.osm.length?'© OpenStreetMap contributors・':'道路はおおよそ・駐車場は推定・')+(WM.lyr.gshhs?'紫の点線：GSHHS/GSHHG（実在・粗い）':'');c.font=`700 10px ${FONT}`;const tw=c.measureText(at).width;
+  c.fillStyle='rgba(19,38,59,.7)';c.fillRect(8,by-50,tw+12,16);c.fillStyle='#fff';c.textAlign='left';c.fillText(at,14,by-38);}
+function wmPick(px,py){const[x,y]=GEO.screenToWorld(WM.v,px,py);const r=16/WM.v.z;let best=null,bd=r;for(const sp of SPOTS){const d=Math.hypot(sp.x-x,sp.y-y);if(d<bd){bd=d;best=sp;}}return best;}
+function wmShow(sp){WM.sel=sp;const box=$('wmInfo');if(!sp){box.hidden=true;drawWorld();return;}const g=sp.sh;const st=spotState(sp);const d=Math.hypot(sp.x-S.x,sp.y-S.y);
+  const sameRg=regionAt(sp.x,sp.y)===regionAt(S.x,S.y);
+  box.innerHTML=`<b>${esc(sp.n)}</b><span>${g?`${SH.AREA_LABEL[g.area]}・${SH.TYPE_LABEL[g.type]}・${SH.STATUS_LABEL[g.accessStatus]}`:sp.hours?`営業時間 ${sp.hours[0]}:00〜${sp.hours[1]}:00`:'岸壁の公園'}</span><span>${st.ok?'いま釣りできる':esc(st.reason||'')}${sameRg?`・ここから約${realM(d)}`:'・別の地域（電車で移動）'}</span>
+    <div class="row2">${sameRg?`<button class="btnA" id="wmGo">ここへ行く</button>`:''}<button class="btnB" id="wmClose">閉じる</button></div>`;box.hidden=false;
+  if($('wmGo'))$('wmGo').onclick=()=>{setDest({x:sp.x,y:sp.y,name:sp.n,spot:sp.id});const p=NAVR;toast(p&&!p.fail?`ルートを表示：${p.label||''} 約${fmtDur(p.time)}`:'ルートが見つからない');wmShow(sp);};
+  $('wmClose').onclick=()=>wmShow(null);drawWorld();}
+wmCv.addEventListener('pointerdown',e=>{try{wmCv.setPointerCapture(e.pointerId);}catch(_){}WM.ptr.set(e.pointerId,{x:e.clientX,y:e.clientY});WM.moved=0;
+  if(WM.ptr.size===2){const[a,b]=[...WM.ptr.values()];WM.pinch={d:Math.hypot(a.x-b.x,a.y-b.y),z:WM.v.z};}});
+wmCv.addEventListener('pointermove',e=>{const p=WM.ptr.get(e.pointerId);if(!p)return;const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;WM.moved+=Math.abs(dx)+Math.abs(dy);
+  if(WM.ptr.size===2&&WM.pinch){const[a,b]=[...WM.ptr.values()];const nd=Math.hypot(a.x-b.x,a.y-b.y);const k=WM.pinch.z*nd/WM.pinch.d/WM.v.z;GEO.zoomAt(WM.v,(a.x+b.x)/2,(a.y+b.y)/2,k,WM_ZMIN,WM_ZMAX);}
+  else if(WM.ptr.size===1){WM.v.cx-=dx/WM.v.z;WM.v.cy-=dy/WM.v.z;}drawWorld();});
+const wmUp=e=>{const had=WM.ptr.has(e.pointerId);WM.ptr.delete(e.pointerId);if(WM.ptr.size<2)WM.pinch=null;if(had&&WM.ptr.size===0&&WM.moved<8)wmShow(wmPick(e.clientX,e.clientY));};
+wmCv.addEventListener('pointerup',wmUp);wmCv.addEventListener('pointercancel',e=>{WM.ptr.delete(e.pointerId);WM.pinch=null;});
+wmCv.addEventListener('wheel',e=>{e.preventDefault();GEO.zoomAt(WM.v,e.clientX,e.clientY,e.deltaY<0?1.2:1/1.2,WM_ZMIN,WM_ZMAX);drawWorld();},{passive:false});
+$('wmIn').onclick=()=>{GEO.zoomAt(WM.v,innerWidth/2,innerHeight/2,1.5,WM_ZMIN,WM_ZMAX);drawWorld();};$('wmOut').onclick=()=>{GEO.zoomAt(WM.v,innerWidth/2,innerHeight/2,1/1.5,WM_ZMIN,WM_ZMAX);drawWorld();};
+$('wmMe').onclick=()=>{WM.v.cx=S.x;WM.v.cy=S.y;drawWorld();};$('wmX').onclick=closeWorld;$('mapBtn').onclick=openWorld;$('mini').addEventListener('click',()=>{if($('title').hidden)openWorld();});
+document.querySelectorAll('[data-wr]').forEach(b=>b.onclick=()=>wmFitRegion(b.dataset.wr));
+document.querySelectorAll('[data-wl]').forEach(b=>b.onchange=()=>{WM.lyr[b.dataset.wl]=b.checked;drawWorld();});
+addEventListener('resize',()=>drawWorld());
 // 地図データの状況（取得済み・おおよそ・推定・未取得）
 function layerStatusHtml(){const ST={real:['実在','ok'],approx:['おおよそ（ゲーム用）','ap'],estimate:['推定（ゲーム用）','ap'],missing:['未取得','ng']};
   return`<details class="lyr"><summary>地図データの状況</summary><ul>${MAPD.summary().filter(l=>l.id!=='player').map(l=>{const[t,c]=ST[l.status];const real=MAPD.real(l.id).length;
@@ -1816,7 +1892,7 @@ function inOSM(x,y){for(const o of NET.osm)if(inBox(o.B,x,y))return true;return 
 
 /* ===== メインループ ===== */
 let last=performance.now(),acc=0,coastChk=0,chunkT=0;
-function paused(){return!$('title').hidden||!$('sheet').hidden||!$('result').hidden||!$('sight').hidden;}
+function paused(){return!$('title').hidden||!$('sheet').hidden||!$('wmap').hidden||!$('result').hidden||!$('sight').hidden;}
 function update(dt,t){
   if(!$('title').hidden){yaw+=dt*.05;updTraffic(dt,t);return;}
   if(paused())return;

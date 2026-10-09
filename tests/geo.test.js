@@ -15,7 +15,7 @@ test('地図の表示：world⇔screen の往復、拡大しても指の位置�
   const w=G.view(0,0,.2,300,300);const before=G.screenToWorld(w,50,80);G.zoomAt(w,50,80,1.7);const after=G.screenToWorld(w,50,80);assert.ok(Math.hypot(before[0]-after[0],before[1]-after[1])<1e-9);
   const sb=G.scaleBar({z:.1},100);assert.ok(sb.px<=100&&/m|km/.test(sb.label));});
 test('提供データ（GSHHS）は正しい GeoJSON で、範囲内・多角形は閉じている',()=>{
-  const bb=D.manifest.bbox_wsen;assert.equal(D.manifest.crs,'EPSG:4326');
+  const bb=D.manifest.coverage_bbox_wsen||D.manifest.bbox_wsen;assert.equal(D.manifest.crs,'EPSG:4326');assert.equal(D.areas.length,6);assert.ok(D.areas.every(a=>a.administrative===false));
   for(const[f,o]of Object.entries(D.files)){const v=MD.validate({type:'FeatureCollection',features:o.features},{bbox:bb});assert.ok(v.ok,f+v.err);assert.equal(v.warn.length,0,f+v.warn);}});
 const M=MD.create();for(const[f,o]of Object.entries(D.files))MD.addGeoJSON(M,{features:o.features},{name:f});
 test('地図データ：GSHHS の海岸線・陸地は実在、道路・建物・駐車場などは未取得（空）のまま',()=>{

@@ -1,23 +1,18 @@
-# 地理データ出典と注意事項
+# データ出典と使用条件
 
-## ZIP内の実データ
+## 収録している地理情報（OSMではない）
 
-- GSHHS / GSHHG: Global Self-consistent Hierarchical High-resolution Geography Database
-- Authors: Paul Wessel, Walter H. F. Smith
-- Source: Basemap package's bundled GSHHS intermediate-resolution coastline and land polygons.
-- Official reference: https://www.soest.hawaii.edu/wessel/gshhg/
-- NOAA documentation: https://www.ngdc.noaa.gov/mgg/shorelines/shorelines.html
-- GSHHG is released under the GNU Lesser General Public License (LGPL). When redistributing, preserve source attribution and applicable notices; see official terms for compliance.
-- This bundle contains extracted geometry and scripts, not original Basemap binary files.
+- GSHHG / GSHHS intermediate-resolution shoreline data, bundled with Basemap.
+- Source: NOAA National Centers for Environmental Information / University of Hawaii (Paul Wessel / Walter H. F. Smith).
+- NOAA information: https://www.ngdc.noaa.gov/mgg/shorelines/shorelines.html
+- License: **GNU Lesser General Public License (LGPL)** (per NOAA source description). Check obligations for distributing original/derived data.
+- Game use: coarse background only; not suitable for navigation, property boundaries, precise sandbars, fishing restrictions or shoreline access.
 
-## OSM data (not yet acquired)
+## Importer-generated GeoJSON (not supplied in this ZIP)
 
-- © OpenStreetMap contributors, Open Database License (ODbL 1.0)
+If OSM GeoJSON is subsequently imported via tools/import_osm_geojson.py:
+- © OpenStreetMap contributors. ODbL 1.0.
 - https://www.openstreetmap.org/copyright
-- https://opendatacommons.org/licenses/odbl/
-- OSM datasets **are not bundled** in this ZIP; source attribution and ODbL obligations apply if `fetch_osm.py` is run elsewhere and derived data published.
-- Do not download OSM raster tiles in bulk. Use suitable permitted vector extracts instead.
+- Proper attribution and ODbL obligations apply to OSM-based map data and derived databases when publishing.
 
-## Accuracy
-
-Shoreline is a **generalized, regional-scale shape**. Road access, fishing regulations, private property and water/shore changes are not represented. Never use as navigational or legal authority.
+This starter pack contains **no downloaded OSM roads, buildings, parking or path data**. The geometry of region coverage rectangles is a user/project-defined geographic extraction box, not official municipal boundaries. No official fishing-access or local fishing restrictions data is contained.
