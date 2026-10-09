@@ -76,7 +76,7 @@ def search(ids):
                 if max(w, h) < 1200 or w < h:  # 横長の写真で、長辺1200px以上
                     continue
                 artist = re.sub('<[^>]+>', '', (meta.get('Artist') or {}).get('value', '')).strip()
-                found.append({'title': p['title'], 'url': ii['url'], 'page': ii.get('descriptionurl'), 'w': w, 'h': h, 'license': lic,
+                found.append({'title': p['title'], 'url': ii['url'].split('?')[0], 'page': ii.get('descriptionurl'), 'w': w, 'h': h, 'license': lic,
                               'license_url': (meta.get('LicenseUrl') or {}).get('value'), 'artist': artist or '不明',
                               'credit': re.sub('<[^>]+>', '', (meta.get('Credit') or {}).get('value', '')).strip(),
                               'score': min(w, 4000) / 4000 + (0.3 if 'fish' in p['title'].lower() else 0)})
@@ -84,7 +84,8 @@ def search(ids):
         found = sorted({f['title']: f for f in found}.values(), key=lambda f: -f['score'])[:8]
         out[id] = {'ja': s['ja'], 'sci': s['sci'], 'candidates': found}
         print(f"{id} {s['ja']}：候補 {len(found)}", flush=True)
-    (BUILD / 'candidates.json').write_text(json.dumps(out, ensure_ascii=False, indent=1))
+        cf.write_text(json.dumps(out, ensure_ascii=False, indent=1))  # 1種ごとに保存（途中で止まっても続きから）
+    cf.write_text(json.dumps(out, ensure_ascii=False, indent=1))
     rows = []
     for id, o in out.items():
         cells = ''.join(f'<figure><img loading="lazy" src="{html.escape(c["url"])}" width="320"><figcaption>{html.escape(c["title"])}<br>{html.escape(c["license"])} / {html.escape(c["artist"][:60])}<br><code>{id}={html.escape(c["title"])}</code></figcaption></figure>' for c in o['candidates'])
