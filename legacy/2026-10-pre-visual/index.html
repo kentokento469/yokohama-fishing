@@ -175,61 +175,6 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
 .fine{font-size:11px;line-height:1.7;opacity:.7;margin:0}
 #fail{position:fixed;inset:0;display:grid;place-items:center;padding:24px;text-align:center;line-height:1.8}
 @media (prefers-reduced-motion:reduce){.card,#mainBtn[data-s="bite"]{animation:none}#toast{transition:none}}
-
-/* ===== デザイン v2（2026-10）：HUD は半透明のガラス、メニューは紙。厚い影をやめ、細い線と柔らかい影に統一 ===== */
-:root{--glass:rgba(12,20,30,.52);--glass2:rgba(12,20,30,.7);--stroke:rgba(255,255,255,.14);--soft:0 6px 22px rgba(0,0,0,.22);--num:-apple-system,"SF Pro Display","Hiragino Sans","Noto Sans JP",sans-serif}
-.chip,#clock,.sq,.pill,#info,#fight,#lureP{background:var(--glass);border:1px solid var(--stroke);box-shadow:var(--soft);-webkit-backdrop-filter:blur(14px) saturate(140%);backdrop-filter:blur(14px) saturate(140%)}
-.chip{border-radius:999px;padding:4px 12px;font-size:12px;letter-spacing:.02em}
-#area{font-weight:700;opacity:.95}
-#clock{border-radius:16px;padding:8px 12px}
-#clk{font-family:var(--num);font-weight:700;font-size:26px;letter-spacing:0}
-#tideTx,#envTx{font-size:11px;opacity:.8}
-#tl{max-width:54vw}
-#trRow{gap:6px}
-.sq{width:40px;height:40px;border-radius:50%;font-size:11px}
-.sq svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.sq.off{opacity:.55}
-#money{order:-1;font-family:var(--num);font-weight:700;font-size:13px;padding:5px 11px;color:#ffd77a}
-#mini{width:100px;height:100px;border:1.5px solid rgba(255,255,255,.45);box-shadow:var(--soft)}
-#info{border-radius:14px;padding:7px 14px;top:calc(176px + env(safe-area-inset-top,0px))}
-#info b{font-size:15px;color:#ffd77a}#info.warn b{color:#ff9d86}
-#toast{top:auto;bottom:calc(176px + env(safe-area-inset-bottom,0px));background:var(--glass2);color:#fff;border:1px solid var(--stroke);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);font-size:14px;font-weight:700;border-radius:14px;box-shadow:var(--soft);max-width:min(86vw,420px);white-space:normal;text-align:center}
-#joy{width:124px;height:124px;background:rgba(12,20,30,.22);border:1.5px solid rgba(255,255,255,.35);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
-#knob{width:50px;height:50px;margin:-25px 0 0 -25px;background:rgba(255,255,255,.9);box-shadow:0 2px 10px rgba(0,0,0,.3)}
-.pill{border-radius:999px;padding:9px 15px;font-size:13px;font-weight:700}
-#viewBtn{background:rgba(255,215,122,.92);color:#1b2430;box-shadow:var(--soft)}
-#mainBtn{width:96px;height:96px;font-size:16px;font-weight:800;color:#13202e;
-  background:radial-gradient(circle,rgba(255,255,255,.94) 0 41px,transparent 42px),conic-gradient(#ffd77a calc(var(--p)*360deg),rgba(255,255,255,.28) 0);box-shadow:0 8px 26px rgba(0,0,0,.32)}
-#mainBtn:active{transform:scale(.96);box-shadow:0 4px 14px rgba(0,0,0,.3)}
-#mainBtn[data-s="bite"]{background:radial-gradient(circle,#fff3d6 0 41px,transparent 42px),#ff5a47;animation:bite2 .5s ease-in-out infinite alternate}
-#mainBtn[data-s="fight"]{background:radial-gradient(circle,rgba(255,255,255,.94) 0 41px,transparent 42px),conic-gradient(#49c1c4 calc(var(--p)*360deg),rgba(255,255,255,.28) 0)}
-@keyframes bite2{to{box-shadow:0 0 0 10px rgba(255,90,71,.35),0 8px 26px rgba(0,0,0,.32)}}
-#mainTxt small{font-weight:600;font-size:10px}
-/* 釣り中の情報は画面の上側（指と重ならない） */
-#fight,#lureP{top:calc(238px + env(safe-area-inset-top,0px));bottom:auto;border-radius:16px}
-#fight{width:min(86vw,420px);padding:10px 14px 12px}
-.bar{height:10px;border-radius:6px;background:rgba(255,255,255,.14)}
-#tens{border-radius:6px;background:linear-gradient(90deg,#49c1c4,#7fe0d4)}#tens[data-hi="1"]{background:linear-gradient(90deg,#ff8a5c,#ff4a3b)}
-#distb{border-radius:6px;background:linear-gradient(90deg,#ffd77a,#ffb347)}
-.dbtn button{border-radius:999px;background:rgba(255,255,255,.14)}
-/* カード・ボタン・シート */
-.overlay{background:rgba(6,12,20,.42);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
-.card{border-radius:22px;box-shadow:0 18px 48px rgba(0,0,0,.35)}
-.card h2,.resStats b{font-family:var(--num)!important;font-weight:800!important}
-.res2.fx-new{box-shadow:0 0 0 3px #49c1c4,0 18px 48px rgba(0,0,0,.35)}.res2.fx-big{box-shadow:0 0 0 3px #ff8a3c,0 18px 48px rgba(0,0,0,.35)}
-.row button,.wide{border-radius:14px;font-weight:800}
-.btnA{background:#13202e}.btnB{background:#e8e4da}
-.sheetIn{position:relative;border-radius:24px 24px 0 0;background:#f4f2ec;box-shadow:0 -10px 40px rgba(0,0,0,.25);padding-top:18px}
-.sheetIn::before{content:"";position:absolute;top:7px;left:50%;width:38px;height:4px;margin-left:-19px;border-radius:2px;background:rgba(19,38,59,.2)}
-.tabs{padding-right:44px}.tabs button{background:transparent;color:#4a5866;font-weight:800;padding:7px 12px}.tabs button.on{background:#13202e;color:#fff}
-.tabs .x{position:absolute;top:12px;right:10px;width:36px;height:36px;padding:0;border-radius:50%;background:#e6e2d8;font-size:16px;color:#13202e}
-.item,.dx,.dexD{border:none;box-shadow:0 1px 3px rgba(19,38,59,.1),0 0 0 1px rgba(19,38,59,.06)}
-.item.on{box-shadow:0 0 0 2px #49c1c4}
-.seg button{background:#e8e4da}.seg button.on{background:#13202e}
-.gfx{display:grid;gap:8px}.gfx button{border:none;border-radius:14px;background:#fff;box-shadow:0 1px 3px rgba(19,38,59,.1);padding:11px 12px;text-align:left;color:var(--ink)}
-.gfx button.on{box-shadow:0 0 0 2px #49c1c4}.gfxA{text-decoration:none;color:inherit}.gfxA button{width:100%}.gfx b{display:block;font-size:14px}.gfx span{font-size:12px;color:var(--mute)}
-#fpsM{position:fixed;left:50%;transform:translateX(-50%);top:calc(4px + env(safe-area-inset-top,0px));font:700 11px var(--num);color:#fff;background:rgba(0,0,0,.45);padding:2px 8px;border-radius:999px;pointer-events:none;z-index:50}
-@media (max-width:360px){#mini{width:86px;height:86px}#clk{font-size:22px}}
 </style>
 
 <canvas id="cv"></canvas>
@@ -239,9 +184,8 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
   <div id="clock"><div><b id="clk">6:30</b><span id="tideTx">—</span><span id="envTx">—</span></div><canvas id="tideCv" width="148" height="68"></canvas></div>
 </div>
 <div id="tr">
-  <div id="trRow"><button id="sndBtn" class="sq" aria-label="音のオン・オフ"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path class="w" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg></button><button id="mapBtn" class="sq" aria-label="ワールドマップを開く"><svg viewBox="0 0 24 24"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg></button><button id="menuBtn" class="sq" aria-label="メニューを開く"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+  <div id="trRow"><div id="money" class="chip">¥1,500</div><button id="sndBtn" class="sq" aria-label="音のオン・オフ">音</button><button id="mapBtn" class="sq" aria-label="ワールドマップを開く">地図</button><button id="menuBtn" class="sq" aria-label="メニューを開く">MENU</button></div>
   <canvas id="mini" width="208" height="208" aria-label="周辺の地図"></canvas>
-  <div id="money" class="chip">¥1,500</div>
 </div>
 <div id="info" hidden><b id="infoT"></b><span id="infoS"></span></div>
 <div id="joy" aria-hidden="true"><div id="knob"></div></div>
@@ -298,7 +242,7 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
 <div id="sheet" hidden>
   <div class="sheetIn">
     <div class="tabs" id="tabs">
-      <button data-t="map" class="on">移動</button><button data-t="dex">図鑑</button><button data-t="stamp">スタンプ</button><button data-t="shop">釣具店</button><button data-t="veh">乗り物</button><button data-t="set">設定</button><button data-t="help">遊び方</button>
+      <button data-t="map" class="on">移動</button><button data-t="dex">図鑑</button><button data-t="stamp">スタンプ</button><button data-t="shop">釣具店</button><button data-t="veh">乗り物</button><button data-t="help">遊び方</button>
       <button class="x" id="sheetX" aria-label="閉じる">✕</button>
     </div>
     <div id="sb"></div>
@@ -575,14 +519,7 @@ const sun=new T.DirectionalLight(0xffffff,1);sun.castShadow=true;sun.shadow.mapS
 {const r=MOBILE?45:70;Object.assign(sun.shadow.camera,{left:-r,right:r,top:r,bottom:-r,near:1,far:700});}sun.shadow.bias=-.0004;sun.shadow.normalBias=.04;
 scene.add(sun);scene.add(sun.target);
 let VW=1,VHt=1;
-/* 画質：高品質・標準・軽量（設定タブ。localStorage hama-tsuri-gfx）。ピクセル比・影・描画距離・街並みの範囲・歩行者と車の数・海の表現 */
-const GFX_KEY='hama-tsuri-gfx';
-const GFX_LV={high:{n:'高品質',d:'影がくっきり、遠くまで描画。新しいスマホ・パソコン向け',pr:2,shadow:2048,far:1500,fog:1.1,crad:2,peds:16,cars:14,sea:2},
-  std:{n:'標準',d:'スマホで30fps以上を目標にした設定（おすすめ）',pr:1.5,shadow:1024,far:1200,fog:.9,crad:2,peds:10,cars:10,sea:1},
-  low:{n:'軽量',d:'影なし・描画距離短め。古い機種や電池を節約したいとき',pr:1,shadow:0,far:800,fog:.65,crad:1,peds:5,cars:6,sea:0}};
-let GFX=(()=>{try{return localStorage.getItem(GFX_KEY);}catch(e){return null;}})();if(!GFX_LV[GFX])GFX=MOBILE?'std':'high';
-const gfx=()=>GFX_LV[GFX];
-function resize(){VW=innerWidth;VHt=innerHeight;renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,gfx().pr));renderer.setSize(VW,VHt,false);camera.aspect=VW/VHt;camera.updateProjectionMatrix();}
+function resize(){VW=innerWidth;VHt=innerHeight;renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,MOBILE?1.5:1.75));renderer.setSize(VW,VHt,false);camera.aspect=VW/VHt;camera.updateProjectionMatrix();}
 addEventListener('resize',resize);resize();
 const GROUND=2;
 const lam=(c,o)=>new T.MeshLambertMaterial(Object.assign({color:c},o||{}));
@@ -849,7 +786,7 @@ for(const[x,y,h,r]of[[2070,1695,300,60],[2895,3015,90,30],[2280,1884,60,50],[325
 const LANDMARK_KEEP=[...SH.SIGHTS.map(s=>[s.x,s.y,45]),[2070,1695,55],[2280,1884,70],[2590,2240,90],[2790,2760,100],[2895,3015,25],[2440,2925,20],[3108,4584,40],[1680,960,120],[2940,5845,90],[2934,3576,70],[1944,1614,40],[2166,1572,40],[2226,1740,35],[1956,1818,35],[1836,1494,35],[2120,1500,30],[2840,5930,50],[3900,3525,20],[3978,3615,20],[3675,2520,20],[3774,2436,20]];
 
 /* ===== 街並みのチャンク生成（近くだけ作り、遠くは消す） ===== */
-const CH=220,chunks=new Map(),colDone=new Set();let CRAD=GFX_LV[GFX].crad;
+const CH=220,CRAD=2,chunks=new Map(),colDone=new Set();
 const UNIT=16;
 const SH_JR=STATIONS.filter(s=>s.region==='shonan'&&s.jr),SH_KAMAKURA=SH.toGame(35.3215,139.5530);
 function zoneAt(x,y){const d=(a,b)=>Math.hypot(x-a,y-b);
@@ -977,7 +914,7 @@ function spawnAlong(around,range){return clamp(around+(rnd()-.5)*2*range,1,ROADT
 function updTraffic(dt,t){
   sChk-=dt;let dRoad=1e9;if(sChk<=0){sChk=.4;const rg=regionAt(S.x,S.y);if(rg!==trRegion){trRegion=rg;setTrafficRoad(rg==='shonan'?SH.R134:ROAD,rg==='shonan'?8:12);for(const c of CARS){c.on=false;c.g.visible=false;}for(const p of PEDS){p.on=false;p.P.g.visible=false;}}const r=roadS(S.x,S.y);sPlayer=r[0];dRoad=r[1];updTraffic.d=dRoad;}
   const near=(updTraffic.d||0)<400;
-  for(const c of CARS){if(CARS.indexOf(c)>=gfx().cars){c.g.visible=false;c.on=false;continue;}if(!c.on||Math.abs(c.s-sPlayer)>420){if(!near){c.g.visible=false;c.on=false;continue;}c.s=spawnAlong(sPlayer,380);c.dir=rnd()<.5?1:-1;c.lane=rnd()<.5?1:2;c.vt=c.len>6?9:10+rnd()*5;c.v=c.vt;c.on=true;c.g.visible=true;}
+  for(const c of CARS){if(!c.on||Math.abs(c.s-sPlayer)>420){if(!near){c.g.visible=false;c.on=false;continue;}c.s=spawnAlong(sPlayer,380);c.dir=rnd()<.5?1:-1;c.lane=rnd()<.5?1:2;c.vt=c.len>6?9:10+rnd()*5;c.v=c.vt;c.on=true;c.g.visible=true;}
     // 前の車・歩行者（プレイヤー）で止まる
     let vt=c.vt;const[x,y,ux,uy]=roadAt(c.s);const fx=ux*c.dir,fy=uy*c.dir;
     for(const o of CARS){if(o===c||!o.on||o.dir!==c.dir||o.lane!==c.lane)continue;const ds=(o.s-c.s)*c.dir;if(ds>0&&ds<c.len/2+o.len/2+5)vt=0;}
@@ -985,7 +922,7 @@ function updTraffic(dt,t){
     c.v+=(vt-c.v)*Math.min(1,dt*(vt<c.v?3:1));c.s+=c.v*c.dir*dt;if(c.s<1||c.s>ROADTOT-1)c.on=false;
     const off=(c.lane*3.4-1.7)*-c.dir;const[x2,y2,ux2,uy2]=roadAt(c.s);const nx=-uy2,ny=ux2;
     c.g.position.set(x2+nx*off,GROUND+.07,y2+ny*off);c.g.rotation.y=-Math.atan2(uy2*c.dir,ux2*c.dir);}
-  for(const p of PEDS){if(PEDS.indexOf(p)>=gfx().peds){p.P.g.visible=false;p.on=false;continue;}if(!p.on||Math.abs(p.s-sPlayer)>260){if(!near){p.P.g.visible=false;p.on=false;continue;}p.s=spawnAlong(sPlayer,240);p.side=rnd()<.5?1:-1;p.dir=rnd()<.5?1:-1;p.v=1.1+rnd()*.5;p.on=true;p.P.g.visible=true;p.off=TRP.ped+rnd()*2.5;}
+  for(const p of PEDS){if(!p.on||Math.abs(p.s-sPlayer)>260){if(!near){p.P.g.visible=false;p.on=false;continue;}p.s=spawnAlong(sPlayer,240);p.side=rnd()<.5?1:-1;p.dir=rnd()<.5?1:-1;p.v=1.1+rnd()*.5;p.on=true;p.P.g.visible=true;p.off=TRP.ped+rnd()*2.5;}
     p.s+=p.v*p.dir*dt;p.ph+=dt*p.v*3.3;const[x,y,ux,uy]=roadAt(p.s);const nx=-uy,ny=ux;p.P.g.position.set(x+nx*p.off*p.side,GROUND,y+ny*p.off*p.side);p.P.g.rotation.y=Math.atan2(ux*p.dir,uy*p.dir);animHuman(p.P,p.ph,.75,t);}}
 
 /* ===== 竿・糸・ウキ ===== */
@@ -998,10 +935,6 @@ scene.add(bobber);
 const jig=new T.Mesh(new T.BoxGeometry(.03,.02,.1),new T.MeshPhongMaterial({color:0xcfd8e0,specular:0xffffff,shininess:90}));scene.add(jig);
 const aimRing=new T.Mesh(new T.RingGeometry(.8,1,40).rotateX(-Math.PI/2),new T.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.95,depthWrite:false}));aimRing.renderOrder=5;scene.add(aimRing);
 const aimRing2=new T.Mesh(new T.RingGeometry(1.35,1.45,40).rotateX(-Math.PI/2),new T.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.5,depthWrite:false}));scene.add(aimRing2);
-// 投げる軌道：竿先から着水点までの放物線（点線）。文字は重ねない
-const ARC_N=28,aimArcGeo=new T.BufferGeometry();aimArcGeo.setAttribute('position',new T.Float32BufferAttribute(new Float32Array(ARC_N*3),3));
-const aimArc=new T.Line(aimArcGeo,new T.LineDashedMaterial({color:0xffffff,dashSize:.6,gapSize:.5,transparent:true,opacity:.85,depthWrite:false}));aimArc.frustumCulled=false;aimArc.renderOrder=6;scene.add(aimArc);
-const aimDot=new T.Mesh(new T.CircleGeometry(.35,20).rotateX(-Math.PI/2),new T.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.9,depthWrite:false}));aimDot.renderOrder=6;scene.add(aimDot);
 const aimLineGeo=new T.BufferGeometry();aimLineGeo.setAttribute('position',new T.Float32BufferAttribute(new Float32Array(6),3));
 const aimLine=new T.Line(aimLineGeo,new T.LineDashedMaterial({color:0xffffff,dashSize:1,gapSize:1.5,transparent:true,opacity:.5}));aimLine.frustumCulled=false;scene.add(aimLine);
 const ripples=[];for(let i=0;i<16;i++){const m=new T.Mesh(new T.RingGeometry(.9,1,32).rotateX(-Math.PI/2),new T.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0,depthWrite:false}));m.visible=false;scene.add(m);ripples.push({m,life:0,max:1,size:1});}
@@ -1369,7 +1302,6 @@ function renderTab(){
   const sb=$('sb');let h='';
   if(tab==='map'&&mapView==='nav'){renderNav(sb);return;}
   if(tab==='veh'){renderVeh(sb);return;}
-  if(tab==='set'){renderSettings(sb);return;}
   if(tab==='map'&&mapView==='spots'){renderSpotList(sb);
   }else if(tab==='map'){const[cur,cd]=nearestStation();const atStop=cd<40;
     h=`<div class="seg"><button data-mv="go" class="on">行き先</button><button data-mv="spots">釣り場一覧</button><button data-mv="nav">地図・ルート</button></div><canvas id="mapCv"></canvas><p class="sub">${atStop?`「${cur.n}」にいます。行き先を選んでください。待ち時間は便によって変わります。${cur.n==='横浜駅'?'湘南（鎌倉〜大磯）へはJRで行けます。':''}`:`電車やバスに乗るには、まず駅・バス停まで歩いてください。一番近いのは「${cur.n}」（約${Math.round(cd)}m）。`}</p><div class="list">`;
@@ -1710,7 +1642,7 @@ function updSky(){const h=hourF();const tp=keyLerp(SKYTOP,h),hr=keyLerp(SKYHOR,h
   const dk=keyLerp(DARK,h);hemi.color.setRGB(lerp(.9,.5,dk),lerp(.95,.58,dk),lerp(1,.88,dk));hemi.groundColor.setRGB(lerp(.55,.12,dk),lerp(.5,.12,dk),lerp(.42,.16,dk));
   const sa=(h-6)/12*Math.PI;const sd=new V3(Math.cos(sa),Math.max(.08,Math.sin(sa)),-.35).normalize();skyU.sd.value.copy(sd);{const sk=sI*(1-cf)*(1-cf);skyU.sunc.value.setRGB(sc[0]/255*sk,sc[1]/255*sk*.9,sc[2]/255*sk*.75);}
   sun.position.set(S.x+sd.x*300,sd.y*300,S.y+sd.z*300);sun.target.position.set(S.x,0,S.y);sun.castShadow=sI>.05;
-  scene.fog.near=lerp(220,120,dk)*(1-cf*.5)*gfx().fog;scene.fog.far=Math.min(camera.far*.95,lerp(1000,650,dk)*(1-cf*.45)*gfx().fog);
+  scene.fog.near=lerp(220,120,dk)*(1-cf*.5);scene.fog.far=lerp(1000,650,dk)*(1-cf*.45);
   for(const m of EMISSIVE)m.emissiveIntensity=dk*1.2;glowMat.opacity=clamp(dk*1.1,0,.95);seaMat.shininess=lerp(90,30,dk);
   headMat.color.setHex(dk>.3?0xfff6dc:0xd8d8d0);}
 
@@ -1953,25 +1885,6 @@ $('wmMe').onclick=()=>{WM.v.cx=S.x;WM.v.cy=S.y;drawWorld();};$('wmX').onclick=cl
 document.querySelectorAll('[data-wr]').forEach(b=>b.onclick=()=>wmFitRegion(b.dataset.wr));
 document.querySelectorAll('[data-wl]').forEach(b=>b.onchange=()=>{WM.lyr[b.dataset.wl]=b.checked;drawWorld();});
 addEventListener('resize',()=>drawWorld());
-
-/* ===== 設定：画質・FPS表示・旧バージョン ===== */
-let FPS_ON=/fps/.test(location.hash)||(()=>{try{return localStorage.getItem('hama-tsuri-fps')==='1';}catch(e){return false;}})();
-const fpsS={t:0,n:0,v:60,low:0,warned:false};
-function applyGfx(){const g=gfx();resize();renderer.shadowMap.enabled=!!g.shadow;
-  if(g.shadow){sun.shadow.mapSize.set(g.shadow,g.shadow);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null;}}
-  camera.far=g.far;camera.updateProjectionMatrix();CRAD=g.crad;
-  scene.traverse(o=>{if(o.material){for(const m of[].concat(o.material))m.needsUpdate=true;}});if(window.applySeaQuality)applySeaQuality();if($('title').hidden)updChunks(true);}
-function renderSettings(sb){let h='<h3 class="hd">画質</h3><div class="gfx">';
-  for(const[k,g]of Object.entries(GFX_LV))h+=`<button data-gfx="${k}" class="${GFX===k?'on':''}"><b>${g.n}${GFX===k?'（使用中）':''}</b><span>${g.d}</span></button>`;
-  h+=`</div><h3 class="hd">表示</h3><div class="gfx"><button id="fpsT" class="${FPS_ON?'on':''}"><b>FPS（1秒あたりの描画回数）を表示：${FPS_ON?'オン':'オフ'}</b><span>動作の重さの確認用。30以上が目安</span></button></div>
-    <h3 class="hd">そのほか</h3><div class="gfx"><a class="gfxA" href="legacy/2026-10-pre-visual/" target="_blank" rel="noopener"><button><b>改善前のバージョンを開く</b><span>グラフィック・UI改善の前の状態（比較用。セーブは共通）</span></button></a></div>`;
-  sb.innerHTML=h;
-  sb.querySelectorAll('[data-gfx]').forEach(b=>b.onclick=()=>{GFX=b.dataset.gfx;try{localStorage.setItem(GFX_KEY,GFX);}catch(e){}applyGfx();renderTab();toast(`画質：${gfx().n}`);});
-  $('fpsT').onclick=()=>{FPS_ON=!FPS_ON;try{localStorage.setItem('hama-tsuri-fps',FPS_ON?'1':'0');}catch(e){}renderTab();};}
-function updFps(dt){fpsS.t+=dt;fpsS.n++;if(fpsS.t>=1){fpsS.v=fpsS.n/fpsS.t;fpsS.t=0;fpsS.n=0;
-    let el=$('fpsM');if(FPS_ON){if(!el){el=document.createElement('div');el.id='fpsM';document.body.appendChild(el);}el.textContent=`${Math.round(fpsS.v)} fps・${gfx().n}`;}else if(el)el.remove();
-    // 重いときは一度だけ軽量モードを案内
-    if($('title').hidden&&!paused()){fpsS.low=fpsS.v<24?fpsS.low+1:0;if(fpsS.low>=8&&!fpsS.warned&&GFX!=='low'){fpsS.warned=true;toast('動作が重いときは メニュー→設定→画質「軽量」');}}}}
 /* ===== 関東の実在地図（OpenStreetMap のタイル。tools/kanto で作る） =====
    座標は geo.js の湘南と同じ変換（緯度経度 → ゲーム座標）。湘南はゲームの地形と同じ位置に重なる。横浜の手描き地図は緯度経度と対応していないので、ここには出さない。
    タイルは表示の範囲と縮尺に合うズームだけを読み込む（遠くは低詳細、近くは高詳細）。タイルの枠で切って描くので継ぎ目は出ない。
@@ -2192,12 +2105,9 @@ function render(dt,t){
   placeCam(Math.min(1,dt*6));
   for(const o of spotMk){const d=Math.hypot(o.sp.x-S.x,o.sp.y-S.y);const here=nearSpot===o.sp;o.b.visible=!here;o.l.visible=!here&&d<500;o.b.position.y=groundY(o.sp.x,o.sp.y)+5+Math.sin(t*2+o.sp.x)*.3;o.l.position.y=o.b.position.y;}
   for(const o of sightMk){const want=S.stamps[o.s.id]?doneTex:starTex;if(o.b.material.map!==want){o.b.material.map=want;o.b.material.needsUpdate=true;}const d=Math.hypot(o.s.x-S.x,o.s.y-S.y);o.b.visible=d<900;o.b.position.y=GROUND+8+Math.sin(t*2.4+o.s.x)*.3;o.l.visible=nearSight===o.s&&F.st==='idle';o.l.position.y=o.b.position.y;}
-  const aiming=F.st==='aim';aimRing.visible=aimRing2.visible=aimLine.visible=aimArc.visible=aimDot.visible=aiming;
+  const aiming=F.st==='aim';aimRing.visible=aimRing2.visible=aimLine.visible=aiming;
   if(aiming){const tg=aimTarget();const inN=N&&Math.hypot(tg[0]-N.x,tg[1]-N.y)<N.r+4,it=inTetra(tg[0],tg[1]);const cc=inN?0xf1b746:it?0xff9d86:0xffffff;
     const rs=Math.max(1,tg[2]/25);aimRing.material.color.setHex(cc);aimRing2.material.color.setHex(cc);aimRing.position.set(tg[0],.05,tg[1]);aimRing2.position.set(tg[0],.04,tg[1]);aimRing.scale.setScalar(rs);aimRing2.scale.setScalar(rs*(1+Math.sin(t*6)*.12));
-    {const pa=aimArcGeo.attributes.position.array,h0=groundY(F.ox,F.oy)+2.2,dd=tg[2],top=Math.min(14,2+dd*.18);
-      for(let i=0;i<ARC_N;i++){const u=i/(ARC_N-1);pa[i*3]=F.ox+(tg[0]-F.ox)*u;pa[i*3+1]=h0*(1-u)+.1+4*top*u*(1-u);pa[i*3+2]=F.oy+(tg[1]-F.oy)*u;}
-      aimArcGeo.attributes.position.needsUpdate=true;aimArc.computeLineDistances();aimArc.material.color.setHex(cc);aimDot.material.color.setHex(cc);aimDot.position.set(tg[0],.07,tg[1]);aimDot.scale.setScalar(rs);}
     const D=castMax();const pa=aimLineGeo.attributes.position.array;pa[0]=F.ox;pa[1]=.1;pa[2]=F.oy;pa[3]=F.ox+Math.cos(F.ang)*D;pa[4]=.1;pa[5]=F.oy+Math.sin(F.ang)*D;aimLineGeo.attributes.position.needsUpdate=true;aimLine.computeLineDistances();}
   updRod(t);updFX(dt,t);drawLureView();
   renderer.render(scene,camera);
@@ -2207,7 +2117,7 @@ function updSound(dt){SND.update(dt);ambT-=dt;if(ambT<=0){ambT=.5;const sea=rect
     SND.ambient({sea,city:(1-sea*.6)*(1-dk*.5),rain:envNow(nearSpot||F.spot).w.kind==='rain'?1:0});}
   SND.reel(F.st==='fight'&&F.hold&&F.fg&&!F.fg.slipping?14:lureWait()&&F.reelHold?S.spd*9:0);
   if(N&&Math.hypot(N.x-S.x,N.y-S.y)<150){gullT-=dt;if(gullT<=0){gullT=1.5+rnd()*3;SND.play('gull');}}}
-function frame(now){const rdt=(now-last)/1000;const dt=Math.min(.05,rdt);last=now;const t=now/1000;updFps(rdt);update(dt,t);render(dt,t);updUI();updSound(dt);requestAnimationFrame(frame);}
+function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;const t=now/1000;update(dt,t);render(dt,t);updUI();updSound(dt);requestAnimationFrame(frame);}
 
 /* ===== 開始 ===== */
 function start(fromSave,where){const ld=fromSave&&load();if(ld){TK.migrate(ld,TACKLE);TK.migrateGear(ld,TACKLE);migrateMap(ld);}S=ld?Object.assign(fresh(),ld):fresh();if(!ld)S.base=today0();VH.migrate(S);restoreRide();
@@ -2220,12 +2130,12 @@ $('factSpots').textContent=SPOTS.filter(sp=>!sp.sh||(sp.sh.accessStatus!=='unver
 $('newBtn').onclick=()=>{SND.init();start(false);};$('hiraBtn').onclick=()=>{SND.init();start(false,'hiratsuka');};$('contBtn').onclick=()=>{SND.init();start(true);};
 // 音：最初のタップで鳴らせるようにする。右上の「音」ボタンで消音
 addEventListener('pointerdown',()=>SND.init(),{once:true});
-function updSndBtn(){const b=$('sndBtn');b.classList.toggle('off',!SND.on);b.querySelector('.w').style.display=SND.on?'':'none';b.setAttribute('aria-label',SND.on?'音を消す':'音を出す');}
+function updSndBtn(){const b=$('sndBtn');b.textContent=SND.on?'音':'消音';b.style.opacity=SND.on?1:.6;}
 $('sndBtn').onclick=()=>{SND.init();SND.setOn(!SND.on);updSndBtn();};updSndBtn();
 const hotS=hot&&hot.data&&hot.data.S;
 if(hotS&&hotS.money!=null){TK.migrate(hotS,TACKLE);TK.migrateGear(hotS,TACKLE);migrateMap(hotS);S=Object.assign(fresh(),hotS);VH.migrate(S);restoreRide();$('title').hidden=true;}
 else if(load())$('contBtn').hidden=false;
-applyGfx();updMoney();updClock();updChunks(true);snapCam();requestAnimationFrame(frame);
+updMoney();updClock();updChunks(true);snapCam();requestAnimationFrame(frame);
 })();
 </script>
 </html>
