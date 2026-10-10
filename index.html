@@ -360,38 +360,38 @@ addEventListener('error',e=>{try{let d=document.getElementById('bootErr');if(!d)
   d.textContent+='エラー：'+(e.message||'')+'（'+String(e.filename||'').split('/').pop()+':'+(e.lineno||'')+'）\n再読み込みしても直らないときはこの画面を送ってください\n';}catch(_){}});
 </script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
-<script src="fishing-sim.js?v=202610101400"></script>
-<script src="fish-ai.js?v=202610101400"></script>
-<script src="data/tackle-data.js?v=202610101400"></script>
-<script src="tackle.js?v=202610101400"></script>
-<script src="fight.js?v=202610101400"></script>
-<script src="sound.js?v=202610111600"></script>
-<script src="data/fish/species.js?v=202610101400"></script>
-<script src="data/fish/images.js?v=202610101400"></script>
-<script src="geo.js?v=202610101400"></script>
-<script src="world.js?v=202610101400"></script>
-<script src="data/world/yokohama-base.js?v=202610101400"></script>
-<script src="data/world/shonan-base.js?v=202610111200"></script>
-<script src="data/yokohama-places.js?v=202610101400"></script>
-<script src="data/shonan-spots.js?v=202610101400"></script>
-<script src="shonan.js?v=202610101400"></script>
-<script src="terrain.js?v=202610101400"></script>
-<script src="data/terrain/shonan-game.js?v=202610101400"></script>
-<script src="osm-convert.js?v=202610101400"></script>
-<script src="mapdata.js?v=202610101400"></script>
-<script src="data/geo/geo-data.js?v=202610101400"></script>
-<script src="tiles.js?v=202610101400"></script>
-<script src="gsi.js?v=202610111000"></script>
-<script src="market.js?v=202610111500"></script>
-<script src="livebait.js?v=202610111700"></script>
-<script src="line.js?v=202610111800"></script>
-<script src="fish3d.js?v=202610111700"></script>
-<script src="gyotaku.js?v=202610111700"></script>
-<script src="kanto.js?v=202610101600"></script>
-<script src="routing.js?v=202610101400"></script>
-<script src="nav.js?v=202610101400"></script>
-<script src="vehicles.js?v=202610101400"></script>
-<script src="data/osm/index.js?v=202610101400"></script>
+<script src="fishing-sim.js?v=9b008156"></script>
+<script src="fish-ai.js?v=722068f5"></script>
+<script src="data/tackle-data.js?v=21dff161"></script>
+<script src="tackle.js?v=e2ccbd4f"></script>
+<script src="fight.js?v=568dbb86"></script>
+<script src="sound.js?v=99a8c8c1"></script>
+<script src="data/fish/species.js?v=f695e5fa"></script>
+<script src="data/fish/images.js?v=907be6b3"></script>
+<script src="geo.js?v=1e6a80c6"></script>
+<script src="world.js?v=bc9c37b8"></script>
+<script src="data/world/yokohama-base.js?v=c73aacf7"></script>
+<script src="data/world/shonan-base.js?v=bb93189e"></script>
+<script src="data/yokohama-places.js?v=a804cda6"></script>
+<script src="data/shonan-spots.js?v=b0ad5a75"></script>
+<script src="shonan.js?v=944d51c9"></script>
+<script src="terrain.js?v=c926989a"></script>
+<script src="data/terrain/shonan-game.js?v=6b00f2b9"></script>
+<script src="osm-convert.js?v=b3df23dd"></script>
+<script src="mapdata.js?v=8f2123c8"></script>
+<script src="data/geo/geo-data.js?v=904e52ee"></script>
+<script src="tiles.js?v=a4ffbb94"></script>
+<script src="gsi.js?v=e1cca43b"></script>
+<script src="market.js?v=5723bce8"></script>
+<script src="livebait.js?v=db431c81"></script>
+<script src="line.js?v=179065e8"></script>
+<script src="fish3d.js?v=d7018d77"></script>
+<script src="gyotaku.js?v=9ed47370"></script>
+<script src="kanto.js?v=d37c8cb7"></script>
+<script src="routing.js?v=f2f8f9a0"></script>
+<script src="nav.js?v=c49b5953"></script>
+<script src="vehicles.js?v=ff525c6e"></script>
+<script src="data/osm/index.js?v=15e3c392"></script>
 <script>
 (()=>{
 'use strict';
@@ -584,7 +584,7 @@ function npcCandidates(){if(npcCands)return npcCands;const lots=(typeof NET!=='u
   for(const l of lots){const rg=regionAt(l.x,l.y);if(rg!=='kanto')out.push({x:l.x,y:l.y,region:rg,label:l.name});}
   for(const m of MARKETS)if(m.kind==='coop'&&m.region!=='kanto'){const p=roadSide(m.x,m.y,200,30);if(p)out.push({x:p[0],y:p[1],region:m.region,label:m.n+'の近く'});}
   return npcCands=out;}
-function npcNow(){if(!MKT||!S)return[];const k=(S.day|0)+':'+Math.floor(S.min/180);if(k!==npcKey){const c=npcCandidates();NPCB=[];for(const rg of['yokohama','shonan']){const cr=c.filter(q=>q.region===rg);NPCB.push(...MKT.npcBuyers((S.day|0)+(rg==='shonan'?500:0),S.min,cr,5).map(b=>Object.assign(b,{n:`移動買取トラック（${String(b.near).replace(/ 近くの駐車スペース（推定）|の近く$/,'')}付近）`})));}npcKey=c.length?k:'';}return NPCB;}
+function npcNow(){if(!MKT||!MKT.npcBuyers||!S)return[];const k=(S.day|0)+':'+Math.floor(S.min/180);if(k!==npcKey){const c=npcCandidates();NPCB=[];for(const rg of['yokohama','shonan']){const cr=c.filter(q=>q.region===rg);NPCB.push(...MKT.npcBuyers((S.day|0)+(rg==='shonan'?500:0),S.min,cr,5).map(b=>Object.assign(b,{n:`移動買取トラック（${String(b.near).replace(/ 近くの駐車スペース（推定）|の近く$/,'')}付近）`})));}npcKey=c.length?k:'';}return NPCB;}
 // 売れる場所（固定の買取所・釣り場の近くの店・いまいる移動買取）
 function sellPoints(){return MARKETS.concat(npcNow());}
 function fishInfo(id){const f=FISH[id];if(!f)return null;return{kg:f.poison?0:f.kg,L:f.L,inSeason:!!(f.mo&&f.mo[gameDate().getMonth()+1])};}
