@@ -160,6 +160,19 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
 .spNav{background:#eef9f9;border:2px solid #7cc9cb;border-top:none;border-radius:0 0 12px 12px;margin-top:-9px;padding:8px 11px;display:grid;gap:3px}.spNav span{font-size:12px;color:var(--mute);line-height:1.5}.spNav .ng{color:var(--signal)}.spNav button{border:none;border-radius:10px;padding:9px;font-weight:900;margin-top:4px}
 .chk{display:flex;gap:6px;align-items:center;font-size:12px;margin:2px 0 8px}
 .lyr{background:#fff;border:2px solid #e3dccb;border-radius:12px;padding:8px 11px;margin-bottom:8px}.lyr summary{font-weight:900;font-size:13px}.lyr ul{list-style:none;margin:6px 0;padding:0;display:grid;gap:4px}.lyr li{font-size:12px;display:flex;flex-wrap:wrap;gap:6px;align-items:baseline}.lyr em{font-style:normal;font-weight:900;font-size:11px;border-radius:999px;padding:1px 8px}.lyr .ok{background:#d6f0e4;color:#1b6b4a}.lyr .ap{background:#f6ead0;color:#8a5a00}.lyr .ng{background:#f3dcd8;color:#a0362a}.lyr span{color:var(--mute)}
+#phone{position:fixed;inset:0;z-index:45;background:rgba(6,16,30,.45);display:flex;align-items:flex-end;justify-content:center}#phone[hidden]{display:none}
+.phIn{width:min(100%,440px);height:min(88vh,780px);background:var(--paper);color:var(--ink);border-radius:26px 26px 0 0;display:flex;flex-direction:column;padding:10px 12px calc(8px + env(safe-area-inset-bottom,0px));box-shadow:0 -6px 24px rgba(0,0,0,.3)}
+.phTop{display:flex;align-items:center;gap:8px;padding:0 2px 8px}.phTop b{flex:1;font-size:16px;text-align:center}.phTop button{border:none;background:#e6e1d4;color:var(--ink);border-radius:999px;width:44px;height:44px;font-size:18px;font-weight:900}
+#phBody{flex:1;overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+#phBar{display:flex;gap:8px;padding-top:8px}#phBar:empty{display:none}#phBar button{flex:1;min-height:52px;border:none;border-radius:14px;font-weight:900;font-size:15px}#phBar button:disabled{opacity:.4}
+#phTabs{display:flex;gap:4px;padding-top:8px}#phTabs:empty{display:none}#phTabs button{flex:1;min-height:50px;border:none;background:#e6e1d4;border-radius:12px;font-weight:900;font-size:13px;color:var(--ink)}#phTabs button.on{background:var(--ink);color:var(--paper)}
+.phApps{display:grid;grid-template-columns:repeat(4,1fr);gap:16px 8px;padding:12px 4px}.phApps button{border:none;background:none;display:flex;flex-direction:column;align-items:center;gap:6px;font-weight:900;font-size:12px;color:var(--ink)}.phApps i{width:60px;height:60px;border-radius:17px;display:grid;place-items:center;font-style:normal;font-size:26px;font-weight:900;color:#fff;box-shadow:0 3px 8px rgba(0,0,0,.18)}
+.fRow{display:flex;align-items:center;gap:4px;background:#fff;border:2px solid #e3dccb;border-radius:12px;padding:4px 6px;margin-bottom:6px}.fRow.sel{border-color:#2a9da0;background:#eef9f9}.fRow.dim{opacity:.55}
+.fRow .tx{flex:1;min-width:0;padding:4px 2px}.fRow b{display:block;font-size:14px}.fRow span{display:block;font-size:12px;color:var(--mute)}.fRow .pr{font-weight:900;color:#a5650a;font-size:14px;min-width:62px;text-align:right;font-variant-numeric:tabular-nums}
+.fRow .ic{border:none;background:none;min-width:44px;height:44px;font-size:22px;color:#b8b09c;padding:0}.fRow .ic.on{color:#e0a100}.fRow .ck.on{color:#2a9da0}.fRow .dump{font-size:12px;font-weight:900;color:#b8402f}
+.venue{display:flex;gap:6px;overflow-x:auto;margin-bottom:8px}.venue button{flex:none;border:none;border-radius:999px;padding:10px 13px;background:#e6e1d4;color:var(--ink);font-weight:900;font-size:13px}.venue button.on{background:var(--ink);color:var(--paper)}
+.cmpT{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:10px}.cmpT td,.cmpT th{padding:7px 4px;border-bottom:1px solid #e3dccb;text-align:left;vertical-align:middle}.cmpT th{font-size:11px;color:var(--mute)}.cmpT td.r{text-align:right;font-weight:900;font-variant-numeric:tabular-nums}.cmpT tr.app td{background:#f6efe0}.cmpT td:nth-child(2),.cmpT button{white-space:nowrap}.cmpT button{border:none;border-radius:8px;background:var(--ink);color:var(--paper);font-weight:900;font-size:12px;padding:8px 10px}
+.phTot{font-size:22px;font-weight:900;text-align:center;margin:8px 0}.phNote{font-size:11px;color:var(--mute);line-height:1.6;margin:6px 0}
 #wmap{position:fixed;inset:0;z-index:40;background:#2a7aa3;touch-action:none}#wmCv{position:absolute;inset:0;width:100%;height:100%;display:block}
 .wmTop{position:absolute;left:calc(12px + env(safe-area-inset-left,0px));right:calc(12px + env(safe-area-inset-right,0px));top:calc(10px + env(safe-area-inset-top,0px));display:flex;gap:6px;align-items:center}
 .wmTop b{flex:1;color:var(--paper);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:14px}
@@ -209,6 +222,8 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
 #fight,#lureP{top:calc(238px + env(safe-area-inset-top,0px));bottom:auto;border-radius:16px}
 #fight{width:min(86vw,400px);padding:7px 12px 9px;top:calc(234px + env(safe-area-inset-top,0px));bottom:auto;background:rgba(12,24,38,.5);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 #fight .gear{font-size:11px;opacity:.75}
+@keyframes gyoFx{0%{box-shadow:0 0 0 0 rgba(195,36,29,.0)}30%{box-shadow:0 0 0 6px rgba(195,36,29,.65),0 0 40px rgba(195,36,29,.5)}100%{box-shadow:0 0 0 0 rgba(195,36,29,0)}}
+.fx-gyo{animation:gyoFx 1.4s ease-out 2}
 #fight.danger{box-shadow:0 0 0 2px #e04a3b,0 0 22px rgba(224,74,59,.55)}
 body.fishing #joy{opacity:.28}body.fishing #acts .pill{opacity:.55}
 .bar{height:10px;border-radius:6px;background:rgba(255,255,255,.14)}
@@ -242,7 +257,7 @@ body.fishing #joy{opacity:.28}body.fishing #acts .pill{opacity:.55}
   <div id="clock"><div><b id="clk">6:30</b><span id="tideTx">—</span><span id="envTx">—</span></div><canvas id="tideCv" width="148" height="68"></canvas></div>
 </div>
 <div id="tr">
-  <div id="trRow"><button id="sndBtn" class="sq" aria-label="音のオン・オフ"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path class="w" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg></button><button id="mapBtn" class="sq" aria-label="ワールドマップを開く"><svg viewBox="0 0 24 24"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg></button><button id="menuBtn" class="sq" aria-label="メニューを開く"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+  <div id="trRow"><button id="phoneBtn" class="sq" aria-label="スマホ（魚市場アプリ）"><svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="18" r="1.2"/></svg></button><button id="sndBtn" class="sq" aria-label="音のオン・オフ"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path class="w" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg></button><button id="mapBtn" class="sq" aria-label="ワールドマップを開く"><svg viewBox="0 0 24 24"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg></button><button id="menuBtn" class="sq" aria-label="メニューを開く"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
   <canvas id="mini" width="208" height="208" aria-label="周辺の地図"></canvas>
   <div id="money" class="chip">¥1,500</div>
 </div>
@@ -275,6 +290,14 @@ body.fishing #joy{opacity:.28}body.fishing #acts .pill{opacity:.55}
   <div id="wmKanto" hidden><input id="wmQ" type="search" placeholder="地域を探す（例：平塚市、千葉県）" aria-label="地域を探す"><div id="wmQR"></div></div>
 </div>
 
+<div id="phone" hidden role="dialog" aria-label="スマホ">
+  <div class="phIn">
+    <div class="phTop"><button id="phHome" aria-label="ホーム">⌂</button><b id="phTitle">スマホ</b><button id="phX" aria-label="閉じる">✕</button></div>
+    <div id="phBody"></div>
+    <div id="phBar"></div>
+    <nav id="phTabs"></nav>
+  </div>
+</div>
 <div id="result" class="overlay" hidden>
   <div class="card res2" id="resCard">
     <div class="kick" id="resKick">釣れた！</div>
@@ -286,7 +309,9 @@ body.fishing #joy{opacity:.28}body.fishing #acts .pill{opacity:.55}
     <dl class="resMeta" id="resMeta"></dl>
     <div id="resBadges"></div>
     <p id="resDesc"></p>
+    <div class="row"><button id="resGyo" class="btnB">魚拓に残す</button></div>
     <div class="row"><button id="resRel" class="btnB">リリース</button><button id="resKeep" class="btnA">持ち帰る</button></div>
+    <div class="row"><button id="resLive" class="btnB" hidden>生き餌にする</button></div>
   </div>
 </div>
 
@@ -303,7 +328,7 @@ body.fishing #joy{opacity:.28}body.fishing #acts .pill{opacity:.55}
 <div id="sheet" hidden>
   <div class="sheetIn">
     <div class="tabs" id="tabs">
-      <button data-t="map" class="on">移動</button><button data-t="dex">図鑑</button><button data-t="stamp">スタンプ</button><button data-t="shop">釣具店</button><button data-t="veh">乗り物</button><button data-t="fish">魚</button><button data-t="set">設定</button><button data-t="help">遊び方</button>
+      <button data-t="map" class="on">移動</button><button data-t="dex">図鑑</button><button data-t="stamp">スタンプ</button><button data-t="shop">釣具店</button><button data-t="veh">乗り物</button><button data-t="fish">魚</button><button data-t="gyo">魚拓</button><button data-t="set">設定</button><button data-t="help">遊び方</button>
       <button class="x" id="sheetX" aria-label="閉じる">✕</button>
     </div>
     <div id="sb"></div>
@@ -358,6 +383,10 @@ addEventListener('error',e=>{try{let d=document.getElementById('bootErr');if(!d)
 <script src="tiles.js?v=202610101400"></script>
 <script src="gsi.js?v=202610111000"></script>
 <script src="market.js?v=202610111500"></script>
+<script src="livebait.js?v=202610111700"></script>
+<script src="line.js?v=202610111800"></script>
+<script src="fish3d.js?v=202610111700"></script>
+<script src="gyotaku.js?v=202610111700"></script>
 <script src="kanto.js?v=202610101600"></script>
 <script src="routing.js?v=202610101400"></script>
 <script src="nav.js?v=202610101400"></script>
@@ -370,7 +399,7 @@ const $=id=>document.getElementById(id);
 if(!window.THREE||!window.HamaSim||!window.HamaShonan||!window.HamaFishAI||!window.HamaFight||!window.HamaTackle||!window.HamaTackleData){document.body.insertAdjacentHTML('beforeend','<div id="fail">3D表示の読み込みに失敗しました。<br>ページを再読み込みしてください。</div>');return;}
 const SND=window.HamaSound||{init(){},play(){},ambient(){},reel(){},drag(){},update(){},setOn(){},on:false};
 const SH=window.HamaShonan;
-const T=THREE,V3=T.Vector3,SIM=window.HamaSim,FAI=window.HamaFishAI,FG=window.HamaFight,TK=window.HamaTackle,TACKLE=window.HamaTackleData,TBYID=new Map(TACKLE.map(t=>[t.id,t]));
+const T=THREE,V3=T.Vector3,SIM=window.HamaSim,FAI=window.HamaFishAI,FG=window.HamaFight,TK=window.HamaTackle,LN=window.HamaLine,TACKLE=window.HamaTackleData.concat(LN?LN.CAT:[]),TBYID=new Map(TACKLE.map(t=>[t.id,t]));
 const FONT='"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",sans-serif';
 const clamp=(v,a,b)=>v<a?a:v>b?b:v, lerp=(a,b,t)=>a+(b-a)*t, rnd=Math.random;
 function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
@@ -467,7 +496,9 @@ function tideFactor(t,td){const a=Math.min(1,Math.abs(td.s));return t==='move'?.
 const FISH_IDS=Object.keys(FISH);
 const BOTTOM_LABEL={sand:'砂地',mud:'泥底',rock:'岩・テトラ',weed:'海藻帯'};
 const TM_LABEL={day:'日中',night:'夜',dd:'朝夕マズメ',dn:'夕方〜夜',dawn:'早朝',any:'時間を問わない'};
-const BAIT={sabiki:{n:'サビキ',max:30},isome:{n:'青イソメ',max:75},lure:{n:'メタルジグ',max:70},egi:{n:'エギ',max:45},worm:{n:'ワーム',max:40}};
+const BAIT={sabiki:{n:'サビキ',max:30},isome:{n:'青イソメ',max:75},lure:{n:'メタルジグ',max:70},egi:{n:'エギ',max:45},worm:{n:'ワーム',max:40},live:{n:'泳がせ（生き餌）',max:40}};
+/* 生き餌・泳がせ（livebait.js）。釣った小魚を活かしておき、投げると1匹使う。大きな魚が来やすい */
+const LB=window.HamaLiveBait;
 // 竿とリールはカタログ（data/tackle-data.js）の商品。装備中は S.rodId / S.reelId
 const SPOTS=[
  {id:'suehiro',n:'末広水際線プロムナード',x:2942,y:360,dir:0,hours:null,w:{kataku:15,iwashi:15,konoshiro:10,sappa:15,haze:15,seabass:12,kurodai:8,bora:12,mebaru:6,kasago:6,murasoi:4,ishimochi:4,anago:4,gonzui:4,kusafugu:6,akaei:2,sumiika:2,madako:2,umitanago:3}},
@@ -540,10 +571,25 @@ if(!SH_REAL)for(const r of SH.STRUCTS)RECTS.push({x:r.x,y:r.y,w:r.w,h:r.h,k:r.br
 function regionAt(x,y){return SH.inShonan(x,y)?'shonan':inKanto(x,y)?'kanto':'yokohama';}
 /* ===== 魚の買取所（market.js。地域共通。位置は実在の市場・漁港の住所の近くの車道の端。ゲーム上の設定） ===== */
 const MKT=window.HamaMarket,MARKETS=MKT?MKT.placesIn((a,b)=>window.HamaGeo.toGame(a,b)):[];
-for(const m of MARKETS){if(WORLD&&inWorld(m.x,m.y)){const r=WORLD.nearestRoad(m.x,m.y,400,q=>q.car&&q.lv===0);if(r){const d=Math.hypot(m.x-r.x,m.y-r.y)||1,hw=r.road.w/2+3;m.x=r.x+(m.x-r.x)/d*hw;m.y=r.y+(m.y-r.y)/d*hw;if(!WORLD.isLand(m.x,m.y)){m.x=r.x;m.y=r.y;}}}m.region=regionAt(m.x,m.y);}
+// 車道の端（歩道側）へ。shift＝道に沿ってずらす距離（駐車場と重ならないように）
+function roadSide(x,y,R,shift){if(!WORLD||!inWorld(x,y))return null;const r=WORLD.nearestRoad(x,y,R,q=>q.car&&q.lv===0);if(!r)return null;const d=Math.hypot(x-r.x,y-r.y)||1,nx=(x-r.x)/d,ny=(y-r.y)/d,hw=r.road.w/2+3,sh=shift||0;
+  let px=r.x+nx*hw-ny*sh,py=r.y+ny*hw+nx*sh;if(!WORLD.isLand(px,py)){px=r.x-nx*hw-ny*sh;py=r.y-ny*hw+nx*sh;}if(!WORLD.isLand(px,py)){px=r.x;py=r.y;}return[px,py];}
+for(const m of MARKETS){const p=roadSide(m.x,m.y,400,0);if(p){m.x=p[0];m.y=p[1];}m.region=regionAt(m.x,m.y);m.fixed=true;}
+// 釣り場の近くの買取ポイント（ゲーム上の架空の店）：漁港の釣り場は浜の買取所、それ以外は釣具店の買取コーナー。1km 以内に別の買取所があれば置かない
+if(MKT)for(const sp of SPOTS){if(MARKETS.some(m=>Math.hypot(m.x-sp.x,m.y-sp.y)<1000))continue;const p=roadSide(sp.x,sp.y,700,22);if(!p)continue;const port=sp.sh&&sp.sh.type==='port',nm=sp.n.replace(/（.*?）/g,'').trim();
+  MARKETS.push({id:'pt_'+sp.id,n:port?`${nm} 浜の買取所`:`つりぐ浜屋 ${nm}店`,kind:port?'coop':'tackle',x:p[0],y:p[1],region:regionAt(p[0],p[1]),src:sp.n,spot:sp.id});}
+// 移動買取トラック：駐車場・漁港の近くに、3時間ごとに場所を変えて出る（market.js の npcBuyers）
+let NPCB=[],npcKey='',npcCands=null;
+function npcCandidates(){if(npcCands)return npcCands;const lots=(typeof NET!=='undefined'&&NET&&NET.lots)||[];if(!lots.length)return[];const out=[];
+  for(const l of lots){const rg=regionAt(l.x,l.y);if(rg!=='kanto')out.push({x:l.x,y:l.y,region:rg,label:l.name});}
+  for(const m of MARKETS)if(m.kind==='coop'&&m.region!=='kanto'){const p=roadSide(m.x,m.y,200,30);if(p)out.push({x:p[0],y:p[1],region:m.region,label:m.n+'の近く'});}
+  return npcCands=out;}
+function npcNow(){if(!MKT||!S)return[];const k=(S.day|0)+':'+Math.floor(S.min/180);if(k!==npcKey){const c=npcCandidates();NPCB=[];for(const rg of['yokohama','shonan']){const cr=c.filter(q=>q.region===rg);NPCB.push(...MKT.npcBuyers((S.day|0)+(rg==='shonan'?500:0),S.min,cr,5).map(b=>Object.assign(b,{n:`移動買取トラック（${String(b.near).replace(/ 近くの駐車スペース（推定）|の近く$/,'')}付近）`})));}npcKey=c.length?k:'';}return NPCB;}
+// 売れる場所（固定の買取所・釣り場の近くの店・いまいる移動買取）
+function sellPoints(){return MARKETS.concat(npcNow());}
 function fishInfo(id){const f=FISH[id];if(!f)return null;return{kg:f.poison?0:f.kg,L:f.L,inSeason:!!(f.mo&&f.mo[gameDate().getMonth()+1])};}
-function mktCtx(place){return{absMin:absMin(),day:S.day||0,iced:!!S.veh.cooler,place};}
-function nearMarket(r){let b=null,bd=r||25;for(const m of MARKETS){const d=Math.hypot(m.x-S.x,m.y-S.y);if(d<bd){bd=d;b=m;}}return b;}
+function mktCtx(place){return{absMin:absMin(),day:S.day||0,iced:!!S.veh.cooler,place,region:place&&place.region||regionAt(S.x,S.y),minOfDay:S.min,S};}
+function nearMarket(r){let b=null,bd=r||25;for(const m of sellPoints()){const d=Math.hypot(m.x-S.x,m.y-S.y);if(d<bd){bd=d;b=m;}}return b;}
 function syncFishKg(){S.veh.fishKg=MKT?+MKT.load(S).toFixed(2):S.veh.fishKg;}
 
 /* ===== 状態 ===== */
@@ -1100,9 +1146,24 @@ for(const[x,y,h,r]of GLOWS){const s=new T.Sprite(glowMat);s.position.set(x,GROUN
 LANDMARK_KEEP.push(...SH.SIGHTS.map(s=>[s.x,s.y,45]));
 {const t=SH.SIGHTS.find(q=>q.id==='tsurugaoka');if(t)LANDMARK_KEEP.push([t.x,t.y-48,34],[t.x,t.y+40,14]);}// 鶴岡八幡宮の境内（上の本宮・楼門と、参道の大鳥居）
 // 買取所：オレンジの日よけの小屋と「魚 買取」の看板（ゲーム上の設定。実在の店の形ではない）
-{const awn=lam(0xe07a2f),wall=lam(0xf1ece2);const sign=lam(0xffffff,{map:canvasTex(256,64,(c,w,h)=>{c.fillStyle='#e07a2f';c.fillRect(0,0,w,h);c.fillStyle='#fff';c.font=`900 34px ${FONT}`;c.textAlign='center';c.textBaseline='middle';c.fillText('魚 買取',w/2,h/2+2);}),emissive:0x333333});EMISSIVE.push(sign);
-  for(const m of MARKETS){const g=new T.Group();const b=box(5,2.6,3.5,wall);b.position.y=1.3;g.add(b);const a=box(5.6,.15,1.6,awn);a.position.set(0,2.5,2.4);a.rotation.x=-.25;g.add(a);const sg=box(3.2,.8,.1,sign);sg.position.set(0,3.2,1.8);g.add(sg);
-    g.traverse(o=>{if(o.isMesh)shadowy(o);});g.position.set(m.x,GROUND,m.y);scene.add(g);addCol(m.x-2.5,m.y-1.75,m.x+2.5,m.y+1.75,3);LANDMARK_KEEP.push([m.x,m.y,6]);}}
+const NPC_TRUCKS=[];
+{const awn=lam(0xe07a2f),wall=lam(0xf1ece2);const signOf=t=>{const m=lam(0xffffff,{map:canvasTex(256,64,(c,w,h)=>{c.fillStyle='#e07a2f';c.fillRect(0,0,w,h);c.fillStyle='#fff';c.font=`900 ${t.length>5?28:34}px ${FONT}`;c.textAlign='center';c.textBaseline='middle';c.fillText(t,w/2,h/2+2);}),emissive:0x333333});EMISSIVE.push(m);return m;};
+  const SIGN={def:signOf('魚 買取'),tackle:signOf('釣具・魚買取'),market:signOf('浜の大市場'),npc:signOf('移動 魚買取')};
+  for(const m of MARKETS){const g=new T.Group();const b=box(5,2.6,3.5,wall);b.position.y=1.3;g.add(b);const a=box(5.6,.15,1.6,awn);a.position.set(0,2.5,2.4);a.rotation.x=-.25;g.add(a);const sg=box(3.2,.8,.1,SIGN[m.kind]||SIGN.def);sg.position.set(0,3.2,1.8);g.add(sg);
+    g.traverse(o=>{if(o.isMesh)shadowy(o);});g.position.set(m.x,GROUND,m.y);g.visible=false;scene.add(g);m.g=g;if(inWorld(m.x,m.y)){addCol(m.x-2.5,m.y-1.75,m.x+2.5,m.y+1.75,3);LANDMARK_KEEP.push([m.x,m.y,6]);}}
+  // 移動買取トラック（白い荷台・オレンジの看板）。いま出ている場所に置く
+  const body=lam(0xf4f4f0),cab=lam(0x2f6fb0),tire=lam(0x222222);
+  for(let i=0;i<10;i++){const g=new T.Group();const bd=box(2,2.1,3.6,body);bd.position.set(0,1.45,-.5);g.add(bd);const cb=box(1.9,1.6,1.4,cab);cb.position.set(0,1.2,2);g.add(cb);
+    for(const[x,z]of[[-.95,-1.4],[.95,-1.4],[-.95,1.8],[.95,1.8]]){const w=box(.3,.7,.7,tire);w.position.set(x,.35,z);g.add(w);}
+    const sg=box(1.8,.6,.08,SIGN.npc);sg.position.set(0,2.2,1.32);g.add(sg);const sd=box(.06,.7,2.6,SIGN.npc);sd.position.set(1.04,1.6,-.5);g.add(sd);const sd2=sd.clone();sd2.position.x=-1.04;g.add(sd2);
+    g.traverse(o=>{if(o.isMesh)shadowy(o);});g.visible=false;scene.add(g);NPC_TRUCKS.push(g);}}
+// 近くの買取所だけ表示し、地面（丘・関東）の高さに合わせる。関東の買取所は地図が読めたら歩ける所へ寄せる
+let stallT=0;
+function updStalls(t){if(t-stallT<.5)return;stallT=t;
+  for(const m of MARKETS){if(!m.g)continue;const d=Math.hypot(m.x-S.x,m.y-S.y),v=d<900;m.g.visible=v;if(!v)continue;
+    if(m.region==='kanto'&&!m.snapped&&d<350&&(m.tries=(m.tries|0)+1)<40){for(let r=0;r<=150&&!m.snapped;r+=6)for(let a=0;a<6.28&&!m.snapped;a+=r?Math.min(1,5/r):7){const px=m.x+Math.cos(a)*r,py=m.y+Math.sin(a)*r;if(inKanto(px,py)&&walk(px,py)&&!colAt(px,py,3)){m.x=px;m.y=py;m.snapped=true;}}}
+    m.g.position.set(m.x,groundY(m.x,m.y),m.y);}
+  const nb=npcNow();NPC_TRUCKS.forEach((g,i)=>{const b=nb[i];if(!b||Math.hypot(b.x-S.x,b.y-S.y)>900){g.visible=false;return;}g.visible=true;g.position.set(b.x,groundY(b.x,b.y),b.y);g.rotation.y=(i*1.7)%6.28;});}
 // 名所（横浜・湘南）は丘の上にもある（港の見える丘公園・鎌倉の大仏など）：標高タイルが読めたら、その地点の丘の高さだけ持ち上げる
 const SIGHT_OBJS=scene.children.slice(SIGHT_C0).map(o=>({o,done:false}));
 function liftSights(){for(const q of SIGHT_OBJS){if(q.done)continue;const x=q.o.position.x,z=q.o.position.z;if(!inWorld(x,z)||!KANTO){q.done=true;continue;}
@@ -1608,16 +1669,18 @@ function eqAny(){return S.eq?TBYID.get(S.eq):null;}
 function rodOf(){return TBYID.get(S.rodId);}
 function reelOf(){return TBYID.get(S.reelId);}
 // 大磯港西防波堤のように「足元のみ」の釣り場では、投げずに足元（8m）まで
-function castMax(){const it=SIM.isLureBait(S.bait)&&eqAny();const m=it?Math.max(6,TK.castMax(it,rodOf())):TK.baitCast(BAIT[S.bait].max,rodOf());const sp=F.spot||nearSpot;return sp&&sp.sh&&sp.sh.footOnly?Math.min(8,m):m;}
+function castMax(){const it=SIM.isLureBait(S.bait)&&eqAny();const m=(it?Math.max(6,TK.castMax(it,rodOf())):TK.baitCast(BAIT[S.bait].max,rodOf()))*(LN?LN.castMul(S,reelOf()):1);const sp=F.spot||nearSpot;return sp&&sp.sh&&sp.sh.footOnly?Math.min(8,m):m;}
 // ルアーを巻ける最高速（リールの巻き取り量で決まる）
 function spdMax(){return TK.reelMaxSpeed(reelOf());}
 // ドラグ：未設定なら糸の強さの4割。リールの最大ドラグまで
-function dragMax(){return Math.min(reelOf().maxDragKg,TK.lineKg(reelOf())*1.3);}
-function dragKg(){const v=S.dragKg==null?TK.lineKg(reelOf())*.4:S.dragKg;return clamp(v,.2,dragMax());}
+// 仕掛けの強さ（kg）：道糸とリーダー（line.js）。rough＝磯・テトラで擦れる
+function lineKgNow(rough){const r=reelOf();return LN?LN.strength(S,r,rough):TK.lineKg(r);}
+function dragMax(){return Math.min(reelOf().maxDragKg,lineKgNow()*1.3);}
+function dragKg(){const v=S.dragKg==null?lineKgNow()*.4:S.dragKg;return clamp(v,.2,dragMax());}
 function setDrag(d){S.dragKg=Math.round(clamp(dragKg()+d,.2,dragMax())*10)/10;if(F.fg)F.fg.drag=S.dragKg;updDragUI();}
 function baitName(){const it=SIM.isLureBait(S.bait)&&eqAny();return it?it.name:BAIT[S.bait].n;}
 function loseEq(){const it=eqAny();if(!it||!SIM.isLureBait(S.bait))return'';TK.lose(S,it.id,1);return`（${it.name}を1つ失った）`;}
-function stock(){return S.bait==='isome'?S.isome:SIM.isLureBait(S.bait)?(S.eq?TK.owned(S,S.eq):0):1;}
+function stock(){return S.bait==='live'?(S.live||[]).length:S.bait==='isome'?S.isome:SIM.isLureBait(S.bait)?(S.eq?TK.owned(S,S.eq):0):1;}
 /* 釣り場の範囲：釣り場の印から40m以内で、すぐ前が海（岸壁の際・桟橋の上）なら投げられる */
 const SPOT_ZONE=40;
 function spotAt(x,y){if(SH.restrictedAt(x,y))return null;for(const sp of SPOTS)if(Math.hypot(sp.x-x,sp.y-y)<(sp.zone||SPOT_ZONE)&&(rectAt(x,y)||nearCoast(x,y,9)))return sp;return null;}
@@ -1641,10 +1704,12 @@ function mainDown(){
     case'fight':F.hold=true;break;
   }}
 function mainUp(){
-  if(F.st==='aim'){const[tx,ty,D]=aimTarget();if(!F.aimOk){F.st='idle';toast('そっちは陸地… 海の方へ向けて投げよう');return;}F.tx=tx;F.ty=ty;F.d0=Math.max(4,Math.round(D));if(S.bait==='isome')S.isome--;F.st='fly';F.t=0;SND.play('cast');}
+  if(F.st==='aim'){const[tx,ty,D]=aimTarget();if(!F.aimOk){F.st='idle';toast('そっちは陸地… 海の方へ向けて投げよう');return;}F.tx=tx;F.ty=ty;F.d0=Math.max(4,Math.round(D));if(S.bait==='isome')S.isome--;F.liveB=null;
+    if(S.bait==='live'){const sp=F.spot||nearSpot;if(!LB.canUse(sp)||(sp&&sp.sh&&SH.prohibitedBy(sp.sh,'live'))){F.st='idle';toast('この釣り場では泳がせ（生き餌）は使えない決まり');return;}F.liveB=LB.take(S);if(!F.liveB){F.st='idle';S.bait='isome';toast('生き餌がいない');return;}}
+    F.st='fly';F.t=0;SND.play('cast');}
   if(F.st==='wait')F.reelHold=false;
   if(F.st==='fight')F.hold=false;}
-function reelIn(msg){F.st='idle';F.t=0;F.reelHold=false;if(msg)toast(msg);}
+function reelIn(msg){F.st='idle';F.t=0;F.reelHold=false;if(F.liveB){LB.giveBack(S,F.liveB);F.liveB=null;if(msg)msg+=(S.live.length?'（生き餌は弱って容器へ）':'（生き餌は弱ってしまった）');}if(msg)toast(msg);}
 /* ルアー・エギの操作（段階2）：長押しで巻く／押した指を上下で巻き速度／上にはじくとジャーク／短くタップでトゥイッチ／離すとフォール */
 const MODE_LABEL={drift:'ドリフト',rise:'浮上',suspend:'ステイ',float:'水面',fall:'フリーフォール',tfall:'テンションフォール',retrieve:'ただ巻き',jerk:'ジャーク',twitch:'トゥイッチ',bottom:'着底'};
 function lureWait(){return F.st==='wait'&&F.lure&&SIM.isLureBait(F.lure.bait);}
@@ -1661,11 +1726,13 @@ function candidates(){const h=hourF(),sp=F.spot,out=[];let sum=0;const mon=gameD
   // 追加の魚種：釣り場の種類（横浜は東京湾の岸壁、湘南は砂浜・河口・磯・漁港・堤防）ごとの多さ × レア度。浅すぎる所には来にくい
   const hk=g?{beach:'beach',river:'estuary',iso:'iso',port:'port',breakwater:'breakwater'}[g.type]:'bay',Dw=SIM.waterDepth(sp.id,dist,tet),td=tideAt(h,tideInfo());
   for(const s of FDATA.species){if(s.existing||ws[s.id])continue;const hv=s.hab[hk];if(!hv)continue;ws[s.id]=hv*1.5*RARITY_W[s.rarity]*(Dw<s.depth[0]?.3:1);}
-  for(const id in ws){const f=FISH[id];if(!f.bait.includes(S.bait))continue;if(f.added&&f.sp.months.strict&&!f.mo[mon])continue;let w=ws[id]*(f.added?tideFactor(f.sp.tide,td):1)*tmul(f.tm,h)*(f.mo[mon]?1:.12)*SIM.tempFactor(id,E.T)*SIM.bottomFactor(id,bot)*SIM.weatherFactor(id,E.w,E.turb,E.cur);
-    if(g){w*=SH.methodFit(g,S.bait);if(g.type==='beach'){if((id==='hirame'||id==='seabass')&&E.wave>=.6&&E.wave<=1.6)w*=1.35;if(id==='kisu'&&E.wave>1.2)w*=.6;}
+  const LIVE=S.bait==='live'&&LB;for(const id in ws){const f=FISH[id];if(!f)continue;if(LIVE){if(!LB.TARGET[id])continue;}else if(!f.bait.includes(S.bait))continue;if(f.added&&f.sp.months.strict&&!f.mo[mon])continue;let w=ws[id]*(f.added?tideFactor(f.sp.tide,td):1)*tmul(f.tm,h)*(f.mo[mon]?1:.12)*SIM.tempFactor(id,E.T)*SIM.bottomFactor(id,bot)*SIM.weatherFactor(id,E.w,E.turb,E.cur);
+    if(LIVE)w*=LB.weight(id,F.liveB||{id:'aji',vit:.6})*1.6;
+    if(g){w*=LIVE?(SH.prohibitedBy(g,'live')?0:1):SH.methodFit(g,S.bait);if(g.type==='beach'){if((id==='hirame'||id==='seabass')&&E.wave>=.6&&E.wave<=1.6)w*=1.35;if(id==='kisu'&&E.wave>1.2)w*=.6;}
       if(g.type==='river'&&E.turb>.6&&(id==='seabass'||id==='kibire'))w*=1.4;}
+    if(LN){const sp2=SPEC[id];w*=LN.biteMul(S,reelOf(),sp2&&sp2.wary!=null?sp2.wary:.4);if((S.bait==='isome'||S.bait==='live')&&sp2&&sp2.size)w*=LN.hookFit(LN.hookOf(S),sp2.size.avg);}
     if(inN&&f.blue)w*=6;if(tet&&f.rock)w*=2.5;if(f.near)w*=dist<14?1.8:.55;if(f.far)w*=.3+far*1.2;if((id==='inada'||id==='warasa')&&!inN)w*=.3;out.push([id,w]);sum+=w;}
-  return{out,sum,tet};}
+  return{out,sum,tet,bot};}
 function startWait(){F.st='wait';F.t=0;F.noFishTip=false;const c=candidates();F.cand=c;const ti=tideInfo(),td=tideAt(hourF(),ti);
   const rf=(.5+.9*Math.abs(td.s)*ti.amp)*ti.boost*(F.nabura?3.2:1);
   ripple(F.tx,F.ty,1.5,1);splash(F.tx,F.ty,8,1.6);SND.play('splash',{size:SIM.isLureBait(S.bait)?.5:.8});
@@ -1697,18 +1764,19 @@ function pickFish(c=F.cand){let r=rnd()*c.sum;for(const[id,w]of c.out){r-=w;if(r
    糸のたるみ、ロッドの合わせの強さで決まる。掛からなくてもルアーはそのまま水中に残る */
 function hook(){const rod=rodOf(),reel=reelOf(),lure=lureWaitOrBite(),L=F.lure;
   const r=FG.hookSet({t:F.t,window:F.biteWin||1.05,short:!!F.short,id:F.fish,fishCm:F.size,lureCm:lure&&L.rig.sizeCm,slack:!!F.slackBite,
-    hookMul:(rod.playerEffect&&rod.playerEffect.hookSetPowerMultiplier)||1,egi:lure&&L.bait==='egi'},rnd);
+    hookMul:((rod.playerEffect&&rod.playerEffect.hookSetPowerMultiplier)||1)*(LN?LN.hookMul(S,reel,lure?L.dist:F.d0):1),egi:lure&&L.bait==='egi'},rnd);
   if(!r.ok){SND.play('miss');const msg=F.short?'乗らなかった…（ショートバイト）':r.timing<.7?(F.t<.1?'早合わせ… 掛からなかった':'合わせが遅れた… 掛からなかった'):'針掛かりしなかった…';F.short=false;
     if(lure){F.st='wait';toast(msg+' ルアーはまだ水中');}else{F.st='idle';toast(msg);}return;}
   if(lure){const p=lurePos();F.tx=p[0];F.ty=p[1];F.d0=Math.max(4,Math.round(L.dist));}
-  F.reelHold=false;F.st='fight';F.t=0;F.hold=false;F.short=false;F.lineKg=TK.lineKg(reel);
+  F.reelHold=false;F.st='fight';F.t=0;F.hold=false;F.short=false;{const rough=!!(F.cand&&F.cand.tet)||!!(F.spot&&F.spot.sh&&F.spot.sh.type==='iso')||(F.cand&&F.cand.bot==='rock');F.lineKg=lineKgNow(rough);
+    const hk=LN&&(S.bait==='isome'||S.bait==='live')?LN.hookOf(S):null;F.hookLim=!!hk&&LN.hookKg(hk)<F.lineKg;if(F.hookLim)F.lineKg=LN.hookKg(hk);}
   F.fg=FG.createFight({P:F.P,d0:F.d0,lineKg:F.lineKg,liftKg:TK.rodLiftKg(rod),reelK:reel.retrieveCmPerTurn/70,flex:rod.flexibility,
     dragPrec:reel.dragPrecision*((reel.playerEffect&&reel.playerEffect.dragStabilityMultiplier)||1),drag:dragKg(),capacityM:reel.capacityM,
     q:r.q,id:F.fish,style:FISH[F.fish].sp&&FISH[F.fish].sp.fight,wkg:F.wkg,needNet:!!(F.spot&&F.spot.hours),rng:rnd});
   F.dist=F.d0;F.ten=.3;F.surge=0;$('fight').hidden=false;updDragUI();
   SND.play('hook');toast(r.q>.8?'掛かった！ 長押しで巻く・赤くなったら離す':'掛かった！（針掛かりが浅い… 慎重に）');}
 $('dragDn').onclick=()=>setDrag(-.2);$('dragUp').onclick=()=>setDrag(.2);
-function updDragUI(){const reel=reelOf();if(!reel)return;const lk=TK.lineKg(reel),d=dragKg();$('dragV').textContent=d.toFixed(1);$('dragM').style.left=clamp(d/lk/1.15*100,0,100)+'%';
+function updDragUI(){const reel=reelOf();if(!reel)return;const lk=lineKgNow(),d=dragKg();$('dragV').textContent=d.toFixed(1);$('dragM').style.left=clamp(d/lk/1.15*100,0,100)+'%';
   $('gearL').textContent=`${rodOf().name}・${reel.name}・糸の強さ ${lk.toFixed(1)}kg`;}
 function endFight(){$('fight').hidden=true;F.hold=false;SND.drag(0);}
 function fishPos(){const k=clamp(F.dist/F.d0,0,1.3);const px=-Math.sin(F.ang),py=Math.cos(F.ang);const sw=F.st==='fight'?Math.sin(F.t*2.2+F.ph)*Math.min(6,F.d0*.15)*k:0;return[F.ox+(F.tx-F.ox)*k+px*sw,F.oy+(F.ty-F.oy)*k+py*sw];}
@@ -1762,19 +1830,20 @@ function updateFishing(dt){
     const evs=FG.stepFight(fg,dt,{hold:F.hold,rock:!!f.rock,inTetra:inTetra(fp[0],fp[1])});F.dist=fg.dist;F.ten=fg.ten;F.surge=fg.surge;SND.drag(fg.slipping?.5+Math.min(.5,(fg.ten-fg.drag+.3)):0);
     fxT-=dt;if(fxT<=0){fxT=.18;ripple(fp[0],fp[1],.5+F.P*.25,.7);if(F.surge>F.P*.3||rnd()<.3)splash(fp[0],fp[1],4,1+F.P*.25);}
     for(const e of evs){
-      if(e.type==='jump'){SND.play('splash',{size:1.3});splash(fp[0],fp[1],14,2.2);ripple(fp[0],fp[1],2,1);buzz(30);toast(F.fish==='seabass'?'エラ洗い！ 緩めると外れる':'ジャンプ！');continue;}
+      if(e.type==='jump'){FMjump=.9;SND.play('splash',{size:1.3});splash(fp[0],fp[1],14,2.2);ripple(fp[0],fp[1],2,1);buzz(30);toast(F.fish==='seabass'?'エラ洗い！ 緩めると外れる':'ジャンプ！');continue;}
       if(e.type==='net_fail'){toast('まだ元気でタモに入らない… もう少し弱らせて');continue;}
       endFight();
-      if(e.type==='landed'){F.st='idle';splash(fp[0],fp[1],10,1.6);SND.play('splash',{size:.9});SND.play('catch');showResult();return;}
+      if(e.type==='landed'){FMland=4;F.st='idle';splash(fp[0],fp[1],10,1.6);SND.play('splash',{size:.9});SND.play('catch');showResult();return;}
       if(e.type==='snag'){snag('テトラに潜られた！ 際では緩めずに巻き切ろう');return;}
       F.st='idle';
-      if(e.type==='break'){SND.play('snap');const lost=loseEq();toast((fg.drag>=fg.lineKg*.8?'糸が切れた！ ドラグを締めすぎかも':'糸が切れた！ 赤くなったら指を離そう')+lost);}
+      if(e.type==='break'){SND.play('snap');const lost=loseEq()+rigLost();toast((F.hookLim?'針が伸びて外れた！ 大物には太い針を':fg.drag>=fg.lineKg*.8?'糸が切れた！ ドラグを締めすぎかも':'糸が切れた！ 赤くなったら指を離そう')+lost);}
       else if(e.type==='spooled'){const lost=loseEq();toast('糸が出切って切れた…'+lost);}
       else if(e.type==='mouth')toast('口が切れて外れた…（口の弱い魚は優しく巻こう）');
       else toast(e.why==='jump'?'ジャンプで針が外れた…':e.why==='slack'?'針が外れた… 離しすぎに注意':'針掛かりが浅くて外れた…');
       save();return;}
   }}
-function snag(msg){F.st='idle';const lost=loseEq();toast(msg+lost);save();}
+function rigLost(){if(!LN)return'';const l=LN.loseRig(S,S.bait);return l.length?`（${l.join('・')}を1本失った）`:'';}
+function snag(msg){F.st='idle';const lost=loseEq()+rigLost();toast(msg+lost);save();}
 function buzz(ms){try{navigator.vibrate&&navigator.vibrate(ms);}catch(e){}}
 let nTimer=0;
 function updateNabura(dt){
@@ -1832,10 +1901,22 @@ const FIMG=window.HamaFishImages||{};
 function fishPic(id,kind){const m=FIMG[id];if(!m)return'';if(kind==='thumb')return`<img loading="lazy" decoding="async" src="${m.thumb}" alt="">`;
   return`<picture>${m.avif?`<source srcset="${m.avif}" type="image/avif">`:''}<img decoding="async" src="${m.full}" alt="${esc(FISH[id].n)}"></picture>`;}
 function picCredit(id){const m=FIMG[id];return m?`写真：${esc(m.artist||'不明')}／${esc(m.license||'')}（${esc(m.source||'')}・${esc(m.modified||'')}）`:'写真素材なし（仮の図。実物の写真ではありません）';}
+/* ===== 魚の3Dモデル（fish3d.js）：ファイト中は近づくと水面近くに姿が見え、ジャンプでは跳ねる。釣り上げたら足元で跳ねる。大きさは体長に合わせる ===== */
+const F3=window.HamaFish3D;let FM=null,FMid=null,FMland=0,FMjump=0;
+function fishLook(id){const s=SPEC[id];if(s&&s.look)return s.look;const f=FISH[id];const sh=f&&f.sh||{};return{shape:'fish',aspect:sh.a||.25,back:sh.bk||'#5c7d6a',belly:sh.bl||'#eef0e6',pattern:sh.pat||'plain'};}
+function fishModel(id,cm){if(!F3)return null;const L=clamp((cm||25)/100,.06,2.2);if(FM&&FMid===id&&Math.abs(FM.userData.L-L)<.01)return FM;if(FM){scene.remove(FM);FM.userData.dispose();}
+  FM=F3.build(fishLook(id),{L,seed:id.length});FMid=id;FM.visible=false;scene.add(FM);return FM;}
+function updFishModel(dt,t){if(!F3)return;F3.update(t);
+  if(F.st==='fight'&&F.fish){const m=fishModel(F.fish,F.size);const fp=fishPos(),near=F.dist<Math.max(6,F.d0*.25)||FMjump>0;m.visible=near;if(near){const L=m.userData.L,a=F.ang;
+      if(FMjump>0){FMjump-=dt;const k=1-FMjump/.9;m.position.set(fp[0],Math.sin(k*Math.PI)*Math.max(.6,L*2.5),fp[1]);m.rotation.set(0,-a+Math.PI,Math.sin(k*Math.PI*2)*.9);m.userData.setSwim(.25,16);}
+      else{m.position.set(fp[0],-.15-L*.2,fp[1]);m.rotation.set(0,-a+Math.PI+Math.sin(t*3)*.4,0);m.userData.setSwim(F.hold?.16:.1,F.hold?14:9);}}}
+  else if(FMland>0&&FM){FMland-=dt;const g=groundY(S.x,S.y),fx=S.x+Math.cos(P.rotation.y-Math.PI/2)*.1,k=FMland%0.6/0.6;FM.visible=true;// 足元で跳ねる
+    FM.position.set(S.x+Math.sin(P.rotation.y)*.9,g+.05+Math.abs(Math.sin(k*Math.PI))*Math.min(.35,FM.userData.L),S.y+Math.cos(P.rotation.y)*.9);FM.rotation.set(Math.PI/2*.95,P.rotation.y,Math.sin(t*9)*.5);FM.userData.setSwim(.22,18);if(FMland<=0)FM.visible=false;}
+  else if(FM)FM.visible=false;}
 function showResult(){const id=F.fish,f=FISH[id],sp=f.sp,sz=F.size,kg=F.wkg;const d=S.dex[id]||{c:0,max:0,kg:0};const isNew=!d.c,prev=d.best||(d.max?{cm:d.max,kg:d.kg}:null),isRec=!isNew&&sz>d.max;
   const dt=gameDate(),rec={cm:sz,kg:Math.round(kg*1000)/1000,spot:F.spot?F.spot.n:'',date:`${dt.getFullYear()}/${dt.getMonth()+1}/${dt.getDate()}`,time:fmtTime(S.min),bait:baitName()};
   d.c++;d.max=Math.max(d.max,sz);d.kg=Math.max(d.kg||0,kg);if(isNew)d.first=rec;if(isNew||isRec)d.best=rec;S.dex[id]=d;S.log=(S.log||[]).concat([Object.assign({id},rec)]).slice(-50);
-  pending={id,sz,kg,price:priceOf(id,kg)};
+  pending={id,sz,kg,price:priceOf(id,kg),rec,gyo:false};{const gb=$('resGyo');gb.disabled=false;gb.textContent='魚拓に残す';}
   const rare=sp&&['rare','very_rare','legendary'].includes(sp.rarity),big=sz>=f.L[0]+(f.L[1]-f.L[0])*.85||(sp&&sz>=sp.size.record*.7);
   const card=$('resCard');card.className='card res2'+(rare?' fx-rare':big?' fx-big':isNew?' fx-new':'');
   $('resKick').textContent=sp&&sp.rarity==='legendary'?'幻の魚！':rare?'レア魚！':big?'大物！':isNew?'はじめて釣った！':F.nabura?'ナブラ撃ち成功！':'釣れた！';
@@ -1847,13 +1928,24 @@ function showResult(){const id=F.fish,f=FISH[id],sp=f.sp,sz=F.size,kg=F.wkg;cons
   $('resBadges').innerHTML=b;$('resDesc').textContent=f.d;const kb=$('resKeep');
   if(f.poison||f.noKeep){kb.hidden=true;$('resRel').textContent='海へ返す';}else{kb.hidden=false;kb.textContent=MKT?`持ち帰る（買取の目安 ¥${pending.price.toLocaleString()}）`:`持ち帰る ¥${pending.price.toLocaleString()}`;$('resRel').textContent='リリース';}
   const box=$('resImg');if(FIMG[id]){box.innerHTML=fishPic(id,'full');}else{box.innerHTML='<canvas id="resCv"></canvas>';}
-  $('resImgNote').textContent=picCredit(id);
+  $('resImgNote').textContent=picCredit(id);$('resLive').hidden=!(LB&&!f.poison&&LB.canBait(id,pending.sz||99));
   $('result').hidden=false;if(!FIMG[id])drawFishCanvas($('resCv'),id,false);save();}
 function keep(k){if(!pending)return;if(k&&!FISH[pending.id].poison){const it={id:pending.id,kg:+(pending.kg||0).toFixed(3),L:+(pending.sz||0).toFixed(1),t:absMin(),spot:F.spot&&F.spot.id};
-    if(MKT){if(MKT.add(S,it,COOLER_CAP)){syncFishKg();SND.play('coin');const cap=MKT.capacity(S.veh.cooler,COOLER_CAP);toast(`持ち帰り：${FISH[it.id].n}（${S.veh.cooler?'クーラー':'バケツ'} ${MKT.load(S).toFixed(1)}/${cap}kg）。買取所で売れる`);}
-      else{toast(S.veh.cooler?'クーラーがいっぱい。買取所で売るか、車へ移そう':'バケツがいっぱい（5kg）。クーラーを買うか、買取所で売ろう');return;}}
+    if(MKT){if(MKT.add(S,it,COOLER_CAP)){syncFishKg();SND.play('coin');const cap=MKT.capacity(S.veh.cooler,COOLER_CAP);toast(`持ち帰り：${FISH[it.id].n}（${S.veh.cooler?'クーラー':'バケツ'} ${MKT.load(S).toFixed(1)}/${cap}kg）。スマホの魚市場アプリでいつでも売れる`);}
+      else{toast(S.veh.cooler?'クーラーがいっぱい。スマホの魚市場アプリで売るか、車へ移そう':'バケツがいっぱい（5kg）。スマホの魚市場アプリで売るか、クーラーを買おう');return;}}
     else{S.money+=pending.price;SND.play('coin');toast(`+¥${pending.price.toLocaleString()}`);}}
   else toast('海へ返した');pending=null;$('result').hidden=true;$('resImg').innerHTML='';save();updMoney();}
+// 魚拓：魚の持ち帰り・リリースとは別に記録（売っても残る）。自己記録は朱の落款「記録」と演出
+$('resGyo').onclick=()=>{if(!pending||pending.gyo||!window.HamaGyotaku)return;const f=FISH[pending.id],r=pending.rec,dt=gameDate(),ro=rodOf(),rl=TBYID.get(S.reelId);
+  const g=HamaGyotaku.record(S,{id:pending.id,name:f.n,cm:+pending.sz.toFixed(1),kg:+pending.kg.toFixed(3),date:`${dt.getFullYear()}年${dt.getMonth()+1}月${dt.getDate()}日 ${r.time}`,place:r.spot,rod:ro&&ro.name,reel:rl&&rl.name,bait:r.bait});
+  pending.gyo=true;const gb=$('resGyo');gb.disabled=true;gb.textContent=g.best?'魚拓に残した（自己記録！）':'魚拓に残した';
+  if(g.best){SND.play('catch');buzz(60);const c=$('resCard');c.classList.remove('fx-gyo');void c.offsetWidth;c.classList.add('fx-gyo');toast(`自己記録の魚拓：${f.n} ${g.cm}cm`);}else toast('魚拓に残した（メニュー→魚拓）');save();};
+function toLive(){if(!pending)return;const r=LB.add(S,pending.id,pending.sz,absMin());if(!r.ok){toast(r.reason);return;}SND.play('splash',{size:.4});
+  toast(`${FISH[pending.id].n}を生き餌に（${S.live.length}/${LB.capacity(S)}匹）。仕掛けの切り替えで「泳がせ」`);pending=null;$('result').hidden=true;$('resImg').innerHTML='';save();}
+$('resLive').onclick=toLive;
+// 生き餌の元気：ゲームの時間・水温で落ちる（15分ごと）
+function liveTick(){if(!LB)return;const now=absMin();if(S.liveT==null||now<S.liveT){S.liveT=now;return;}const h=(now-S.liveT)/60;if(h<.25)return;S.liveT=now;
+  if(!S.live||!S.live.length)return;const dead=LB.tick(S,h,envNow(F.spot||nearSpot||null).T);if(dead){toast(`生き餌が${dead}匹死んでしまった…（エアポンプで長持ち）`);if(S.bait==='live'&&!S.live.length&&F.st==='idle')S.bait='isome';save();}}
 $('resKeep').onclick=()=>keep(true);$('resRel').onclick=()=>keep(false);
 function openSight(){const s=nearSight;if(!s)return;$('sgName').textContent=s.n;$('sgDesc').textContent=s.d;
   if(!S.stamps[s.id]){S.stamps[s.id]=1;S.money+=200;$('sgBadge').innerHTML=`<span class="badge">スタンプ獲得 ＋¥200（${Object.keys(S.stamps).length}/${SIGHTS.length}）</span>`;updMoney();save();}
@@ -1877,10 +1969,11 @@ mainBtn.addEventListener('pointermove',e=>{if(!pd||e.pointerId!==pd.id||!pd.lure
 const mainEnd=e=>{if(pd&&e.pointerId===pd.id){if(pd.lure&&!pd.jerked&&pd.move<10&&performance.now()-pd.t0<200)rodAction('twitch');pd=null;}mainUp();};
 mainBtn.addEventListener('pointerup',mainEnd);mainBtn.addEventListener('pointercancel',mainEnd);mainBtn.addEventListener('contextmenu',e=>e.preventDefault());
 // 仕掛けの切り替え：サビキ → 青イソメ → 装備中のルアー（持っていれば） → サビキ
-function cycleBait(){if(F.st!=='idle')return;const it=eqItem();S.bait=S.bait==='sabiki'?'isome':S.bait==='isome'&&it?SIM.baitClassOf(it):'sabiki';save();}
+function cycleBait(){if(F.st!=='idle')return;const it=eqItem();const L=['sabiki','isome'];if(it)L.push(SIM.baitClassOf(it));if(LB&&S.live&&S.live.length)L.push('live');
+  const i=L.indexOf(S.bait);S.bait=L[(i+1)%L.length];save();}
 $('baitBtn').onclick=cycleBait;
 function vehAct(){if(F.st!=='idle')return;if(RIDE){dismount();return;}const o=nearParked(4);if(o)mount(o);}
-$('vehBtn').onclick=vehAct;$('sellBtn').onclick=()=>{tab='fish';openMenu();};$('jumpBtn').addEventListener('pointerdown',e=>{e.preventDefault();doJump();});
+$('vehBtn').onclick=vehAct;$('sellBtn').onclick=()=>openPhone('market','sell');$('jumpBtn').addEventListener('pointerdown',e=>{e.preventDefault();doJump();});
 let uiKey='';
 function updUI(){
   let st='',txt='',p=0;
@@ -1892,7 +1985,7 @@ function updUI(){
   else if(F.st==='bite'){st='bite';txt='合わせ！';}
   else if(F.st==='fight'){st='fight';txt='巻く<small>長押し</small>';p=1-clamp(F.dist/F.d0,0,1);}
   mainBtn.style.setProperty('--p',p.toFixed(3));
-  const bl=`仕掛け：${baitName()}`+(S.bait==='isome'?` ×${S.isome}`:SIM.isLureBait(S.bait)?` ×${stock()}`:'');
+  const bl=`仕掛け：${baitName()}`+(S.bait==='isome'?` ×${S.isome}`:S.bait==='live'?` ×${stock()}`:SIM.isLureBait(S.bait)?` ×${stock()}`:'');
   const showBait=!!nearSpot&&F.st==='idle';const showView=!!nearSight&&F.st==='idle'&&!nearSpot;
   let vb='';if(F.st==='idle'){if(RIDE)vb=RIDE.sp.kind==='car'?(NV.lotAt(NET.lots,S.x,S.y)?'ここに駐車する':'降りる（駐車場で）'):'自転車を降りる';else{const o=nearParked(4);if(o)vb=`乗る：${VH.specOf(o).name}`;}}
   if($('vehBtn')._t!==vb){$('vehBtn')._t=vb;$('vehBtn').hidden=!vb;$('vehBtn').textContent=vb;}
@@ -1918,7 +2011,7 @@ function updUI(){
   if(F.st==='fight'){const lim=F.lineKg,r=F.ten/lim,sl=F.fg&&F.fg.slipping;$('tens').style.width=clamp(r/1.15*100,0,100)+'%';$('tens').dataset.hi=r>.85?'1':'0';{const dg=r>.95;const fe=$('fight');if(fe._dg!==dg){fe._dg=dg;fe.classList.toggle('danger',dg);if(dg){buzz(40);SND.play('creak');}}}
     $('fbR').textContent=`${F.ten.toFixed(1)} / ${lim.toFixed(1)}kg`+(sl?'・ドラグが出ている':'');$('fbD').textContent=`あと ${Math.max(0,Math.ceil(F.dist))}m`;$('distb').style.width=clamp((1-F.dist/F.d0)*100,0,100)+'%';}}
 let lastClock='';
-function updClock(){const t=fmtTime(S.min);if(t===lastClock)return;lastClock=t;$('clk').textContent=t;
+function updClock(){const t=fmtTime(S.min);if(t===lastClock)return;lastClock=t;$('clk').textContent=t;liveTick();
   const ti=tideInfo(),td=tideAt(hourF(),ti);const dt=gameDate();
   $('tideTx').textContent=`${dt.getMonth()+1}/${dt.getDate()} ${ti.name}・${tideLabel(td)}`;
   {const E=envNow(nearSpot||F.spot);$('envTx').textContent=`${E.w.label}${E.w.kind==='windy'?` ${E.w.wind.toFixed(0)}m/s`:''}・水温 ${E.T.toFixed(1)}℃`;}
@@ -1928,6 +2021,81 @@ function updClock(){const t=fmtTime(S.min);if(t===lastClock)return;lastClock=t;$
 
 /* ===== シート ===== */
 let tab='map';
+/* ===== スマホ（魚市場アプリ）：どこからでも売れる（地域の相場の8割）。近くの買取所・移動買取ならその値段で。相場の比較・売り場・実績。
+   売るときは確認画面 → 1回だけ処理（market.js の sell。魚の通し番号で売るので二度売れない）。お気に入り（☆）は売らない ===== */
+const PH={app:null,tab:'sell',venue:'auto',sel:new Set(),confirm:null,busy:false,last:null};
+function openPhone(app,tab){if(F.st!=='idle'&&F.st!=='wait'){toast('釣りの最中です');return;}if(F.st==='wait')reelIn();closeSheet();if(!$('wmap').hidden)closeWorld();
+  PH.app=app||null;if(tab)PH.tab=tab;PH.confirm=null;PH.sel.clear();PH.venue='auto';PH.last=null;$('phone').hidden=false;renderPhone();}
+function closePhone(){$('phone').hidden=true;PH.confirm=null;PH.busy=false;}
+// いま売る場所：近く（25m）の買取所が営業中ならそこ、それ以外はアプリ（いる地域の相場の8割）
+function phVenue(){const near=nearMarket(25);if(PH.venue!=='app'&&near&&MKT.isOpen(near,S.min))return near;return MKT.appPlace(regionAt(S.x,S.y));}
+const yen=v=>'¥'+Math.round(v).toLocaleString();
+const RGL=r=>MKT.REGION_LABEL[r]||r;
+function renderPhone(){const body=$('phBody'),bar=$('phBar'),tabs=$('phTabs');bar.innerHTML='';tabs.innerHTML='';
+  if(!PH.app){$('phTitle').textContent='スマホ';const A=[['market','¥','#e07a2f','魚市場'],['map','◎','#2f6fb0','地図'],['dex','図','#1b7d82','図鑑'],['gyo','拓','#3a3a3a','魚拓'],['shop','竿','#7a5a2f','釣具店'],['veh','車','#b8402f','乗り物']];
+    body.innerHTML=`<div class="phApps">${A.map(([k,ic,col,n])=>`<button data-app="${k}"><i style="background:${col}">${ic}</i>${n}</button>`).join('')}</div><p class="phNote">所持金 ${yen(S.money)}・持ち帰りの魚 ${(S.catch||[]).filter(c=>!c.legacy).length}匹</p>`;
+    body.querySelectorAll('[data-app]').forEach(b=>b.onclick=()=>{const k=b.dataset.app;if(k==='market'){PH.app='market';PH.tab='sell';renderPhone();}else if(k==='map'){closePhone();openWorld();}else{closePhone();tab=k;openMenu();}});return;}
+  $('phTitle').textContent='魚市場';
+  if(PH.confirm){renderPhConfirm(body,bar);return;}
+  tabs.innerHTML=[['sell','売る'],['cmp','相場'],['pts','売り場'],['rec','実績']].map(([k,n])=>`<button data-pt="${k}" class="${PH.tab===k?'on':''}">${n}</button>`).join('');
+  tabs.querySelectorAll('[data-pt]').forEach(b=>b.onclick=()=>{PH.tab=b.dataset.pt;PH.sel.clear();renderPhone();});
+  if(PH.tab==='cmp')renderPhCmp(body);else if(PH.tab==='pts')renderPhPts(body);else if(PH.tab==='rec')renderPhRec(body);else renderPhSell(body,bar);}
+function renderPhSell(body,bar){const v=phVenue(),near=nearMarket(25),ctx=mktCtx(v),items=S.catch||[],cap=MKT.capacity(S.veh.cooler,COOLER_CAP);
+  let h='<div class="venue">';if(near){const op=MKT.isOpen(near,S.min);h+=`<button data-v="near" class="${v===near?'on':''}" ${op?'':'disabled'}>${esc(near.n)}${op?'':'（時間外）'}</button>`;}
+  h+=`<button data-v="app" class="${v.kind==='app'?'on':''}">アプリ（${RGL(v.region||regionAt(S.x,S.y))}の相場の8割）</button></div>`;
+  h+=`<p class="phNote">${v.kind==='app'?'どこでもすぐ売れる。高く売りたいときは「相場」で大市場・買取所と比べよう。':esc(MKT.KIND[v.kind].label)}　${S.veh.cooler?'クーラー':'バケツ'} ${MKT.load(S).toFixed(1)}/${cap}kg</p>`;
+  if(PH.last)h+=`<p class="phNote"><b>売れた：${yen(PH.last.yen)}（${PH.last.sold}匹）${PH.last.spoiled?`・傷んだ魚${PH.last.spoiled}匹は処分`:''}</b></p>`;
+  let selYen=0,allYen=0,allN=0;
+  for(const c of items){if(c.legacy){h+=`<div class="fRow dim"><div class="tx"><b>持ち帰りの魚（以前の買取済み）</b><span>${c.kg}kg・売れない</span></div><button class="ic dump" data-dump="${c.u}">処分</button></div>`;continue;}
+    const f=FISH[c.id],p=MKT.priceOf(c,fishInfo(c.id),ctx),sel=PH.sel.has(c.u),hrs=((absMin()-c.t)/60).toFixed(1);if(!c.fav&&!p.spoiled){allYen+=p.yen;allN++;if(sel)selYen+=p.yen;}
+    h+=`<div class="fRow${sel?' sel':''}${p.spoiled?' dim':''}">${p.spoiled?`<button class="ic dump" data-dump="${c.u}">処分</button>`:c.fav?'<span class="ic" style="display:grid;place-items:center">🔒</span>':`<button class="ic ck${sel?' on':''}" data-ck="${c.u}" aria-label="選ぶ">${sel?'☑':'☐'}</button>`}
+      <div class="tx" data-ck="${p.spoiled||c.fav?'':c.u}"><b>${esc(f?f.n:c.id)} ${c.L}cm</b><span>${c.kg.toFixed(2)}kg・鮮度${Math.round(p.fresh*100)}%（${hrs}時間前）${p.spoiled?'・傷んで売れない':''}</span></div>
+      <div class="pr">${p.spoiled?'—':yen(p.yen)}</div><button class="ic fav${c.fav?' on':''}" data-fav="${c.u}" aria-label="お気に入り（売らない）">${c.fav?'★':'☆'}</button></div>`;}
+  if(!items.length)h+='<p class="sub">持ち帰った魚はありません。釣れたら「持ち帰る」で入れる。</p>';
+  h+='<p class="phNote">☆ を押すとお気に入り（売らない）。値段は基準単価×重さ×大きさ×鮮度×その日の地域の相場×売る場所（ゲームの目安で、実際の市況ではない）。</p>';body.innerHTML=h;
+  const n=PH.sel.size;bar.innerHTML=`<button class="btnB" id="phAll" ${allN?'':'disabled'}>まとめて売る<br><small>☆以外 ${allN}匹 ${yen(allYen)}</small></button><button class="btnA" id="phSel" ${n?'':'disabled'}>選んだ魚を売る<br><small>${n}匹 ${yen(selYen)}</small></button>`;
+  body.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{PH.venue=b.dataset.v==='app'?'app':'auto';renderPhone();});
+  body.querySelectorAll('[data-ck]').forEach(b=>b.onclick=()=>{const u=+b.dataset.ck;if(!b.dataset.ck)return;if(PH.sel.has(u))PH.sel.delete(u);else PH.sel.add(u);renderPhone();});
+  body.querySelectorAll('[data-fav]').forEach(b=>b.onclick=e=>{e.stopPropagation();const u=+b.dataset.fav,c=S.catch.find(q=>q.u===u);if(!c)return;MKT.setFav(S,u,!c.fav);PH.sel.delete(u);save();renderPhone();});
+  body.querySelectorAll('[data-dump]').forEach(b=>b.onclick=()=>{const u=+b.dataset.dump;S.catch=S.catch.filter(c=>c.u!==u);PH.sel.delete(u);syncFishKg();save();renderPhone();});
+  $('phAll').onclick=()=>phAsk(v,null);$('phSel').onclick=()=>phAsk(v,[...PH.sel]);}
+// 確認画面：見積もり（その時点の値段）を見せて、「売る」で1回だけ売る
+function phAsk(v,uids){const q=MKT.quote(S,v,mktCtx(v),fishInfo,uids);if(!q.lines.length){toast('売れる魚がありません');return;}PH.confirm={v,uids:q.lines.map(l=>l.u),q};renderPhone();}
+function renderPhConfirm(body,bar){const{v,q}=PH.confirm;
+  body.innerHTML=`<h3 class="hd">売却の確認</h3><p class="phNote">${esc(v.n)}（${esc(MKT.KIND[v.kind].short)}${v.kind==='app'?`・${RGL(v.region)}の相場の8割`:''}）</p><div class="phTot">${yen(q.yen)}</div>
+    <table class="cmpT">${q.lines.map(l=>`<tr><td>${esc(FISH[l.id]?FISH[l.id].n:l.id)} ${l.L}cm</td><td class="r">${l.spoiled?'傷み・処分':yen(l.yen)}</td></tr>`).join('')}</table>
+    <p class="phNote">${q.spoiled?`傷んだ魚${q.spoiled}匹は処分されます。`:''}☆お気に入りは売りません。売ったあとは取り消せません。</p>`;
+  bar.innerHTML=`<button class="btnB" id="phNo">やめる</button><button class="btnA" id="phOk">売る ${yen(q.yen)}</button>`;
+  $('phNo').onclick=()=>{PH.confirm=null;renderPhone();};$('phOk').onclick=e=>{e.currentTarget.disabled=true;phDoSell();};}
+function phDoSell(){if(PH.busy||!PH.confirm)return;PH.busy=true;const{v,uids}=PH.confirm;PH.confirm=null;
+  try{if(v.kind!=='app'&&Math.hypot(v.x-S.x,v.y-S.y)>40){toast('買取所から離れたので売れない（アプリなら売れる）');return;}
+    const r=MKT.sell(S,v,mktCtx(v),fishInfo,uids);if(!r.ok){toast(r.reason||'売れなかった');return;}PH.last=r;PH.sel.clear();syncFishKg();updMoney();save();
+    if(r.yen){SND.play('coin');buzz(20);toast(`${yen(r.yen)}で売れた（${r.sold}匹）${r.spoiled?`・傷んだ魚${r.spoiled}匹は処分`:''}`);}else if(r.spoiled)toast(`傷んだ魚${r.spoiled}匹を処分した`);}
+  finally{PH.busy=false;PH.tab='sell';renderPhone();}}
+// 相場：持っている魚をまとめて売ると（売り場ごと・高い順）、魚種ごとの地域別の相場（円/kg）
+function renderPhCmp(body){const rg=regionAt(S.x,S.y),items=(S.catch||[]).filter(c=>!c.legacy&&!c.fav);const ids=[...new Set(items.map(c=>c.id))];
+  let h='<h3 class="hd">持っている魚をまとめて売ると</h3>';
+  if(!items.length)h+='<p class="sub">持ち帰りの魚（☆以外）がありません。下の相場は図鑑に載っている魚で表示します。</p>';
+  else{const app=MKT.appPlace(rg);const rows=sellPoints().concat([app]).map(p=>({p,q:MKT.quote(S,p,mktCtx(p),fishInfo)})).sort((a,b)=>b.q.yen-a.q.yen);const here=rows.filter(r=>r.p.kind==='app'||r.p.region===rg),far=rows.filter(r=>r.p.kind!=='app'&&r.p.region!==rg&&r.p.kind!=='npc');const top=here.slice(0,9);if(!top.some(r=>r.p===app))top.push(here.find(r=>r.p===app));top.push(...far.slice(0,3));
+    h+=`<table class="cmpT"><tr><th>売り場</th><th>今</th><th class="r">合計</th><th></th></tr>${top.map(({p,q})=>{const same=p.kind==='app'||p.region===rg,op=MKT.isOpen(p,S.min);return`<tr class="${p.kind==='app'?'app':''}"><td><b>${esc(p.n)}</b><br><small>${esc(MKT.KIND[p.kind].short)}・${RGL(p.region)}${p.kind!=='app'&&same?`・${realM(Math.hypot(p.x-S.x,p.y-S.y))}`:''}</small></td><td>${op?'営業中':'<small>時間外</small>'}</td><td class="r">${yen(q.yen)}</td><td>${p.kind==='app'?'':same?`<button data-go="${esc(p.id)}">行く</button>`:'<small>別の地域</small>'}</td></tr>`;}).join('')}</table>`;}
+  const sp=ids.length?ids:FISH_IDS.filter(id=>S.dex[id]&&FISH[id]&&!FISH[id].poison).slice(0,6);
+  if(sp.length){h+='<h3 class="hd">魚種ごとの相場（円/kg・今日）</h3><table class="cmpT"><tr><th>魚</th>'+Object.keys(MKT.REGION_LABEL).map(r=>`<th class="r">${RGL(r).replace(/（.*）/,'')}</th>`).join('')+'</tr>';
+    const cmp=MKT.compare(sp,sellPoints(),Object.assign(mktCtx(null),{region:rg}),fishInfo);
+    for(const{id,rows}of cmp){h+=`<tr><td>${esc(FISH[id].n)}</td>`+Object.keys(MKT.REGION_LABEL).map(r=>{const R=rows.filter(x=>(x.place.region||'yokohama')===r);const best=R.filter(x=>x.place.kind!=='app')[0],app=R.find(x=>x.place.kind==='app');
+      return`<td class="r">${best?`${yen(best.rate)}<br><small>${esc(MKT.KIND[best.place.kind].short)}</small>`:'—'}<br><small>アプリ ${app?yen(app.rate):'—'}</small></td>`;}).join('')+'</tr>';}h+='</table>';}
+  h+='<p class="phNote">大市場は魚種ごとに需要・供給・季節・曜日・その日の売れ行きで大きく変わる（朝だけ）。アプリはいる地域の相場の8割。数値はゲームの目安。</p>';body.innerHTML=h;
+  body.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const p=sellPoints().find(q=>q.id===b.dataset.go);if(!p)return;setDest({x:p.x,y:p.y,name:p.n});closePhone();toast('ルートを表示：'+p.n);});}
+// 売り場：いる地域の買取所・移動買取（近い順）
+function renderPhPts(body){const rg=regionAt(S.x,S.y),L=sellPoints().map(p=>({p,d:Math.hypot(p.x-S.x,p.y-S.y)}));const here=L.filter(o=>o.p.region===rg).sort((a,b)=>a.d-b.d),other=L.length-here.length;
+  body.innerHTML=`<p class="phNote">${RGL(rg)}の売り場 ${here.length}か所（ほかの地域 ${other}か所）。ゲーム上の架空の買取所で、実在の店ではありません。</p>`+here.slice(0,40).map(({p,d})=>{const op=MKT.isOpen(p,S.min);
+    return`<div class="fRow"><div class="tx"><b>${esc(p.n)}</b><span>${esc(MKT.KIND[p.kind].label)}${p.until?`・${fmtTime(p.until)}まで`:''}・${op?'営業中':'時間外'}・約${realM(d)}</span></div><button class="ic" style="font-size:13px;font-weight:900;color:var(--ink)" data-go="${esc(p.id)}">行く</button></div>`;}).join('');
+  body.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const p=sellPoints().find(q=>q.id===b.dataset.go);if(!p)return;setDest({x:p.x,y:p.y,name:p.n});closePhone();toast('ルートを表示：'+p.n);});}
+function renderPhRec(body){const st=S.mStats||{n:0,yen:0,best:null,kinds:{}};
+  body.innerHTML=`<table class="cmpT"><tr><td>売った魚</td><td class="r">${st.n}匹</td></tr><tr><td>売り上げの合計</td><td class="r">${yen(st.yen)}</td></tr>
+    <tr><td>いちばん高く売れた魚</td><td class="r">${st.best?`${esc(FISH[st.best.id]?FISH[st.best.id].n:st.best.id)} ${st.best.L}cm<br>${yen(st.best.yen)}（${esc(st.best.place||'')}）`:'—'}</td></tr>
+    ${Object.keys(MKT.KIND).map(k=>`<tr><td>${MKT.KIND[k].short}で売った</td><td class="r">${st.kinds[k]||0}匹</td></tr>`).join('')}</table>`;}
+$('phoneBtn').onclick=()=>openPhone();$('phX').onclick=closePhone;$('phHome').onclick=()=>{PH.app=null;PH.confirm=null;renderPhone();};
+$('phone').addEventListener('click',e=>{if(e.target.id==='phone')closePhone();});
 function openMenu(){if(F.st!=='idle'&&F.st!=='wait'){toast('釣りの最中です');return;}if(F.st==='wait')reelIn();$('sheet').hidden=false;renderTab();}
 function closeSheet(){$('sheet').hidden=true;}
 $('menuBtn').onclick=openMenu;$('sheetX').onclick=closeSheet;
@@ -1951,6 +2119,7 @@ function renderTab(){
   if(tab==='map'&&mapView==='nav'){renderNav(sb);return;}
   if(tab==='veh'){renderVeh(sb);return;}
   if(tab==='fish'){renderFish(sb);return;}
+  if(tab==='gyo'){renderGyo(sb);return;}
   if(tab==='set'){renderSettings(sb);return;}
   if(tab==='map'&&mapView==='spots'){renderSpotList(sb);
   }else if(tab==='map'&&regionAt(S.x,S.y)==='kanto'){// 関東の散策中：駅から横浜・湘南へ戻る。駅が遠ければ最寄りの駅までバス（運賃・時間はゲームの目安）
@@ -2001,7 +2170,8 @@ function renderTab(){
 /* ===== 釣具店：竿・エサ／ルアー／メタルジグ／持ち物 =====
    ルアーとジグは各100件あるので、検索・種類・並び替えで絞り、20件ずつ表示する */
 const shop={cat:'gear',q:'',style:'',sort:'level',n:20,open:null};
-const SHOP_CATS=[['gear','エサ'],['rod','ロッド'],['reel','リール'],['lure','ルアー'],['jig','ジグ'],['own','持ち物']];
+const SHOP_CATS=[['gear','エサ'],['rod','ロッド'],['reel','リール'],['line','糸'],['leader','リーダー'],['hook','針'],['lure','ルアー'],['jig','ジグ'],['own','持ち物']];
+const LN_CAT={line:'道糸',leader:'リーダー',hook:'針'};
 const SORTS=[['level','購入レベル順'],['price','安い順'],['-price','高い順'],['weight','軽い順'],['-weight','重い順'],['cast','飛ばしやすい順'],['drag','ドラグが強い順']];
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function playerLv(){return TK.level(FISH_IDS.filter(id=>S.dex[id]).length);}
@@ -2010,9 +2180,12 @@ function renderShop(sb){const lv=playerLv();
   let h=`<p class="sub">所持金 ¥${S.money.toLocaleString()}・Lv${lv}（図鑑2種ごとに上がる）<br>ロッド：${esc(rod.name)}（ルアー${rod.minLureWeightG}〜${rod.maxLureWeightG}g）・リール：${esc(reel.name)}${match?'':'・<b style="color:#b8402f">リール不一致</b>'}</p>`;
   h+=`<div class="seg">${SHOP_CATS.map(([k,n])=>`<button data-cat="${k}" class="${shop.cat===k?'on':''}">${n}</button>`).join('')}</div>`;
   if(shop.cat==='gear'){
-    h+=`<div class="list"><button class="item" data-buy="isome"><div class="tx"><b>青イソメ 20匹</b><span>ハゼ・カレイ・根魚・アナゴなど底の魚に。所持 ${S.isome}匹</span></div><div class="pr">¥500</div></button></div>`;
-    sb.innerHTML=h;
-    sb.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{if(S.money<500){toast('お金が足りません');return;}S.money-=500;S.isome+=20;save();updMoney();renderTab();});
+    h+=`<div class="list"><button class="item" data-buy="isome"><div class="tx"><b>青イソメ 20匹</b><span>ハゼ・カレイ・根魚・アナゴなど底の魚に。所持 ${S.isome}匹</span></div><div class="pr">¥500</div></button>`;
+    if(LB){const G=LB.GEAR,D={live_bucket:`釣った小さなアジ・イワシなどを${G.live_bucket.cap}匹まで生かしておける（泳がせ釣り）`,live_tank:`仕切り付きで${G.live_tank.cap}匹まで`,air_pump:'生き餌が長持ちする（無いと数時間で弱る）'};
+      for(const k in G){const own=S.liveGear&&S.liveGear[k];h+=`<button class="item" data-buy="${k}" ${own?'disabled':''}><div class="tx"><b>${esc(G[k].n)}</b><span>${D[k]}${own?'・<b>持っている</b>':''}</span></div><div class="pr">¥${G[k].price.toLocaleString()}</div></button>`;}
+      h+=`<p class="sub">生き餌：${(S.live||[]).length}匹${(S.live||[]).length?'（'+S.live.map(b=>`${FISH[b.id]?FISH[b.id].n:b.id} ${b.cm}cm 元気${Math.round(b.vit*100)}%`).join('、')+'）':''}。釣り場の決まりで使えない所もある</p>`;}
+    h+='</div>';sb.innerHTML=h;
+    sb.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{const k=b.dataset.buy,pr=k==='isome'?500:LB.GEAR[k].price;if(S.money<pr){toast('お金が足りません');return;}S.money-=pr;if(k==='isome')S.isome+=20;else{S.liveGear[k]=1;toast(LB.GEAR[k].n+'を買った');}SND.play('coin');save();updMoney();renderTab();});
   }else{
     const styles=Object.keys(TK.STYLE_LABEL).filter(st=>TACKLE.some(t=>t.style===st&&(shop.cat==='own'?TK.owned(S,t.id):t.cat===shop.cat)));
     if(shop.style&&!styles.includes(shop.style))shop.style='';
@@ -2025,22 +2198,29 @@ function renderShop(sb){const lv=playerLv();
     $('shopSort').onchange=e=>{shop.sort=e.target.value;shop.n=20;renderShopList();};
     renderShopList();}
   sb.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{shop.cat=b.dataset.cat;shop.style='';shop.q='';shop.n=20;shop.open=null;renderTab();});}
-function shopRow(t,lv){const own=TK.owned(S,t.id),eq=TK.isEquipped(S,t),locked=lv<t.unlockedAtLevel,gear=t.cat==='rod'||t.cat==='reel';const rod=rodOf(),reel=reelOf();
+function shopRow(t,lv){const own=TK.owned(S,t.id),eq=TK.isEquipped(S,t),locked=lv<t.unlockedAtLevel,gear=t.cat==='rod'||t.cat==='reel'||t.cat==='line',pack=t.pack||0;const rod=rodOf(),reel=reelOf();
   let tags;
   if(t.cat==='rod')tags=[`${t.lengthM}m・${t.power}・ルアー${t.minLureWeightG}〜${t.maxLureWeightG}g`,TK.REELTYPE_LABEL[t.reelType]+(reel&&t.reelType!==reel.reelType?'（<em class="ng">リール不一致</em>）':'')];
   else if(t.cat==='reel')tags=[`${t.retrieveCmPerTurn}cm/回転・ドラグ最大${t.maxDragKg}kg・PE${t.capacityPeRating}号`,TK.REELTYPE_LABEL[t.reelType]+(rod&&t.reelType!==rod.reelType?'（<em class="ng">ロッド不一致</em>）':'')];
+  else if(t.cat==='line'||t.cat==='leader')tags=[`${LN.TYPES[t.type].n} ${t.go}号・約${t.kg}kg・${t.dMm}mm`];
+  else if(t.cat==='hook')tags=[`合う魚 ${t.fitCm[0]}〜${t.fitCm[1]}cm・${t.maxKg}kgまで`];
   else{const fit=TK.rodFit(t,rod);tags=[`${t.weightG}g・${t.lengthMm}mm`,fit==='ok'?'適正':`<em class="ng">${TK.FIT_LABEL[fit]}</em>`];}
   if(locked)tags.push(`<em class="ng">Lv${t.unlockedAtLevel}〜</em>`);
-  let h=`<button class="item${eq?' on':''}${locked?' dim':''}" data-it="${t.id}"><div class="tx"><b>${esc(t.name)}</b><span>${TK.STYLE_LABEL[t.style]}・${tags.join('・')}</span>${own?`<span>${gear?'所持':`所持 ${own}個`}${eq?'・装備中':''}</span>`:''}</div><div class="pr">¥${t.priceYen.toLocaleString()}</div></button>`;
+  let h=`<button class="item${eq?' on':''}${locked?' dim':''}" data-it="${t.id}"><div class="tx"><b>${esc(t.name)}</b><span>${TK.STYLE_LABEL[t.style]||LN_CAT[t.cat]}・${tags.join('・')}</span>${own?`<span>${gear?'所持':`所持 ${own}${pack?'本':'個'}`}${eq?'・装備中':''}</span>`:''}</div><div class="pr">¥${t.priceYen.toLocaleString()}</div></button>`;
   if(shop.open===t.id){let spec;
     if(t.cat==='rod')spec=[['長さ',`${t.lengthM}m`],['パワー',`${t.power}（${TK.POWER_LABEL[t.power]}）`],['適合ルアー',`${t.minLureWeightG}〜${t.maxLureWeightG}g`],['推奨PE',`${t.recommendedPeMax}号まで`],['リールの種類',TK.REELTYPE_LABEL[t.reelType]],
       ['感度',`${t.sensitivity}／100（小さなアタリの伝わりやすさ）`],['張り',`${t.backbone}／100（魚を寄せる力）`],['しなやかさ',`${t.flexibility}／100（突っ込みの衝撃をやわらげる）`],['キャストのしやすさ',`${t.castingControl}／100`],['自重',`${t.rodWeightG}g`],['対象魚',(t.targetSpecies||[]).join('・')]];
     else if(t.cat==='reel')spec=[['種類',TK.REELTYPE_LABEL[t.reelType]],['巻き取り',`${t.retrieveCmPerTurn}cm/回転（ギア比${t.gearRatio}）・ルアーは最高${TK.reelMaxSpeed(t).toFixed(1)}m/秒`],['最大ドラグ',`${t.maxDragKg}kg`],['ドラグの滑らかさ',`${t.dragPrecision}／100`],
       ['糸',`PE${t.capacityPeRating}号 ${t.capacityM}m（糸の強さ約${TK.lineKg(t).toFixed(1)}kg）`],['自重',`${t.reelWeightG}g`]];
+    else if(t.cat==='line'||t.cat==='leader'){const T=LN.TYPES[t.type],lv3=v=>v>.7?'強い':v>.45?'ふつう':'弱い';spec=[['種類',T.n],['号数',`${t.go}号（太さ約${t.dMm}mm）`],['強さ',`約${t.kg}kg`+(t.cat==='leader'?'（結び目で1割落ちる）':'')],t.lengthM?['長さ',`${t.lengthM}m`]:['本数',`${t.pack}本`],
+      ['伸び',t.stretch>.2?'よく伸びる（衝撃に強いが遠くで合わせが効きにくい）':t.stretch>.1?'少し伸びる':'ほとんど伸びない（感度が良い）'],['擦れ',lv3(t.abr)],['魚からの見えやすさ',t.vis>.6?'見えやすい':t.vis>.3?'ふつう':'見えにくい'],
+      t.cat==='line'?['沈みやすさ',t.sink>.2?'沈む':t.sink<0?'浮く':'ふつう']:null,t.cat==='line'?['飛距離',`×${LN.castMul({lineId:t.id},reel).toFixed(2)}`]:null].filter(Boolean);}
+    else if(t.cat==='hook')spec=[['型',LN.HOOKS[t.style].n],['号数',`${t.size}号`],['合う魚の大きさ',`${t.fitCm[0]}〜${t.fitCm[1]}cm`],['伸びる重さ',`約${t.maxKg}kg`],['本数',`${t.pack}本`],['使う釣り',`青イソメ・泳がせ`]];
     else{const cast=Math.round(TK.castMax(t,rod));spec=[['浮力',TK.BUOY_LABEL[t.buoyancy]||t.buoyancy],['得意レンジ',t.maxEffectiveDepthM<.3?'水面':`${t.minEffectiveDepthM}〜${t.maxEffectiveDepthM}m`],t.sinkRateMps?['沈下速度',`${t.sinkRateMps}m/秒`]:null,['適正巻き速度',`${t.optimalRetrieveMinMps}〜${t.optimalRetrieveMaxMps}m/秒`],
       t.fallFlutter!=null?['フォールのヒラヒラ',`${t.fallFlutter}／100`]:null,t.jerkResponse!=null?['しゃくりの反応',`${t.jerkResponse}／100`]:null,t.balance?['重心',{center:'センター',rear:'リア',front:'フロント'}[t.balance]||t.balance]:null,
       ['飛距離の目安',cast?`約${cast}m（いまのロッド）`:'投げられない（重量オーバー）'],['根掛かりしやすさ',`${t.snagRisk}／100`],['対象魚',t.targetSpecies.join('・')],['色',t.color]].filter(Boolean);}
     const buyBtns=gear?`<button class="btnB" data-buy1="${t.id}" ${locked||own?'disabled':''}>${own?'持っている':'買う ¥'+t.priceYen.toLocaleString()}</button>`
+      :pack?`<button class="btnB" data-buy1="${t.id}" ${locked?'disabled':''}>1パック（${pack}本） ¥${t.priceYen.toLocaleString()}</button>`
       :`<button class="btnB" data-buy1="${t.id}" ${locked?'disabled':''}>1個 ¥${t.priceYen.toLocaleString()}</button><button class="btnB" data-buy5="${t.id}" ${locked?'disabled':''}>5個 ¥${(t.priceYen*5).toLocaleString()}</button>`;
     h+=`<div class="det"><p>${esc(t.description)}</p><ul>${t.features.map(f=>`<li>${esc(f)}</li>`).join('')}</ul><p class="tr">弱点：${esc(t.tradeoff)}</p>
       <dl>${spec.map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl><div class="row">${buyBtns}
@@ -2054,11 +2234,13 @@ function renderShopList(){const el=$('shopList');if(!el)return;const lv=playerLv
   el.innerHTML=h;
   el.querySelectorAll('[data-it]').forEach(b=>b.onclick=()=>{shop.open=shop.open===b.dataset.it?null:b.dataset.it;renderShopList();});
   const buyN=(id,n)=>{const t=TBYID.get(id);const r=TK.buy(S,t,n,playerLv());if(!r.ok){toast(r.reason);return;}SND.play('coin');
-    if((t.cat==='lure'||t.cat==='jig')&&!eqItem()){S.eq=id;if(F.st==='idle')S.bait=SIM.baitClassOf(t);}toast(t.cat==='rod'||t.cat==='reel'?`${t.name}を買った（¥${r.cost.toLocaleString()}）。「装備する」で使える`:`${t.name}を${n}個買った（¥${r.cost.toLocaleString()}）`);save();updMoney();renderTab();};
+    if((t.cat==='lure'||t.cat==='jig')&&!eqItem()){S.eq=id;if(F.st==='idle')S.bait=SIM.baitClassOf(t);}if(LN_CAT[t.cat]&&!TK.isEquipped(S,t)&&!(t.cat==='line'?S.lineId:t.cat==='leader'?LN.leaderOf(S):LN.hookOf(S)))TK.equip(S,t);
+    toast(LN_CAT[t.cat]?`${t.name}を買った（¥${r.cost.toLocaleString()}）${TK.isEquipped(S,t)?'・装備した':'。「装備する」で替えられる'}`:t.cat==='rod'||t.cat==='reel'?`${t.name}を買った（¥${r.cost.toLocaleString()}）。「装備する」で使える`:`${t.name}を${n}個買った（¥${r.cost.toLocaleString()}）`);save();updMoney();renderTab();};
   el.querySelectorAll('[data-buy1]').forEach(b=>b.onclick=()=>buyN(b.dataset.buy1,1));
   el.querySelectorAll('[data-buy5]').forEach(b=>b.onclick=()=>buyN(b.dataset.buy5,5));
   el.querySelectorAll('[data-eq]').forEach(b=>b.onclick=()=>{const t=TBYID.get(b.dataset.eq);TK.equip(S,t);uiKey='';let msg=`${t.name}を装備した`;
     if(t.cat==='lure'||t.cat==='jig'){S.bait=SIM.baitClassOf(t);if(TK.rodFit(t,rodOf())==='heavy')msg=`${t.name}を装備（今のロッドには重すぎて投げられない）`;}
+    else if(LN_CAT[t.cat]){S.dragKg=null;if(t.cat==='line')msg=`${t.name}をリールに巻いた`;}
     else{S.dragKg=null;if(!TK.reelMatch(rodOf(),reelOf()))msg+=t.cat==='rod'?'（いまのリールと種類が合わない）':'（いまのロッドと種類が合わない）';}
     toast(msg);save();renderTab();});
   const more=$('shopMore');if(more)more.onclick=()=>{shop.n+=20;renderShopList();};}
@@ -2120,6 +2302,7 @@ function drawMapCv(cvs){const sh=regionAt(S.x,S.y)==='shonan';const B=sh?{x0:-23
   if(sh)for(const r of SH.GRESTRICTED){c.fillStyle='rgba(224,74,59,.35)';c.beginPath();c.arc(r.x,r.y,Math.max(r.gr,60),0,7);c.fill();}
   for(const sp of SPOTS){const ng=sp.sh&&(sp.sh.accessStatus==='unverified'||sp.sh.accessStatus==='protected');c.fillStyle=ng?'#8a8f94':'#1b7d82';c.beginPath();c.arc(sp.x,sp.y,66,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=18;c.stroke();}
   for(const s of STATIONS){c.fillStyle='#2f6fb0';c.fillRect(s.x-36,s.y-36,72,72);c.strokeStyle='#fff';c.lineWidth=12;c.strokeRect(s.x-36,s.y-36,72,72);}
+  if(MKT)for(const m of sellPoints()){c.fillStyle=m.kind==='npc'?'#c2410c':'#e07a2f';c.beginPath();c.arc(m.x,m.y,48,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=12;c.stroke();}
   if(selSpot){const sp=SPOTS.find(p=>p.id===selSpot);if(sp){c.strokeStyle='#f1b746';c.lineWidth=30;c.beginPath();c.arc(sp.x,sp.y,170,0,7);c.stroke();}}
   c.fillStyle='#e04a3b';c.beginPath();c.arc(S.x,S.y,90,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=24;c.stroke();}
 const miniC=$('mini').getContext('2d');let miniT=0;
@@ -2140,7 +2323,7 @@ function drawMini(){const c=miniC,W=208,R=W/2,z=2.6;c.save();c.clearRect(0,0,W,W
   c.translate(R,R);c.rotate(yaw);c.scale(z,z);c.translate(-S.x*.1,-S.y*.1);for(const m of MAPCS)c.drawImage(m.cv,m.x0*.1,m.y0*.1);if(!SH_REAL)c.drawImage(MAPC2,-2300,820);if(inKanto(S.x,S.y)){const k=kantoMini();if(k)c.drawImage(k.cv,k.x0*.1,k.y0*.1,KM_SIZE*.1,KM_SIZE*.1);}
   for(const sp of SPOTS){c.fillStyle='#1b7d82';c.beginPath();c.arc(sp.x*.1,sp.y*.1,3,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=.8;c.stroke();}
   for(const s of STATIONS){c.fillStyle='#2f6fb0';c.fillRect(s.x*.1-1.6,s.y*.1-1.6,3.2,3.2);}
-  for(const m of MARKETS){c.fillStyle='#e07a2f';c.beginPath();c.arc(m.x*.1,m.y*.1,2.2,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=.6;c.stroke();}
+  for(const m of sellPoints()){c.fillStyle=m.kind==='npc'?'#c2410c':'#e07a2f';c.beginPath();if(m.kind==='npc')c.rect(m.x*.1-2.2,m.y*.1-1.8,4.4,3.6);else c.arc(m.x*.1,m.y*.1,2.2,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=.6;c.stroke();}
   for(const s of SIGHTS){c.fillStyle=S.stamps[s.id]?'#f6f2e8':'#f1b746';c.beginPath();c.arc(s.x*.1,s.y*.1,2,0,7);c.fill();}
   if(N){c.fillStyle='#ffffff';c.beginPath();c.arc(N.x*.1,N.y*.1,2,0,7);c.fill();}
   if(NAVR&&!NAVR.fail)for(const L of NAVR.legs){c.strokeStyle=L.mode==='car'?'#e04a3b':L.mode==='bike'?'#f1b746':'#13263b';c.lineWidth=1.1;c.setLineDash(L.mode==='walk'?[1.5,1.2]:[]);c.beginPath();L.pts.forEach(([x,y],i)=>i?c.lineTo(x*.1,y*.1):c.moveTo(x*.1,y*.1));c.stroke();}c.setLineDash([]);
@@ -2517,11 +2700,16 @@ function drawMapBody(c,z,o){o=o||{};const px=1/z;
   for(const b of NET.bikeParks){c.fillStyle='#6a4fa0';c.beginPath();c.arc(b.x,b.y,5*px,0,7);c.fill();}
   for(const sp of SPOTS){const ng=sp.sh&&(sp.sh.accessStatus==='unverified'||sp.sh.accessStatus==='protected');const r=(o.spotR||6)*px;c.fillStyle=ng?'#8a8f94':sp.id===o.sel?'#f1b746':'#1b7d82';c.beginPath();c.arc(sp.x,sp.y,r,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=1.5*px;c.stroke();if(o.spotR){fishGlyph(c,sp.x,sp.y,r*.62);}}
   for(const s of STATIONS){c.fillStyle='#2f6fb0';c.fillRect(s.x-4*px,s.y-4*px,8*px,8*px);}
+  if(MKT)drawSellPts(c,px,o.spotR?7:5,o.sel);
   if(NAVR&&!NAVR.fail)for(const L of NAVR.legs){c.strokeStyle=L.mode==='car'?'#e04a3b':L.mode==='bike'?'#f1b746':'#13263b';c.lineWidth=4*px;c.setLineDash(L.mode==='walk'?[5*px,4*px]:[]);pline2(c,L.pts);c.stroke();}c.setLineDash([]);
   for(const o of S.veh.owned){const pk=S.veh.parked[o.uid];if(!pk)continue;const car=VH.specOf(o).kind==='car';c.fillStyle=car?'#e04a3b':'#f1b746';c.strokeStyle='#fff';c.lineWidth=1.5*px;c.beginPath();c.arc(pk.x,pk.y,7*px,0,7);c.fill();c.stroke();c.fillStyle='#fff';c.fillText(car?'車':'自',pk.x,pk.y+.5*px);}
   const ds=S.veh.dest;if(ds){c.fillStyle='#f1b746';c.strokeStyle='#13263b';c.lineWidth=2*px;c.beginPath();c.moveTo(ds.x,ds.y);c.lineTo(ds.x,ds.y-18*px);c.stroke();c.beginPath();c.moveTo(ds.x,ds.y-18*px);c.lineTo(ds.x+11*px,ds.y-14*px);c.lineTo(ds.x,ds.y-10*px);c.fill();}
   c.fillStyle='#e04a3b';c.beginPath();c.arc(S.x,S.y,6*px,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=2*px;c.stroke();
 }
+// 買取所（オレンジの丸に¥）と移動買取（四角にト）
+function drawSellPts(c,px,R,sel){const ms=R*px;c.save();c.textAlign='center';c.textBaseline='middle';c.font=`900 ${ms*1.25}px ${FONT}`;
+  for(const m of sellPoints()){const npc=m.kind==='npc';c.fillStyle=m.id===sel?'#f1b746':npc?'#c2410c':m.kind==='market'?'#b45309':'#e07a2f';c.strokeStyle='#fff';c.lineWidth=1.5*px;c.beginPath();
+    if(npc)c.rect(m.x-ms,m.y-ms*.8,2*ms,1.6*ms);else c.arc(m.x,m.y,m.kind==='market'?ms*1.2:ms,0,7);c.fill();c.stroke();if(R>=6){c.fillStyle='#fff';c.fillText(npc?'ト':'¥',m.x,m.y+.5*px);}}c.restore();}
 // 釣り場アイコンの魚の形
 function fishGlyph(c,x,y,r){c.fillStyle='#fff';c.beginPath();c.ellipse(x-r*.15,y,r*.75,r*.42,0,0,7);c.fill();c.beginPath();c.moveTo(x+r*.45,y);c.lineTo(x+r*.95,y-r*.4);c.lineTo(x+r*.95,y+r*.4);c.closePath();c.fill();}
 function drawNav(cvs){const w=cvs.clientWidth||320,h=Math.round(Math.min(420,w*1.05));cvs.style.height=h+'px';const d=Math.min(window.devicePixelRatio||1,2);cvs.width=Math.round(w*d);cvs.height=Math.round(h*d);
@@ -2559,6 +2747,7 @@ function drawWorld(){if($('wmap').hidden)return;const w=innerWidth,h=innerHeight
   const label=(t,x,y,size,col)=>{c.font=`900 ${size*px}px ${FONT}`;c.lineWidth=3*px;c.strokeStyle='rgba(255,255,255,.9)';c.strokeText(t,x,y);c.fillStyle=col||'#13263b';c.fillText(t,x,y);};
   if(z<.09){for(const[n,x,y]of AREAS)label(n,x,y,12,'rgba(19,38,59,.75)');}
   if(z>=.12)for(const sp of SPOTS)label(sp.n,sp.x,sp.y-16*px,11);
+  if(z>=.2)for(const m of sellPoints())label(m.n,m.x,m.y+14*px,10,'#b45309');
   if(z>=.06)for(const st of STATIONS)label(st.n,st.x,st.y+13*px,10,'#2f6fb0');
   // 現在地：向きつきの矢印
   const hd=RIDE?RIDE.st.h:P.rotation.y;c.save();c.translate(S.x,S.y);c.rotate(-hd+Math.PI);c.scale(px,px);c.fillStyle='#e04a3b';c.strokeStyle='#fff';c.lineWidth=2.5;c.beginPath();c.moveTo(0,-14);c.lineTo(9,9);c.lineTo(0,4);c.lineTo(-9,9);c.closePath();c.fill();c.stroke();c.restore();
@@ -2568,8 +2757,14 @@ function drawWorld(){if($('wmap').hidden)return;const w=innerWidth,h=innerHeight
   // 出典・注意は縮尺の上の行に（重ならないように）
   const at=(NET.osm.length?'© OpenStreetMap contributors・':'')+(inWorld(v.cx,v.cy)?'国土地理院ベクトルタイルを加工・駐車場は推定・':'道路はおおよそ・駐車場は推定・')+(WM.lyr.gshhs?'紫の点線：GSHHS/GSHHG（実在・粗い）':'');c.font=`700 10px ${FONT}`;const tw=c.measureText(at).width;
   c.fillStyle='rgba(19,38,59,.7)';c.fillRect(8,by-50,tw+12,16);c.fillStyle='#fff';c.textAlign='left';c.fillText(at,14,by-38);}
-function wmPick(px,py){const[x,y]=GEO.screenToWorld(WM.v,px,py);const r=16/WM.v.z;let best=null,bd=r;for(const sp of SPOTS){const d=Math.hypot(sp.x-x,sp.y-y);if(d<bd){bd=d;best=sp;}}return best;}
-function wmShow(sp){WM.sel=sp;const box=$('wmInfo');if(!sp){box.hidden=true;drawWorld();return;}const g=sp.sh;const st=spotState(sp);const d=Math.hypot(sp.x-S.x,sp.y-S.y);
+function wmPick(px,py){const[x,y]=GEO.screenToWorld(WM.v,px,py);const r=16/WM.v.z;let best=null,bd=r;for(const sp of SPOTS.concat(MKT?sellPoints():[])){const d=Math.hypot(sp.x-x,sp.y-y);if(d<bd){bd=d;best=sp;}}return best;}
+// 地図で買取所を選んだとき：種類・営業時間・持っている魚をここで売ると・ここへ行く
+function wmShowMk(m){const box=$('wmInfo');const open=MKT.isOpen(m,S.min),q=MKT.quote(S,m,mktCtx(m),fishInfo),same=m.region===regionAt(S.x,S.y),d=Math.hypot(m.x-S.x,m.y-S.y);
+  box.innerHTML=`<b>${esc(m.n)}</b><span>${MKT.KIND[m.kind].label}・${open?'営業中':'営業時間外'}${m.until?`・${fmtTime(m.until)}まで`:''}</span><span>${q.n?`持っている魚（☆以外${q.n}匹）をここで売ると約¥${q.yen.toLocaleString()}`:'ゲーム上の架空の買取所'}${same?`・ここから約${realM(d)}`:'・別の地域'}</span>
+    <div class="row2">${same?`<button class="btnA" id="wmGo">ここへ行く</button>`:''}<button class="btnB" id="wmCmp">相場を比べる</button><button class="btnB" id="wmClose">閉じる</button></div>`;box.hidden=false;
+  if($('wmGo'))$('wmGo').onclick=()=>{setDest({x:m.x,y:m.y,name:m.n});const p=NAVR;toast(p&&!p.fail?`ルートを表示：${p.label||''} 約${fmtDur(p.time)}`:'ルートが見つからない');};
+  $('wmCmp').onclick=()=>{closeWorld();openPhone('market','cmp');};$('wmClose').onclick=()=>wmShow(null);drawWorld();}
+function wmShow(sp){WM.sel=sp;const box=$('wmInfo');if(!sp){box.hidden=true;drawWorld();return;}if(sp.kind&&MKT&&MKT.KIND[sp.kind]){wmShowMk(sp);return;}const g=sp.sh;const st=spotState(sp);const d=Math.hypot(sp.x-S.x,sp.y-S.y);
   const sameRg=regionAt(sp.x,sp.y)===regionAt(S.x,S.y);
   box.innerHTML=`<b>${esc(sp.n)}</b><span>${g?`${SH.AREA_LABEL[g.area]}・${SH.TYPE_LABEL[g.type]}・${SH.STATUS_LABEL[g.accessStatus]}`:sp.hours?`営業時間 ${sp.hours[0]}:00〜${sp.hours[1]}:00`:'岸壁の公園'}</span><span>${st.ok?'いま釣りできる':esc(st.reason||'')}${sameRg?`・ここから約${realM(d)}`:'・別の地域（電車で移動）'}</span>
     <div class="row2">${sameRg?`<button class="btnA" id="wmGo">ここへ行く</button>`:''}<button class="btnB" id="wmClose">閉じる</button></div>`;box.hidden=false;
@@ -2669,6 +2864,7 @@ function drawKanto(w,h,d){const c=wmCv.getContext('2d'),v=WM.v,z=v.z,px=1/z;c.se
     note=KT.status==='missing'?'関東の実在地図（OSM）のタイルはまだありません。表示は湘南のゲーム地形と GSHHS の概形だけ':'読み込み中…';}
   // 釣り場（湘南）と現在地（湘南にいるとき）
   for(const sp of SPOTS)if(sp.sh){c.fillStyle='#1b7d82';c.beginPath();c.arc(sp.x,sp.y,6*px,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=1.5*px;c.stroke();fishGlyph(c,sp.x,sp.y,3.6*px);}
+  if(MKT)drawSellPts(c,px,6);
   if(regionAt(S.x,S.y)==='shonan'){const hd=RIDE?RIDE.st.h:P.rotation.y;c.save();c.translate(S.x,S.y);c.rotate(-hd+Math.PI);c.scale(px,px);c.fillStyle='#e04a3b';c.strokeStyle='#fff';c.lineWidth=2.5;c.beginPath();c.moveTo(0,-14);c.lineTo(9,9);c.lineTo(0,4);c.lineTo(-9,9);c.closePath();c.fill();c.stroke();c.restore();}
   else note+='・横浜の手描き地図は緯度経度と対応していないため現在地は出さない';
   c.setTransform(d,0,0,d,0,0);const sb=GEO.scaleBar(v,120);const by=h-14;c.fillStyle='rgba(246,242,232,.9)';c.fillRect(8,by-30,Math.max(sb.px,60)+16,28);c.fillStyle='#13263b';c.fillRect(16,by-10,sb.px,3);
@@ -2737,23 +2933,17 @@ let vehView='own';
 function vehStatus(o){const sp=VH.specOf(o);const a=[`耐久 ${Math.round(o.dur)}/${sp.durMax}`];if(sp.kind==='car')a.push(`燃料 ${o.fuel.toFixed(1)}/${sp.tankL}L（あと約${Math.round(o.fuel*sp.kmPerL)}km）`);if(sp.batteryKm)a.push(`電池 ${Math.round(o.batt)}%`);return a.join('・');}
 function nearVeh(o){if(RIDE&&RIDE.o===o)return true;const p=S.veh.parked[o.uid];return!!p&&(p.region||'yokohama')===regionAt(S.x,S.y)&&Math.hypot(p.x-S.x,p.y-S.y)<30;}
 const CALL_FEE=500;// 出張の給油・修理（ゲーム用）
+// 魚拓のコレクション：一覧（新しい順・自己記録に印）→ 選ぶと大きく
+let gyoSel=null;
+function renderGyo(sb){const L=window.HamaGyotaku?HamaGyotaku.list(S):[];
+  if(gyoSel!=null){const r=(S.gyotaku||[]).find(g=>g.n===gyoSel);if(r){sb.innerHTML=`<button class="btnB" id="gyoBack">← 一覧へ</button><canvas id="gyoBig" width="960" height="640" style="width:100%;border-radius:10px;margin-top:8px"></canvas><p class="sub">${r.best?'<b>自己記録</b>・':''}${esc(r.place||'')}・${esc(r.date||'')}</p>`;
+      HamaGyotaku.draw($('gyoBig'),r,fishLook(r.id));$('gyoBack').onclick=()=>{gyoSel=null;renderTab();};return;}gyoSel=null;}
+  if(!L.length){sb.innerHTML='<p class="sub">まだ魚拓がありません。釣れたときの画面で「魚拓に残す」を選ぶと、ここに並びます（魚を売っても残る）。</p>';return;}
+  sb.innerHTML=`<p class="sub">${L.length}枚（自己記録 ${L.filter(g=>g.best).length}）。和紙と墨の魚拓。選ぶと大きく見られる。</p><div class="gyoGrid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">`+
+    L.slice(0,60).map(g=>`<button data-gy="${g.n}" style="padding:0;border:none;background:none;text-align:left"><canvas width="360" height="240" style="width:100%;border-radius:8px${g.best?';outline:2px solid #c3241d':''}"></canvas><span style="font-size:12px">${esc(g.name)} ${g.cm}cm${g.best?'・記録':''}</span></button>`).join('')+'</div>';
+  sb.querySelectorAll('[data-gy]').forEach(b=>{const r=S.gyotaku.find(g=>g.n===+b.dataset.gy);HamaGyotaku.draw(b.querySelector('canvas'),r,fishLook(r.id));b.onclick=()=>{gyoSel=r.n;renderTab();};});}
 // 魚（持ち物）と買取所：近くの買取所なら売れる。どこでも中身・鮮度・目安の値段・買取所までの距離を見られる
-function renderFish(sb){const m=nearMarket(25),items=S.catch||[];const mo=S.min,cap=MKT?MKT.capacity(S.veh.cooler,COOLER_CAP):0;
-  let h=`<p class="sub">${S.veh.cooler?'クーラー（氷あり：鮮度が長持ち）':'バケツ（氷なし：数時間で傷む。クーラーは乗り物タブで買える）'} ${MKT.load(S).toFixed(1)}/${cap}kg。値段は基準単価×重さ×大きさ×鮮度×その日の相場×店の種類（ゲームの目安で、実際の市況ではない）。</p>`;
-  if(m){const open=MKT.isOpen(m,mo);h+=`<h3 class="hd">${esc(m.n)}</h3><p class="sub">${MKT.KIND[m.kind].label}・${open?'営業中':'<b>営業時間外</b>'}。${esc(m.src)}の近く（ゲーム上の買取所）。</p>`;}
-  h+='<div class="list">';let tot=0;
-  items.forEach((c,i)=>{if(c.legacy){h+=`<div class="item dim"><div class="tx"><b>持ち帰りの魚（以前の買取済み）</b><span>${c.kg}kg・売れない</span></div><button data-dump="${i}">処分</button></div>`;return;}
-    const f=FISH[c.id],p=MKT.priceOf(c,fishInfo(c.id),mktCtx(m||{kind:'market'}));tot+=p.yen;const hrs=((absMin()-c.t)/60).toFixed(1);
-    h+=`<div class="item"><div class="tx"><b>${esc(f?f.n:c.id)} ${c.L}cm・${c.kg.toFixed(2)}kg</b><span>鮮度 ${Math.round(p.fresh*100)}%（${hrs}時間前）${p.spoiled?'・傷んで売れない':''}</span></div><div class="pr">${p.spoiled?'—':'¥'+p.yen.toLocaleString()}</div>${m&&MKT.isOpen(m,mo)&&!p.spoiled?`<button data-sell="${i}">売る</button>`:p.spoiled?`<button data-dump="${i}">処分</button>`:''}</div>`;});
-  if(!items.length)h+='<p class="sub">持ち帰った魚はありません。釣れたら「持ち帰る」で入れる。</p>';
-  h+='</div>';if(m&&MKT.isOpen(m,mo)&&items.some(c=>!c.legacy))h+=`<button class="btnA" id="sellAll">全部売る（約¥${tot.toLocaleString()}）</button>`;
-  h+='<h3 class="hd">買取所</h3><div class="list">'+MARKETS.map((q,i)=>`<button class="item" data-mk="${i}"><div class="tx"><b>${esc(q.n)}</b><span>${MKT.KIND[q.kind].label}・${q.region==='shonan'?'湘南':q.region==='yokohama'?'横浜':'関東'}・約${realM(Math.hypot(q.x-S.x,q.y-S.y))}</span></div></button>`).join('')+'</div>';
-  sb.innerHTML=h;
-  const done=r=>{syncFishKg();updMoney();save();if(r.yen){SND.play('coin');toast(`¥${r.yen.toLocaleString()}で売れた（${r.sold}匹）${r.spoiled?`・傷んだ魚 ${r.spoiled}匹は処分`:''}`);}renderTab();};
-  sb.querySelectorAll('[data-sell]').forEach(b=>b.onclick=()=>done(MKT.sell(S,m,mktCtx(m),fishInfo,[+b.dataset.sell])));
-  sb.querySelectorAll('[data-dump]').forEach(b=>b.onclick=()=>{S.catch.splice(+b.dataset.dump,1);syncFishKg();save();renderTab();});
-  if($('sellAll'))$('sellAll').onclick=()=>done(MKT.sell(S,m,mktCtx(m),fishInfo));
-  sb.querySelectorAll('[data-mk]').forEach(b=>b.onclick=()=>{const q=MARKETS[+b.dataset.mk];if(q.region!==regionAt(S.x,S.y)){toast('別の地域の買取所です（電車・車で移動）');return;}setDest({x:q.x,y:q.y,name:q.n});closeSheet();toast('ルートを表示：'+q.n);});}
+function renderFish(sb){const items=(S.catch||[]).filter(c=>!c.legacy);sb.innerHTML=`<p class="sub">持ち帰りの魚 ${items.length}匹（${MKT.load(S).toFixed(1)}kg）。売るのはスマホの「魚市場」アプリから（どこでも・近くの買取所ならその値段で）。</p><button class="btnA" id="toPhone" style="width:100%;min-height:52px">魚市場アプリを開く</button>`;$('toPhone').onclick=()=>openPhone('market','sell');}
 function renderVeh(sb){const kg=carriedNow();
   let h=`<div class="seg"><button data-vv="own" class="${vehView==='own'?'on':''}">持っている</button><button data-vv="bike" class="${vehView==='bike'?'on':''}">自転車を買う</button><button data-vv="car" class="${vehView==='car'?'on':''}">車を買う</button><button data-vv="cool" class="${vehView==='cool'?'on':''}">クーラー</button></div>`;
   if(vehView==='own'){h+=`<p class="sub">持ち物の重さ 約${kg.toFixed(1)}kg（竿・リール・ルアー・クーラー${S.veh.fishKg?`・魚 ${S.veh.fishKg.toFixed(1)}kg`:''}）・自転車の体力 ${Math.round(S.veh.stamina)}%</p>`;
@@ -2849,7 +3039,7 @@ function update(dt,t){
   nearSpot=RIDE?null:spotAt(S.x,S.y);idleDirT-=dt;if(nearSpot&&idleDirT<=0){idleDirT=.3;idleDir=waterDir(S.x,S.y,nearSpot.dir);}
   if(F.st!=='idle')nearSpot=F.spot;
   nearSight=null;for(const s of SIGHTS)if(Math.hypot(s.x-S.x,s.y-S.y)<s.r){nearSight=s;break;}
-  updateFishing(dt);updateNabura(dt);
+  updateFishing(dt);updateNabura(dt);updFishModel(dt,t);updStalls(t);
   // 磯の波：波が高めの日は、ときどき大波が足元を洗う（釣りを中断。高波の日はそもそも立てない）
   if(F.st!=='idle'&&F.st!=='fight'&&F.spot&&F.spot.sh&&F.spot.sh.type==='iso'){const E=envNow(F.spot);if(E.wave>.9&&rnd()<dt*.02*(E.wave-.8)*10){splash(S.x,S.y,14,2.2);SND.play('splash',{size:1.3});buzz(60);F.st='idle';F.reelHold=false;toast('大波が足元を洗った！ 仕掛けを回収した。磯では波に注意');}}
   if(yawT!==null&&F.st!=='idle')yaw=angLerp(yaw,yawT,Math.min(1,dt*3));
@@ -2894,7 +3084,7 @@ function updSound(dt){SND.update(dt);ambT-=dt;if(ambT<=0){ambT=.5;const sea=rect
 function frame(now){const rdt=(now-last)/1000;const dt=Math.min(.05,rdt);last=now;const t=now/1000;updFps(rdt);update(dt,t);render(dt,t);updUI();updSound(dt);requestAnimationFrame(frame);}
 
 /* ===== 開始 ===== */
-function start(fromSave,where){const ld=fromSave&&load();if(ld){TK.migrate(ld,TACKLE);TK.migrateGear(ld,TACKLE);migrateMap(ld);}S=ld?Object.assign(fresh(),ld):fresh();if(!ld)S.base=today0();VH.migrate(S);if(MKT)MKT.migrate(S);restoreRide();
+function start(fromSave,where){const ld=fromSave&&load();if(ld){TK.migrate(ld,TACKLE);TK.migrateGear(ld,TACKLE);migrateMap(ld);}S=ld?Object.assign(fresh(),ld):fresh();if(!ld)S.base=today0();VH.migrate(S);if(MKT)MKT.migrate(S);if(LB)LB.migrate(S);if(LN)LN.migrate(S);restoreRide();
   if(where==='hiratsuka'){const p=hiratsukaStart();S.x=p[0];S.y=p[1];}
   F.st='idle';N=null;$('title').hidden=true;updMoney();lastClock='';updClock();yaw=0;updChunks(true);rescuePos();snapCam();save();
   if(!ld)setTimeout(()=>toast(where==='hiratsuka'?'平塚の海岸から。メニュー→乗り物で自転車や車も買える':'まずは釣り場へ。歩くか、青い丸看板のバス停からバスで'),500);}
@@ -2910,7 +3100,7 @@ addEventListener('pointerdown',()=>SND.init(),{once:true});
 function updSndBtn(){const b=$('sndBtn');b.classList.toggle('off',!SND.on);b.querySelector('.w').style.display=SND.on?'':'none';b.setAttribute('aria-label',SND.on?'音を消す':'音を出す');}
 $('sndBtn').onclick=()=>{SND.init();SND.setOn(!SND.on);updSndBtn();};updSndBtn();
 const hotS=hot&&hot.data&&hot.data.S;
-if(hotS&&hotS.money!=null){TK.migrate(hotS,TACKLE);TK.migrateGear(hotS,TACKLE);migrateMap(hotS);S=Object.assign(fresh(),hotS);VH.migrate(S);if(MKT)MKT.migrate(S);restoreRide();$('title').hidden=true;}
+if(hotS&&hotS.money!=null){TK.migrate(hotS,TACKLE);TK.migrateGear(hotS,TACKLE);migrateMap(hotS);S=Object.assign(fresh(),hotS);VH.migrate(S);if(MKT)MKT.migrate(S);if(LB)LB.migrate(S);if(LN)LN.migrate(S);restoreRide();$('title').hidden=true;}
 else if(load())$('contBtn').hidden=false;
 applyGfx();updMoney();updClock();updChunks(true);snapCam();requestAnimationFrame(frame);
 })();

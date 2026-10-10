@@ -8,7 +8,7 @@ export default async (page, SP) => {
     const y0=await page.evaluate(()=>__D.PY);await page.evaluate(()=>__D.doJump());const top=await step(20);const y1=await page.evaluate(()=>__D.PY),air=await page.evaluate(()=>__D.AIR);
     // 持ち帰り→買取所で売る
     const r=await page.evaluate(([mid])=>{const D=__D,m=D.MARKETS.find(q=>q.id===mid);const m0=D.S.money;D.setPending({id:'aji',sz:24,kg:.25,price:300});D.keep(true);const n1=(D.S.catch||[]).length;
-      D.S.x=m.x+4;D.S.y=m.y+4;D.S.min=7*60;D.setTab('fish');D.openMenu();const btn=document.getElementById('sellAll');const near=!!D.nearMarket(25);if(btn)btn.click();D.closeSheet();
+      D.S.x=m.x+4;D.S.y=m.y+4;D.S.min=7*60;D.openPhone('market','sell');const btn=document.getElementById('phAll');const near=!!D.nearMarket(25);if(btn)btn.click();const ok=document.getElementById('phOk');if(ok)ok.click();D.closePhone();
       return{kept:n1,near,sellBtn:!!btn,sold:(D.S.catch||[]).length===0,gain:D.S.money-m0,region:m.region};},[mid]);
     console.log('common_'+rg,JSON.stringify(Object.assign({jump:+(top-y0).toFixed(2),landed:Math.abs(y1-y0)<.05&&!air},r)));}
   // 段差：足元より0.45m までは歩いて上れ、それより高いと上れない（ジャンプ中で足元が上がれば上れる）
