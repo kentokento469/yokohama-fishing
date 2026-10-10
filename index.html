@@ -790,10 +790,11 @@ asphaltTex.repeat.set(1,1);
 /* 海づり施設の釣り桟橋（大黒・本牧・磯子）：杭の上の床版・手すり・街灯・あずまや・岸側の管理棟。形・長さは既存の地図のまま（細部は一般的な釣り桟橋の作り） */
 const PIER_DONE=new Set();
 // 夜の灯り：街灯の光の玉と、床に落ちる光（加算合成。暗さに合わせて updSky で濃くする）
-const NIGHT_GLOW=[];const pierGlowTex=canvasTex(64,64,(c,w,h)=>{const g=c.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'rgba(255,240,200,1)');g.addColorStop(.35,'rgba(255,220,150,.45)');g.addColorStop(1,'rgba(255,200,120,0)');c.fillStyle=g;c.fillRect(0,0,w,h);});
+const NIGHT_GLOW=[];const LAMP_POOL_GEO=new T.CircleGeometry(9,20).rotateX(-Math.PI/2);const pierGlowTex=canvasTex(64,64,(c,w,h)=>{const g=c.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'rgba(255,240,200,1)');g.addColorStop(.35,'rgba(255,220,150,.45)');g.addColorStop(1,'rgba(255,200,120,0)');c.fillStyle=g;c.fillRect(0,0,w,h);});
 pierGlowTex.wrapS=pierGlowTex.wrapT=T.ClampToEdgeWrapping;
 const pierGlowM=new T.SpriteMaterial({map:pierGlowTex,blending:T.AdditiveBlending,depthWrite:false,transparent:true,opacity:0});
 const pierPoolM=new T.MeshBasicMaterial({map:pierGlowTex,blending:T.AdditiveBlending,depthWrite:false,transparent:true,opacity:0});NIGHT_GLOW.push(pierGlowM,pierPoolM);
+const LAMP_GLOW_PTS=new T.PointsMaterial({map:pierGlowTex,size:4.5,sizeAttenuation:true,blending:T.AdditiveBlending,depthWrite:false,transparent:true,opacity:0});NIGHT_GLOW.push(LAMP_GLOW_PTS);
 function buildFishingPier(r){const dummy=new T.Object3D();// r={a:[x,y],b:[x,y],w,shore,spot}：a＝付け根、b＝先端
   const L=Math.hypot(r.b[0]-r.a[0],r.b[1]-r.a[1]),ux=(r.b[0]-r.a[0])/L,uy=(r.b[1]-r.a[1])/L,nx=-uy,ny=ux,Wd=r.w,rot=-Math.atan2(uy,ux),top=GROUND;
   const at=(u,v,y)=>[r.a[0]+ux*u+nx*(v-Wd/2),y,r.a[1]+uy*u+ny*(v-Wd/2)];// u：長さ方向、v：幅方向（0〜Wd）
@@ -882,6 +883,15 @@ for(const s of STATIONS){let bx=s.x,by=s.y;const g=new T.Group();
   for(let k=0;k<2;k++){const vm=box(.95,1.8,.75,new T.MeshLambertMaterial({color:[0xd8312c,0x2d6fb7][k],emissive:0xffffff,emissiveIntensity:0}));EMISSIVE.push(vm.material);vm.position.set(-1.6-k*1.05,0,0);g.add(vm);}
   g.traverse(o=>{if(o.isMesh)shadowy(o);});g.position.set(bx,GROUND,by);g.rotation.y=.5;scene.add(g);}
 
+/* ===== 防波堤（国土地理院の防波堤の線）：コンクリートの堤（幅4m・海面から3m）と外側のテトラポッド。湘南の漁港には小さな漁船（数・位置はおおよそ） ===== */
+if(WORLD){const segs=[],pods=[],R=mulberry(57);for(const b of WORLD.breakwaters){const a=b.a;for(let i=0;i<a.length-2;i+=2){const ax=a[i],az=a[i+1],bx=a[i+2],bz=a[i+3],l=Math.hypot(bx-ax,bz-az);if(l<1)continue;
+      segs.push([ax,az,bx,bz,l]);const ux=(bx-ax)/l,uz=(bz-az)/l;for(let t=0;t<l;t+=2.8)for(const sd of[-1,1]){if(R()<.35)continue;const o=3.4+R()*1.6,x=ax+ux*t-uz*o*sd,z=az+uz*t+ux*o*sd;if(isLand(x,z))continue;pods.push([x,z]);}}}
+  if(segs.length){const im=new T.InstancedMesh(new T.BoxGeometry(1,1,1).translate(0,.5,0),lam(0xb5b1a8),segs.length);segs.forEach(([ax,az,bx,bz,l],k)=>{dummy.position.set((ax+bx)/2,-2,(az+bz)/2);dummy.rotation.set(0,-Math.atan2(bz-az,bx-ax),0);dummy.scale.set(l+.4,5,4);dummy.updateMatrix();im.setMatrixAt(k,dummy.matrix);});
+    for(const part of[im]){shadowy(fitInstances(part));scene.add(part);}}
+  if(pods.length){const tm=lam(0xa6aaa8);for(const part of byTile(pods)){const im=new T.InstancedMesh(tetraGeo,tm,part.length);part.forEach(([x,z],i)=>{dummy.position.set(x,.2+R()*.8,z);dummy.rotation.set(R()*6,R()*6,R()*6);dummy.scale.setScalar(1.6+R()*.4);dummy.updateMatrix();im.setMatrixAt(i,dummy.matrix);});shadowy(fitInstances(im));scene.add(im);}}}
+{const boats=[],R=mulberry(91);for(const g of SH.GSPOTS){if(g.type!=='port')continue;let n=0;for(let t=0;t<40&&n<5;t++){const a=R()*6.283,r=25+R()*70,x=g.x+Math.cos(a)*r,z=g.y+Math.sin(a)*r;if(isLand(x,z)||!nearCoast(x,z,14))continue;boats.push([x,z,R()*6.283,.8+R()*.5]);n++;}}
+  if(boats.length){const hull=new T.InstancedMesh(new T.BoxGeometry(7,1.1,2.3).translate(0,.25,0),lam(0xf2f2ee),boats.length),cab=new T.InstancedMesh(new T.BoxGeometry(2,1.5,1.7).translate(-.8,1.5,0),lam(0x5a8fb0),boats.length);
+    boats.forEach(([x,z,a,s2],k)=>{dummy.position.set(x,0,z);dummy.rotation.set(0,a,0);dummy.scale.setScalar(s2);dummy.updateMatrix();hull.setMatrixAt(k,dummy.matrix);cab.setMatrixAt(k,dummy.matrix);});for(const m of[hull,cab]){shadowy(fitInstances(m));scene.add(m);}}}
 /* ===== 名所・ランドマーク（実寸に近い大きさ。位置は data/yokohama-places.js と国土地理院の建物の形から） =====
    名所の場所では国土地理院の建物（自動の高さ）を出さず、この形を置く（LANDMARK_KEEP） */
 const WS={glass:16,apt:12,house:7,wh:6};
@@ -1098,6 +1108,10 @@ function ribbonGeo(list,y){const pos=[],uv=[];for(const[a,w]of list){for(let i=0
   for(let i=0;i<pos.length;i+=3)uv.push(pos[i]/8,pos[i+2]/8);const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.computeVertexNormals();return g;}
 // 線をチャンクの四角で切る（各区間は中点がチャンクの中にあるものだけ。隣のチャンクと重ならない）
 const WIRE_MAT=new T.LineBasicMaterial({color:0x2a2a2a}),VEND_MAT=new T.MeshLambertMaterial({color:0xffffff,emissive:0x333333,emissiveIntensity:0});EMISSIVE.push(VEND_MAT);
+// 海づり施設の桟橋の近くか（係船柱を置かない）
+function nearPier(x,z){for(const p of YP.piers||[])if(segDist(x,z,p.a[0],p.a[1],p.b[0],p.b[1])<p.w/2+12)return true;return false;}
+// 係船柱（ボラード）：低い円柱と頭
+const BOLLARD_GEO=mergeGeos([new T.CylinderGeometry(.18,.22,.55,10).translate(0,.28,0),new T.CylinderGeometry(.3,.26,.14,10).translate(0,.6,0)]),BOLLARD_MAT=lam(0x3d4246);
 function offLine(a,o){const n=a.length/2,out=[];for(let k=0;k<n;k++){const p=Math.max(0,k-1),q=Math.min(n-1,k+1);const dx=a[2*q]-a[2*p],dz=a[2*q+1]-a[2*p+1],l=Math.hypot(dx,dz)||1;out.push(a[2*k]-dz/l*o,a[2*k+1]+dx/l*o);}return out;}
 function clipLine(a,X0,Y0,X1,Y1){const out=[];let cur=null;for(let i=0;i<a.length-2;i+=2){const mx=(a[i]+a[i+2])/2,my=(a[i+1]+a[i+3])/2;if(mx>=X0&&mx<X1&&my>=Y0&&my<Y1){if(!cur){cur=[a[i],a[i+1]];out.push(cur);}cur.push(a[i+2],a[i+3]);}else cur=null;}return out;}
 function buildWorldChunk(i,j,grp,L,doCol){const X0=i*CH,Y0=j*CH,X1=X0+CH,Y1=Y0+CH;const own=m=>{m.userData.own=true;grp.add(m);return m;};
@@ -1158,7 +1172,17 @@ function buildWorldChunk(i,j,grp,L,doCol){const X0=i*CH,Y0=j*CH,X1=X0+CH,Y1=Y0+C
   {const lp=[];for(const[seg,w]of ground.car){if(w<9)continue;for(let k=0;k<seg.length-2;k+=2){const ax=seg[k],az=seg[k+1],bx=seg[k+2],bz=seg[k+3],l=Math.hypot(bx-ax,bz-az);if(l<1)continue;const ux=(bx-ax)/l,uz=(bz-az)/l;
       for(let t=((ax*7+az*3)%30+30)%30;t<l;t+=30)for(const sd of[-1,1]){const o=w/2+1.2,x=ax+ux*t-uz*o*sd,z=az+uz*t+ux*o*sd;if(isLand(x,z))lp.push([x,z,Math.atan2(uz,ux)+(sd>0?Math.PI:0)]);}}}
     if(lp.length){const geo=new T.CylinderGeometry(.07,.09,7.5,6).translate(0,3.75,0),arm=new T.BoxGeometry(1.4,.08,.08).translate(.6,7.4,0),lm=lam(0x4c565e);const a1=new T.InstancedMesh(geo,lm,lp.length),a2=new T.InstancedMesh(arm,lm,lp.length);
-      lp.forEach(([x,z,a],k)=>{dummy.position.set(x,GROUND,z);dummy.rotation.set(0,-a+Math.PI/2,0);dummy.scale.setScalar(1);dummy.updateMatrix();a1.setMatrixAt(k,dummy.matrix);a2.setMatrixAt(k,dummy.matrix);});for(const m of[a1,a2]){fitInstances(m);grp.add(m);}}}
+      lp.forEach(([x,z,a],k)=>{dummy.position.set(x,GROUND,z);dummy.rotation.set(0,-a+Math.PI/2,0);dummy.scale.setScalar(1);dummy.updateMatrix();a1.setMatrixAt(k,dummy.matrix);a2.setMatrixAt(k,dummy.matrix);});for(const m of[a1,a2]){fitInstances(m);grp.add(m);}
+      // 夜：灯具の光（点）と足元の明かり（加算の円）。濃さは updSky で（夜だけ）
+      const gp=[],pool=new T.InstancedMesh(LAMP_POOL_GEO,pierPoolM,lp.length);lp.forEach(([x,z,a],k)=>{const hx=x+Math.cos(-a+Math.PI/2)*1.2,hz=z-Math.sin(-a+Math.PI/2)*1.2;gp.push(hx,GROUND+7.3,hz);dummy.position.set(hx,GROUND+.2,hz);dummy.rotation.set(0,0,0);dummy.scale.setScalar(1);dummy.updateMatrix();pool.setMatrixAt(k,dummy.matrix);});
+      pool.renderOrder=3;fitInstances(pool);grp.add(pool);const pg=new T.BufferGeometry();pg.setAttribute('position',new T.Float32BufferAttribute(gp,3));const pts=new T.Points(pg,LAMP_GLOW_PTS);pts.userData.own=true;grp.add(pts);}}
+  // 岸壁：まっすぐな水際（8m以上）に白い縁石と係船柱（約18mおき）。縁石は陸側1m、係船柱は陸側0.8m
+  {const cxx=(X0+X1)/2,czz=(Y0+Y1)/2,cope=[],bol=[];const isBox=e=>(Math.abs(e[0]-e[2])<1e-6&&(Math.abs(e[0]-WB.x0)<.5||Math.abs(e[0]-WB.x1)<.5))||(Math.abs(e[1]-e[3])<1e-6&&(Math.abs(e[1]-WB.y0)<.5||Math.abs(e[1]-WB.y1)<.5));
+    for(const e of WORLD.edgesNear(cxx,czz,170)){const mx=(e[0]+e[2])/2,mz=(e[1]+e[3])/2;if(mx<X0||mx>=X1||mz<Y0||mz>=Y1||isBox(e))continue;const dx=e[2]-e[0],dz=e[3]-e[1],l=Math.hypot(dx,dz);if(l<8)continue;
+      let nx=-dz/l,nz=dx/l;if(!isLand(mx+nx*1.5,mz+nz*1.5)){nx=-nx;nz=-nz;}if(!isLand(mx+nx*1.5,mz+nz*1.5))continue;// 陸側の向き
+      cope.push([[e[0]+nx*.5,e[1]+nz*.5,e[2]+nx*.5,e[3]+nz*.5],1]);if(nearPier(mx,mz))continue;for(let t=6;t<l-3;t+=18){const x=e[0]+dx/l*t+nx*.8,z=e[1]+dz/l*t+nz*.8;if(!colAt(x,z,.3))bol.push([x,z]);}}
+    if(cope.length)own(flatOrder(new T.Mesh(ribbonGeo(cope,GROUND+.04),flatMat(0xd9d6cf)),GROUND+.04));
+    if(bol.length){const im=new T.InstancedMesh(BOLLARD_GEO,BOLLARD_MAT,bol.length);bol.forEach(([x,z],k)=>{dummy.position.set(x,GROUND,z);dummy.rotation.set(0,0,0);dummy.scale.setScalar(1);dummy.updateMatrix();im.setMatrixAt(k,dummy.matrix);});fitInstances(im);im.castShadow=true;grp.add(im);}}
   // 建物
   const ci=Math.floor(X0/WORLD.BT),cj=Math.floor(Y0/WORLD.BT),cell=WORLD.cell(ci,cj);
   if(!cell){grp.userData.pending=true;WORLD.loadCell(ci,cj).then(()=>{const k=i+','+j,g=chunks.get(k);if(g&&g.userData.pending){disposeChunk(g);chunks.delete(k);buildChunk(i,j);}});return;}
