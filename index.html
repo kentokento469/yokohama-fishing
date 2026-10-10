@@ -168,7 +168,7 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
 #phTabs{display:flex;gap:4px;padding-top:8px}#phTabs:empty{display:none}#phTabs button{flex:1;min-height:50px;border:none;background:#e6e1d4;border-radius:12px;font-weight:900;font-size:13px;color:var(--ink)}#phTabs button.on{background:var(--ink);color:var(--paper)}
 .phApps{display:grid;grid-template-columns:repeat(4,1fr);gap:16px 8px;padding:12px 4px}.phApps button{border:none;background:none;display:flex;flex-direction:column;align-items:center;gap:6px;font-weight:900;font-size:12px;color:var(--ink)}.phApps i{width:60px;height:60px;border-radius:17px;display:grid;place-items:center;font-style:normal;font-size:26px;font-weight:900;color:#fff;box-shadow:0 3px 8px rgba(0,0,0,.18)}
 .fRow{display:flex;align-items:center;gap:4px;background:#fff;border:2px solid #e3dccb;border-radius:12px;padding:4px 6px;margin-bottom:6px}.fRow.sel{border-color:#2a9da0;background:#eef9f9}.fRow.dim{opacity:.55}
-.fRow .tx{flex:1;min-width:0;padding:4px 2px}.fRow b{display:block;font-size:14px}.fRow span{display:block;font-size:12px;color:var(--mute)}.fRow .pr{font-weight:900;color:#a5650a;font-size:14px;min-width:62px;text-align:right;font-variant-numeric:tabular-nums}
+.fRow .tx{flex:1;min-width:0;padding:4px 2px}.fRow .th{flex:none;width:54px;height:38px;border-radius:7px;overflow:hidden;background:#e8e2d4}.fRow .th:empty{display:none}.fRow .th img{width:100%;height:100%;object-fit:cover;display:block}.fRow b{display:block;font-size:14px}.fRow span{display:block;font-size:12px;color:var(--mute)}.fRow .pr{font-weight:900;color:#a5650a;font-size:14px;min-width:62px;text-align:right;font-variant-numeric:tabular-nums}
 .fRow .ic{border:none;background:none;min-width:44px;height:44px;font-size:22px;color:#b8b09c;padding:0}.fRow .ic.on{color:#e0a100}.fRow .ck.on{color:#2a9da0}.fRow .dump{font-size:12px;font-weight:900;color:#b8402f}
 .venue{display:flex;gap:6px;overflow-x:auto;margin-bottom:8px}.venue button{flex:none;border:none;border-radius:999px;padding:10px 13px;background:#e6e1d4;color:var(--ink);font-weight:900;font-size:13px}.venue button.on{background:var(--ink);color:var(--paper)}
 .cmpT{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:10px}.cmpT td,.cmpT th{padding:7px 4px;border-bottom:1px solid #e3dccb;text-align:left;vertical-align:middle}.cmpT th{font-size:11px;color:var(--mute)}.cmpT td.r{text-align:right;font-weight:900;font-variant-numeric:tabular-nums}.cmpT tr.app td{background:#f6efe0}.cmpT td:nth-child(2),.cmpT button{white-space:nowrap}.cmpT button{border:none;border-radius:8px;background:var(--ink);color:var(--paper);font-weight:900;font-size:12px;padding:8px 10px}
@@ -401,7 +401,7 @@ addEventListener('error',e=>{try{let d=document.getElementById('bootErr');if(!d)
 <script src="fight.js?v=568dbb86"></script>
 <script src="sound.js?v=99a8c8c1"></script>
 <script src="data/fish/species.js?v=f695e5fa"></script>
-<script src="data/fish/images.js?v=907be6b3"></script>
+<script src="data/fish/images.js?v=ac1c49ad"></script>
 <script src="geo.js?v=1e6a80c6"></script>
 <script src="world.js?v=bc9c37b8"></script>
 <script src="data/world/yokohama-base.js?v=c73aacf7"></script>
@@ -1932,8 +1932,11 @@ function dexDetail(id){const f=FISH[id],d=S.dex[id],sp=SPEC[id];const known=!!d;
   return h+'</dl><p class="sub" style="font-size:10px">学名・分布は一般的な資料にもとづくおおよそ。能力値はゲーム用の推定。</p></div>';}
 /* ===== 釣果の表示：写真（data/fish/images.js にある魚種）または仮の図、名前・学名・体長・重さ・場所・日時・仕掛け・自己ベスト。初物・大物・レアの演出 ===== */
 const FIMG=window.HamaFishImages||{};
-function fishPic(id,kind){const m=FIMG[id];if(!m)return'';if(kind==='thumb')return`<img loading="lazy" decoding="async" src="${m.thumb}" alt="">`;
-  return`<picture>${m.avif?`<source srcset="${m.avif}" type="image/avif">`:''}<img decoding="async" src="${m.full}" alt="${esc(FISH[id].n)}"></picture>`;}
+function fishPic(id,kind){const m=FIMG[id];if(!m)return'';const oe=`onerror="fishImgErr(this,'${id}')"`;if(kind==='thumb')return`<img loading="lazy" decoding="async" src="${m.thumb}" alt="${esc(FISH[id]?FISH[id].n:id)}" ${oe}>`;
+  return`<picture>${m.avif?`<source srcset="${m.avif}" type="image/avif">`:''}<img decoding="async" src="${m.full}" alt="${esc(FISH[id].n)}" ${oe}></picture>`;}
+// 画像が読めない（通信・ファイルの不具合）とき：その魚の体型と色の図に差し替え、注記をつける
+window.fishImgErr=function(el,id){const box=el.closest('picture')||el;if(!box.parentNode)return;const cv=document.createElement('canvas');cv.className='fishPh';cv.title='画像を読み込めませんでした（代わりの図）';
+  cv.style.cssText='width:100%;height:100%;display:block';box.replaceWith(cv);try{drawFishCanvas(cv,id,false);}catch(e){}const note=cv.closest('.resImg,.dexD')&&cv.closest('.resImg,.dexD').parentNode.querySelector('.resImgNote');if(note&&!/読み込めません/.test(note.textContent))note.textContent='画像を読み込めませんでした（代わりの図。実物の写真ではありません）';};
 function picCredit(id){const m=FIMG[id];return m?`写真：${esc(m.artist||'不明')}／${esc(m.license||'')}（${esc(m.source||'')}・${esc(m.modified||'')}）`:'写真素材なし（仮の図。実物の写真ではありません）';}
 /* ===== 魚の3Dモデル（fish3d.js）：ファイト中は近づくと水面近くに姿が見え、ジャンプでは跳ねる。釣り上げたら足元で跳ねる。大きさは体長に合わせる ===== */
 const F3=window.HamaFish3D;let FM=null,FMid=null,FMland=0,FMjump=0;
@@ -2103,7 +2106,7 @@ function renderPhSell(body,bar){const v=phVenue(),near=nearMarket(25),ctx=mktCtx
   for(const c of items){if(c.legacy){h+=`<div class="fRow dim"><div class="tx"><b>持ち帰りの魚（以前の買取済み）</b><span>${c.kg}kg・売れない</span></div><button class="ic dump" data-dump="${c.u}">処分</button></div>`;continue;}
     const f=FISH[c.id],p=MKT.priceOf(c,fishInfo(c.id),ctx),sel=PH.sel.has(c.u),hrs=((absMin()-c.t)/60).toFixed(1);if(!c.fav&&!p.spoiled){allYen+=p.yen;allN++;if(sel)selYen+=p.yen;}
     h+=`<div class="fRow${sel?' sel':''}${p.spoiled?' dim':''}">${p.spoiled?`<button class="ic dump" data-dump="${c.u}">処分</button>`:c.fav?'<span class="ic" style="display:grid;place-items:center">🔒</span>':`<button class="ic ck${sel?' on':''}" data-ck="${c.u}" aria-label="選ぶ">${sel?'☑':'☐'}</button>`}
-      <div class="tx" data-ck="${p.spoiled||c.fav?'':c.u}"><b>${esc(f?f.n:c.id)} ${c.L}cm</b><span>${c.kg.toFixed(2)}kg・鮮度${Math.round(p.fresh*100)}%（${hrs}時間前）${p.spoiled?'・傷んで売れない':''}</span></div>
+      <span class="th">${FIMG[c.id]?fishPic(c.id,'thumb'):''}</span><div class="tx" data-ck="${p.spoiled||c.fav?'':c.u}"><b>${esc(f?f.n:c.id)} ${c.L}cm</b><span>${c.kg.toFixed(2)}kg・鮮度${Math.round(p.fresh*100)}%（${hrs}時間前）${p.spoiled?'・傷んで売れない':''}</span></div>
       <div class="pr">${p.spoiled?'—':yen(p.yen)}</div><button class="ic fav${c.fav?' on':''}" data-fav="${c.u}" aria-label="お気に入り（売らない）">${c.fav?'★':'☆'}</button></div>`;}
   if(!items.length)h+='<p class="sub">持ち帰った魚はありません。釣れたら「持ち帰る」で入れる。</p>';
   h+='<p class="phNote">☆ を押すとお気に入り（売らない）。値段は基準単価×重さ×大きさ×鮮度×その日の地域の相場×売る場所（ゲームの目安で、実際の市況ではない）。</p>';body.innerHTML=h;

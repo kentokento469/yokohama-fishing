@@ -15,7 +15,7 @@ NC（非営利のみ）・ND（改変禁止）・ライセンス不明の素材�
 | 位置の確認 | 国土地理院 住所検索（msearch.gsi.go.jp） | 国土地理院コンテンツ利用規約 | data/yokohama-places.js の位置の根拠（住所の代表点） |
 | 標高（湘南） | 国土地理院 標高タイル（dem_png、z14＝10mメッシュ） | 国土地理院コンテンツ利用規約（CC BY 4.0 互換） | 取得済み。元の格子は data-build/terrain（git外）、ゲーム用は data/terrain/shonan-game.js（40m間引き・ゲーム座標・標高20m以上を立体）。出典は設定タブに表示 |
 | 建物の3D（予定） | PLATEAU（国土交通省） | CC BY 4.0 | 未取得。出典表記が必要 |
-| 魚の写真 | Wikimedia Commons（画像ごとに確認） | CC0・PD・CC BY・CC BY-SA のみ | 41種採用（data/fish/img、1280px→WebP/AVIF。CC BY-SA 2.0〜4.0・CC BY 2.0〜4.0・CC0・パブリックドメイン）。tools/fish/fetch_images.py。各画像の作者・ライセンス・改変は data/fish/images.js と図鑑に表示 |
+| 魚の写真 | Wikimedia Commons・iNaturalist・GBIF（画像ごとに確認） | CC0・PD・CC BY・CC BY-SA のみ（NC・ND・不明は使わない） | 126種中123種（2026-10-10。data/fish/img、WebP/AVIF/サムネイル）。tools/fish/fetch_images.py（Commons）・fetch_inat.py・fetch_gbif.py（GBIF と iNaturalist。候補→目で魚種を確認→approve）。各画像の撮影者・ライセンス・出典ページ・改変は data/fish/images.js と図鑑・釣果画面に表示。画像の無い3種（マコガレイ・ニベ・ヤマトカマス）は data/fish/img/missing.json に理由。検査は tests/fish_images.test.js |
 | 釣具カタログ | ユーザー提供（架空） | このリポジトリ | data/equipment_catalog_400.json |
 | 釣り場・規制エリア（湘南） | ユーザー提供の資料 | このリポジトリ | data/shonan-spots.js（位置はおおよそ） |
 | 魚種のデータ | 一般的な資料にもとづくおおよそ＋ゲーム用の推定 | このリポジトリ | data/fish/species.json |

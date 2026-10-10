@@ -16,6 +16,7 @@ const CASES=[
   ['p10','魚拓・生き餌（泳がせ）',[/p10 \{"gy":1,"best":true,"cv":[1-9]\d*,"noGear":0,"live":1,"liveCand":true,[^\n]*"back":2,"fish3d":true/,/p8 \{"cats":true,"det":true,"leader":true,"rough":true,"hooks":10\}/]],
   ['p11','魚市場アプリ・買取所・移動買取・地図',[/p11 \{"counts":\{"yokohama":([5-9]|\d\d),"shonan":(\d\d)[^\n]*"conf":true,"quoted":[1-9]\d*,"gain":[1-9]\d*,"once":true,"left":1,"favKept":true,"cmpRows":([5-9]|\d\d),"pts":([3-9]|\d\d),"rec":true,"npc":([4-9]|10),"vis":true,"mStats":2\}/,/p11map \{"orange":[1-9]\d+/]],
   ['fightui','ファイトUI：上部HUD・中央を空ける・危険/緩みの表示・カメラ・マルチタッチ',[/fightui \{"st":"fight","top":true,"bottom":true,"noOverlap":true,"miniHidden":true,"danger":true,"slack":true,"cueTop":true,"btnNoText":true,"camD":[3-8]\.\d,"h1":true,"h2":true,"h3":false\}/]],
+  ['fishimg','魚の写真：全画像の表示・釣果/売却画面・読めない時の代わりの図',[/fishimg \{"total":123,"ok":123,"bad":\[\],"res":true,"sell":true,"fallback":true\}/]],
   ['s60','横浜の6釣り場で投げられる',[/\["kanazawa",[^\]]*"kanazawa","kanazawa"\]/,/\["honmoku",[^\]]*"honmoku","honmoku"\]/]]];
 const only=process.argv.slice(2);let fail=0;
 for(const[id,name,want]of CASES){if(only.length&&!only.includes(id))continue;let out='';

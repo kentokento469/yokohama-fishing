@@ -8,7 +8,7 @@ export default async (page, SP) => {
     if(s.st==='bite'){await page.evaluate(()=>{__D.mainUp();__D.mainDown();});await step(1);await page.evaluate(()=>__D.mainUp());s=await step(2);}
     if(s.st==='fight')break;await page.evaluate(()=>{__D.F.st='idle';__D.mainUp();});}
   await step(30);
-  const r=await page.evaluate(()=>{const D=__D,H=innerHeight,rc=id=>document.getElementById(id).getBoundingClientRect();const f=rc('fight'),cl=rc('clock'),tr=rc('trRow'),mb=rc('mainBtn');
+  const r=await page.evaluate(()=>{const D=__D;D.updUI();const H=innerHeight,rc=id=>document.getElementById(id).getBoundingClientRect();const f=rc('fight'),cl=rc('clock'),tr=rc('trRow'),mb=rc('mainBtn');
     const o={st:D.F.st,top:f.top<H*.25,bottom:f.bottom<H*.3,noOverlap:f.top>=cl.bottom-1&&f.top>=tr.bottom-1,miniHidden:getComputedStyle(document.getElementById('mini')).display==='none'};
     // 危険：テンションを限界の98%に
     D.F.hold=true;D.F.ten=D.F.lineKg*.98;D.updUI();o.danger=document.getElementById('fight').classList.contains('s-danger')&&document.getElementById('cue').textContent.startsWith('今すぐ離せ')&&document.getElementById('mainBtn').classList.contains('dg');

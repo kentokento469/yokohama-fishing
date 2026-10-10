@@ -1,0 +1,5 @@
+{
+ "makogarei": {"name": "マコガレイ", "sci": "Pseudopleuronectes yokohamae", "checked": "2026-10-10", "reason": "使える許諾（CC0・CC BY・CC BY-SA）の生体・鮮魚の写真が見つからない。GBIF は標本のX線写真と登録台帳の画像のみ、iNaturalist は9件ともNC等。Wikimedia Commons は作業環境から接続制限（429）で確認できない。別種の画像では代用しない"},
+ "nibe": {"name": "ニベ", "sci": "Nibea mitsukurii", "checked": "2026-10-10", "reason": "使える許諾の写真が見つからない。GBIF は登録台帳の画像のみ、iNaturalist は1件（許諾が合わない）。Wikimedia Commons は接続制限（429）で確認できない。近縁のコイチ等では代用しない"},
+ "yamatokamasu": {"name": "ヤマトカマス", "sci": "Sphyraena japonica", "checked": "2026-10-10", "reason": "使える許諾の写真が見つからない。GBIF に画像なし、iNaturalist は別種 Sphyraena acutipinnis と同じ扱いでフィリピン等の観察のみ（ヤマトカマスと確かめられない）。Wikimedia Commons は接続制限（429）で確認できない"}
+}
