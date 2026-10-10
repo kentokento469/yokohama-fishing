@@ -10,3 +10,13 @@ test('道路：横浜駅前に道路、道路の上は車が通れる',()=>{asse
   const at=W.roadAt(r.x,r.y);assert.ok(at&&at.w>0);});
 test('地名：駅と名所',()=>{assert.ok(W.findName('横浜駅',422).length);assert.ok(W.findName('三溪園').length);});
 test('建物：区画を読み込める',async()=>{const[i,j]=W.cellOf(7860,-5086);const b=await W.loadCell(i,j);assert.ok(b.length>50);assert.ok(b[0].p.length>=6);});
+test('複数の地域をまとめる（combine）：点は含む地域へ、範囲は合わせて',()=>{
+  // 2つ目の地域：横浜のデータを東へ 50km ずらしたもの（テスト用）
+  const D2=Object.assign({},D,{name:'test2',bbox:[D.bbox[0]+50000,D.bbox[1],D.bbox[2]+50000,D.bbox[3]],land:[],roads:[],rails:[],names:[],breakwaters:[],structs:[]});
+  const W2=HW.create(D2,{readFile:()=>null});const C=HW.combine([W,W2]);
+  assert.ok(C.isLand(7860,-5086)&&C.inBox(7860,-5086));assert.ok(C.inBox(57860,-5086)&&!C.isLand(57860,-5086));assert.ok(!C.inBox(30000,-5086));
+  assert.strictEqual(C.at(57860,-5086),W2);assert.strictEqual(C.at(7860,-5086),W);
+  assert.ok(C.roadsIn(7700,-5200,8000,-4900).length===W.roadsIn(7700,-5200,8000,-4900).length);
+  assert.ok(C.onBoxEdge([D2.bbox[0],0,D2.bbox[0],10]));assert.ok(!C.onBoxEdge([1,2,3,4]));
+  assert.strictEqual(C.rings.length,W.rings.length);
+  const one=HW.combine([W]);assert.strictEqual(one,W);assert.ok(one.at(7860,-5086)===W);});

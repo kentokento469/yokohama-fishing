@@ -341,6 +341,7 @@ addEventListener('error',e=>{try{let d=document.getElementById('bootErr');if(!d)
 <script src="geo.js?v=202610101400"></script>
 <script src="world.js?v=202610101400"></script>
 <script src="data/world/yokohama-base.js?v=202610101400"></script>
+<script src="data/world/shonan-base.js?v=202610111200"></script>
 <script src="data/yokohama-places.js?v=202610101400"></script>
 <script src="data/shonan-spots.js?v=202610101400"></script>
 <script src="shonan.js?v=202610101400"></script>
@@ -372,7 +373,10 @@ function hash(a,b){let h=a*374761393+b*668265263;h=(h^(h>>13))*1274126177;return
 /* ===== 地図：横浜も等倍（2026-10 ユーザー決定「全て1/1」）。国土地理院ベクトルタイル → data/world/yokohama-base.js（world.js）。
    湘南は shonan.js（等倍）。どちらも geo.js の同じ変換（緯度経度 → メートル）なので、横浜と湘南は実際の位置関係のまま並ぶ ===== */
 const YP=window.HamaYokohamaPlaces||{spots:[],sights:[],stations:[],areas:[],old:{stations:{},spots:{}}};
-const WORLD=window.HamaWorld&&window.HamaWorldData&&HamaWorldData.yokohama?HamaWorld.create(HamaWorldData.yokohama):null;
+// 実在の地図（国土地理院）は地域ごとのデータ、処理は共通：横浜・湘南（今後の地域も HamaWorldData に足すだけ）をまとめて WORLD に
+const WORLD=window.HamaWorld&&window.HamaWorldData?HamaWorld.combine(['yokohama','shonan'].filter(k=>HamaWorldData[k]).map(k=>HamaWorld.create(HamaWorldData[k]))):null;
+// 湘南も実在の地図か（無ければ以前の shonan.js の近似の地図で動く）
+const SH_REAL=!!WORLD&&WORLD.worlds.some(w=>w.name==='shonan');
 const WB=WORLD?{x0:WORLD.bbox[0],y0:WORLD.bbox[1],x1:WORLD.bbox[2],y1:WORLD.bbox[3]}:{x0:0,y0:0,x1:0,y1:0};
 const inWorld=(x,y)=>!!WORLD&&WORLD.inBox(x,y);
 // 関東（横浜・湘南の外）：国土地理院タイルから直接（kanto.js）。地面の高さ・陸・建物・道路
@@ -387,7 +391,7 @@ function pip(p,x,y){let c=false;for(let i=0,j=p.length-1;i<p.length;j=i++){const
 function isLand(x,y){return inWorld(x,y)?WORLD.isLand(x,y):inKanto(x,y)?KANTO.isLand(x,y):SH.isLand(x,y);}
 // 横浜の水の上を渡る道（運河の橋・八景島への橋など）は歩ける。高さは岸とほぼ同じ
 const WBRIDGE={k:'bridge',top:2.4};
-function rectAt(x,y){for(const r of RECTS)if(x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h)return r;if(inWorld(x,y)&&WORLD.bridgeAt(x,y))return WBRIDGE;if(inKanto(x,y)){const h=kBridgeAt(x,y);if(h!=null)return{k:'bridge',top:h+.16};}return null;}
+function rectAt(x,y){for(const r of RECTS)if(x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h)return r;if(inWorld(x,y)){if(WORLD.bridgeAt(x,y))return WBRIDGE;const b=bwAt(x,y);if(b)return BWTOP;}if(inKanto(x,y)){const h=kBridgeAt(x,y);if(h!=null)return{k:'bridge',top:h+.16};}return null;}
 function isWater(x,y){return !isLand(x,y)&&!rectAt(x,y);}
 function segDist(px,py,ax,ay,bx,by){const dx=bx-ax,dy=by-ay,l=dx*dx+dy*dy;let t=l?((px-ax)*dx+(py-ay)*dy)/l:0;t=clamp(t,0,1);return Math.hypot(px-(ax+dx*t),py-(ay+dy*t));}
 function lineDist(pts,x,y){let d=1e9;for(let i=0;i<pts.length-1;i++)d=Math.min(d,segDist(x,y,pts[i][0],pts[i][1],pts[i+1][0],pts[i+1][1]));return d;}
@@ -500,15 +504,40 @@ for(const sp of SPOTS)sp.region='yokohama';for(const s of SIGHTS)s.region='yokoh
 STATIONS.find(s=>s.n==='横浜駅').jr=true;
 for(const g of SH.GSPOTS){SPOTS.push({id:g.id,n:g.name,x:g.x,y:g.y,dir:Math.PI/2,hours:null,w:SH.fishWeights(g),region:'shonan',zone:20,sh:g});SIM.SPOT_ENV[g.id]=SH.gameParams(g);}
 for(const s of SH.SIGHTS)SIGHTS.push(s);for(const s of SH.STATIONS)STATIONS.push(s);
+/* ===== 防波堤・砂浜（実在の地図の上。地域共通） =====
+   防波堤：国土地理院の防波堤の線のうち、釣り場（漁港・堤防）から700m 以内のものは歩ける（幅約4.4m・海面から3m）。それ以外は立入できない扱い
+   砂浜：外海に面した水際から45m 以内の陸で、砂浜の釣り場から1.5km 以内（磯・漁港・堤防の釣り場の150m 以内と江の島は除く） */
+var BW_IDX=null;const BWTOP={k:'pier',top:3};
+function bwIndex(){BW_IDX=new Map();if(!WORLD)return;const near=SPOTS.filter(sp=>sp.sh&&(sp.sh.type==='port'||sp.sh.type==='breakwater'));if(!near.length)return;
+  for(const b of WORLD.breakwaters){const a=b.a;for(let i=0;i<a.length-2;i+=2){const ax=a[i],ay=a[i+1],bx=a[i+2],by=a[i+3];const mx=(ax+bx)/2,my=(ay+by)/2;if(!near.some(sp=>Math.hypot(sp.x0!=null?sp.x0-mx:sp.x-mx,sp.y0!=null?sp.y0-my:sp.y-my)<900))continue;
+      const s=[ax,ay,bx,by];for(let gx=Math.floor((Math.min(ax,bx)-3)/50);gx<=Math.floor((Math.max(ax,bx)+3)/50);gx++)for(let gy=Math.floor((Math.min(ay,by)-3)/50);gy<=Math.floor((Math.max(ay,by)+3)/50);gy++){const k=gx+','+gy;let l=BW_IDX.get(k);if(!l){l=[];BW_IDX.set(k,l);}l.push(s);}}}}
+function bwAt(x,y){if(!BW_IDX)return null;const l=BW_IDX.get(Math.floor(x/50)+','+Math.floor(y/50));if(!l)return null;for(const s of l)if(segDist(x,y,s[0],s[1],s[2],s[3])<2.2)return s;return null;}
+function bwNear(x,y,R){if(!BW_IDX)return null;let best=null,bd=R;for(const l of BW_IDX.values())for(const s of l){const d=segDist(x,y,s[0],s[1],s[2],s[3]);if(d<bd){bd=d;best=s;}}return best;}
+const SAND_C=new Map();
+function openSea(c){return!WORLD.isLand(c.x+c.nx*150,c.y+c.ny*150)&&!WORLD.isLand(c.x+c.nx*400,c.y+c.ny*400);}
+function beachy(x,y){let nb=false;for(const sp of SPOTS){if(!sp.sh)continue;const t=sp.sh.type,d=Math.hypot(x-sp.x,y-sp.y);if((t==='iso'||t==='port'||t==='breakwater')&&d<150)return false;if(t==='beach'&&d<1500)nb=true;}return nb&&!pip(SH.ENOSHIMA,x,y);}
+function sandAt(x,y){if(!SH_REAL||!inWorld(x,y))return false;const k=Math.round(x/6)+','+Math.round(y/6);let v=SAND_C.get(k);if(v!==undefined)return v;
+  const c=WORLD.nearestCoast(x,y,45);v=!!c&&openSea(c)&&beachy(x,y)&&WORLD.isLand(x,y);if(SAND_C.size>200000)SAND_C.clear();SAND_C.set(k,v);return v;}
+// 湘南も実在の地図なら横浜と同じ置き方：釣り場は一番近い水際の2.5m陸側（海の向きを dir に）、駅は国土地理院の同じ名前の駅（3km 以内）の近くの車道の端、バス停は近くの車道の端
+if(SH_REAL){const carRoad=r=>r.car&&r.lv===0;
+  for(const sp of SPOTS){if(sp.region!=='shonan')continue;sp.x0=sp.x;sp.y0=sp.y;// 手描きの海岸線は所により数百m ずれていたので、900m まで探す
+    let c=null;for(const R of[350,900]){c=WORLD.nearestCoast(sp.x,sp.y,R);if(c)break;}if(!c)continue;sp.x=c.x-c.nx*2.5;sp.y=c.y-c.ny*2.5;sp.dir=Math.atan2(c.ny,c.nx);
+    if(!WORLD.isLand(sp.x,sp.y)){let best=null;for(let r=1;r<=15&&!best;r++)for(let a=0;a<6.28&&!best;a+=.3){const x=c.x+Math.cos(a)*r,y=c.y+Math.sin(a)*r;if(WORLD.isLand(x,y))best=[x,y];}if(best){sp.x=best[0];sp.y=best[1];}}
+    if(sp.sh){sp.sh.x=sp.x;sp.sh.y=sp.y;}}
+  bwIndex();// 堤防の釣り場は、近くの歩ける防波堤の上（元の位置に一番近い点）
+  for(const sp of SPOTS){if(!sp.sh||sp.sh.type!=='breakwater')continue;const b=bwNear(sp.x0,sp.y0,700);if(!b)continue;const dx=b[2]-b[0],dy=b[3]-b[1],l=dx*dx+dy*dy;let t=l?((sp.x0-b[0])*dx+(sp.y0-b[1])*dy)/l:0;t=clamp(t,0,1);sp.x=b[0]+dx*t;sp.y=b[1]+dy*t;sp.sh.x=sp.x;sp.sh.y=sp.y;sp.dir=waterDir(sp.x,sp.y,sp.dir);}
+  for(const st of STATIONS){if(st.region!=='shonan')continue;let x=st.x,y=st.y;if(/駅$/.test(st.n)){let best=null,bd=3000;for(const q of WORLD.findName(st.n,422)){const d=Math.hypot(q.x-x,q.y-y);if(d<bd){bd=d;best=q;}}if(best){x=best.x;y=best.y;}}
+    else{let ns=null,nd=1e9;for(const sp of SPOTS){if(sp.region!=='shonan')continue;const d=Math.hypot(sp.x0-x,sp.y0-y);if(d<nd){nd=d;ns=sp;}}if(ns&&nd<1500){x=ns.x;y=ns.y;}}// バス停：近くの釣り場（実在の水際に合わせた後）の近く
+    const r=WORLD.nearestRoad(x,y,600,carRoad);if(r){const d=Math.hypot(x-r.x,y-r.y)||1,hw=r.road.w/2+2.5;st.x=r.x+(x-r.x)/d*hw;st.y=r.y+(y-r.y)/d*hw;if(!WORLD.isLand(st.x,st.y)){st.x=r.x;st.y=r.y;}}else{st.x=x;st.y=y;}}}
 for(const[n,a,o]of[['鎌倉',35.318,139.548],['長谷・稲村ヶ崎',35.310,139.528],['腰越・江の島',35.309,139.488],['藤沢',35.336,139.485],['鵠沼・辻堂',35.322,139.455],['茅ヶ崎',35.324,139.405],['平塚',35.322,139.350],['大磯',35.306,139.312]]){const[x,y]=SH.toGame(a,o);AREAS.push([n,x,y]);}
-for(const r of SH.STRUCTS)RECTS.push({x:r.x,y:r.y,w:r.w,h:r.h,k:r.bridge?'bridge':'pier',top:2.6,name:r.n});
+if(!SH_REAL)for(const r of SH.STRUCTS)RECTS.push({x:r.x,y:r.y,w:r.w,h:r.h,k:r.bridge?'bridge':'pier',top:2.6,name:r.n});
 function regionAt(x,y){return SH.inShonan(x,y)?'shonan':inKanto(x,y)?'kanto':'yokohama';}
 
 /* ===== 状態 ===== */
 const SAVE_KEY='hama-tsuri-v2';
 function today0(){const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();}
 const START=(()=>{const st=STATIONS.find(s=>s.n==='みなとみらい');if(!st)return{x:2130,y:1880};const r=WORLD&&WORLD.nearestRoad(st.x,st.y,30);if(r){const d=Math.hypot(r.x-st.x,r.y-st.y)||1;return{x:st.x+(r.x-st.x)/d*Math.min(d,3),y:st.y+(r.y-st.y)/d*Math.min(d,3)};}return{x:st.x+3,y:st.y};})();
-function fresh(){const st=TK.starter(TACKLE);return{money:1500,rod:0,bait:'sabiki',isome:10,lure:0,egi:0,tk:{[st.rod.id]:1,[st.reel.id]:1},eq:null,rodId:st.rod.id,reelId:st.reel.id,dragKg:null,spd:.8,dex:{},stamps:{},base:today0(),day:0,min:6*60+30,x:START.x,y:START.y,tip:{},veh:window.HamaVehicles.fresh(),mapv:3};}
+function fresh(){const st=TK.starter(TACKLE);return{money:1500,rod:0,bait:'sabiki',isome:10,lure:0,egi:0,tk:{[st.rod.id]:1,[st.reel.id]:1},eq:null,rodId:st.rod.id,reelId:st.reel.id,dragKg:null,spd:.8,dex:{},stamps:{},base:today0(),day:0,min:6*60+30,x:START.x,y:START.y,tip:{},veh:window.HamaVehicles.fresh(),mapv:4};}
 /* 湘南を等倍にした（mapv 2）：古いセーブの湘南の位置（1/3の地図）を等倍の位置に直す。原点 (2400,8300) から3倍 */
 function migrateMap(S){
   if((S.mapv||1)<2){const old=(x,y)=>x>=-6000&&x<=2700&&y>=8200&&y<=10700,fix=p=>{if(p&&old(p.x,p.y)){p.x=2400+(p.x-2400)*3;p.y=8300+(p.y-8300)*3;}};
@@ -519,6 +548,8 @@ function migrateMap(S){
       ...Object.entries(YP.old.spots).map(([id,p])=>{const st=STATIONS.find(s=>s.n===(SPOTS.find(q=>q.id===id)||{}).n);const sp=SPOTS.find(q=>q.id===id);return sp&&{ox:p[0],oy:p[1],x:st?st.x:sp.x,y:st?st.y:sp.y};})].filter(Boolean);
     const fix=p=>{if(!p||!oldY(p.x,p.y))return false;let b=null,bd=1e18;for(const t of tg){const d=(t.ox-p.x)**2+(t.oy-p.y)**2;if(d<bd){bd=d;b=t;}}if(b){p.x=b.x;p.y=b.y;}return true;};
     fix(S);if(S.veh){for(const k in S.veh.parked||{}){const pk=S.veh.parked[k];if(fix(pk)&&typeof NET!=='undefined'&&NET){const nl=NV.nearestLot(NET.lots,pk.x,pk.y);if(nl&&nl.d<1500){pk.x=nl.lot.x;pk.y=nl.lot.y;pk.lotId=nl.lot.id;}}}if(S.veh.dest&&oldY(S.veh.dest.x,S.veh.dest.y))S.veh.dest=null;}S.mapv=3;}
+  /* 湘南も実在の地図にした（mapv 4）：位置が海・建物になった乗り物は近くの駐車場へ（本人の位置は start の rescuePos で） */
+  if(S.mapv<4){if(S.veh&&SH_REAL&&typeof NET!=='undefined'&&NET)for(const k in S.veh.parked||{}){const pk=S.veh.parked[k];if(pk&&SH.inShonan(pk.x,pk.y)&&!isLand(pk.x,pk.y)){const nl=NV.nearestLot(NET.lots,pk.x,pk.y,l=>SH.inShonan(l.x,l.y));if(nl){pk.x=nl.lot.x;pk.y=nl.lot.y;pk.lotId=nl.lot.id;}}}S.mapv=4;}
   return S;}
 let S=fresh();
 function save(){try{if(S.veh)S.veh.h=RIDE?RIDE.st.h:null;localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(e){}}
@@ -668,10 +699,10 @@ function inPolyPad(p,x,z,pad){let c=false;const n=p.length/2;for(let i=0,j=n-1;i
 function colAt(x,z,pad){const a=cgrid.get(Math.floor(x/CG)+','+Math.floor(z/CG));if(!a)return null;for(const o of a)if(x>o.x0-pad&&x<o.x1+pad&&z>o.z0-pad&&z<o.z1+pad&&(!o.poly||inPolyPad(o.poly,x,z,pad)))return o;return null;}
 // チャンクを消すときに、その建物の当たり判定も外す
 function removeCols(list){for(const o of list)for(let gx=Math.floor(o.x0/CG);gx<=Math.floor(o.x1/CG);gx++)for(let gz=Math.floor(o.z0/CG);gz<=Math.floor(o.z1/CG);gz++){const a=cgrid.get(gx+','+gz);if(a){const i=a.indexOf(o);if(i>=0)a.splice(i,1);}}}
-function walk(x,y){let ok=false;if(SH.inShonan(x,y))ok=SH.isLand(x,y)||!!rectAt(x,y);else if(inWorld(x,y))ok=WORLD.isLand(x,y)||!!rectAt(x,y);else if(inKanto(x,y))ok=KANTO.isLand(x,y)||!!rectAt(x,y);
+function walk(x,y){let ok=false;if(inWorld(x,y))ok=WORLD.isLand(x,y)||!!rectAt(x,y);else if(SH.inShonan(x,y))ok=SH.isLand(x,y)||!!rectAt(x,y);else if(inKanto(x,y))ok=KANTO.isLand(x,y)||!!rectAt(x,y);
   return ok&&!colAt(x,y,.35);}
 // 湘南の丘（国土地理院の標高。標高20mより上だけを立体にする。海沿いの平地・横浜は平らのまま）
-const TERR=window.HamaTerrain&&window.HamaTerrainData&&HamaTerrainData.shonan?HamaTerrain.gameGrid(HamaTerrainData.shonan):null;
+const TERR=!SH_REAL&&window.HamaTerrain&&window.HamaTerrainData&&HamaTerrainData.shonan?HamaTerrain.gameGrid(HamaTerrainData.shonan):null;
 function terrOff(x,y){return TERR&&y>8200?TERR.offAt(x,y):0;}
 // 横浜の丘：標高8mより上だけを盛り上げる（岸壁・浜・釣り場の高さは今のまま）。標高タイルが無い所は平ら
 const HILL_TH=8,hillF=h=>h==null?0:Math.max(0,h-HILL_TH);
@@ -741,8 +772,8 @@ const SHORE={x:1e9,y:1e9,w:768};
 function worldPath(c,x0,y0,x1,y1){for(const r of WORLD.rings){let rx0=1e9,ry0=1e9,rx1=-1e9,ry1=-1e9;for(let i=0;i<r.length;i+=2){if(r[i]<rx0)rx0=r[i];if(r[i]>rx1)rx1=r[i];if(r[i+1]<ry0)ry0=r[i+1];if(r[i+1]>ry1)ry1=r[i+1];}
   if(rx1<x0||rx0>x1||ry1<y0||ry0>y1)continue;c.moveTo(r[0],r[1]);for(let i=2;i<r.length;i+=2)c.lineTo(r[i],r[i+1]);c.closePath();}}
 function drawShore(cx,cy){const c=shoreCv.getContext('2d'),W=512,k=W/SHORE.w;c.setTransform(1,0,0,1,0,0);c.fillStyle='#000';c.fillRect(0,0,W,W);c.setTransform(k,0,0,k,W/2-cx*k,W/2-cy*k);
-  const h=SHORE.w/2+60,nearW=WORLD&&cx>WB.x0-h&&cx<WB.x1+h&&cy>WB.y0-h&&cy<WB.y1+h;
-  const path=()=>{c.beginPath();if(nearW)worldPath(c,cx-h,cy-h,cx+h,cy+h);poly2(c,SH.LAND);poly2(c,SH.ENOSHIMA);for(const r of RECTS)c.rect(r.x,r.y,r.w,r.h);};
+  const h=SHORE.w/2+60,nearW=WORLD&&WORLD.nearBox(cx,cy,h);
+  const path=()=>{c.beginPath();if(nearW)worldPath(c,cx-h,cy-h,cx+h,cy+h);if(!SH_REAL){poly2(c,SH.LAND);poly2(c,SH.ENOSHIMA);}for(const r of RECTS)c.rect(r.x,r.y,r.w,r.h);};
   c.lineJoin='round';for(const[w,a]of[[56,.08],[34,.1],[18,.14],[8,.2],[3,.3]]){path();c.strokeStyle=`rgba(255,255,255,${a})`;c.lineWidth=w;c.stroke();}
   path();c.fillStyle='#fff';c.fill('evenodd');SHORE.x=cx;SHORE.y=cy;shoreTex.needsUpdate=true;}
 const seaU={uTime:{value:0},uDeep:{value:new T.Color(0x2a7aa3)},uHor:{value:new T.Color()},uTop:{value:new T.Color()},uSun:{value:new V3(0,1,0)},uSunC:{value:new T.Color()},
@@ -782,7 +813,7 @@ function updSea(t){if(!seaNear)return;const E=envNow(nearSpot||F.spot);seaU.uTim
 // 横浜の陸（実在の形。運河・池は穴）。輪の点が重なると三角形分割が崩れるので、同じ点は除く
 function shpHoles(poly){const clean=r=>r.filter((p,i)=>i===0||Math.hypot(p[0]-r[i-1][0],p[1]-r[i-1][1])>.05);const s=shp(clean(poly[0]));for(const h of poly.slice(1)){const c=clean(h);if(c.length<3)continue;const pa=new T.Path();pa.moveTo(c[0][0],c[0][1]);for(let i=1;i<c.length;i++)pa.lineTo(c[i][0],c[i][1]);pa.closePath();s.holes.push(pa);}return s;}
 const W_SHAPES=WORLD?WORLD.land.map(shpHoles):[];
-const landGeo=new T.ExtrudeGeometry([...W_SHAPES,shp(SH.LAND),shp(SH.ENOSHIMA)],{depth:8,bevelEnabled:false,curveSegments:40});
+const landGeo=new T.ExtrudeGeometry([...W_SHAPES,...(SH_REAL?[]:[shp(SH.LAND),shp(SH.ENOSHIMA)])],{depth:8,bevelEnabled:false,curveSegments:40});
 landGeo.rotateX(Math.PI/2);landGeo.translate(0,GROUND,0);
 {const uv=landGeo.attributes.uv,p=landGeo.attributes.position;for(let i=0;i<uv.count;i++)uv.setXY(i,p.getX(i)/12,p.getZ(i)/12);}
 groundTex.repeat.set(1,1);
@@ -815,7 +846,7 @@ function dashes(pts,off,len,gap,w,y,mat){const pos=[];for(let i=0;i<pts.length-1
 const paveMat=flatMat(0xffffff,{map:paveTex}),asphMat=flatMat(0xffffff,{map:asphaltTex}),whiteLine=flatMat(0xf4f2ea),yellowLine=flatMat(0xe8b53a);
 asphaltTex.repeat.set(1,1);
 /* 湘南：砂浜（海岸線の陸側）、川、国道134号、JR東海道線・江ノ電 */
-{const sand=flatMat(0xe2cf9c),water=flatMat(0x2f6f8f);ribbon(SH.COAST,60,GROUND+.05,sand,-30);
+if(!SH_REAL){const sand=flatMat(0xe2cf9c),water=flatMat(0x2f6f8f);ribbon(SH.COAST,60,GROUND+.05,sand,-30);
   for(const r of SH.RIVERS){ribbon(r.pts,r.half*2+3,GROUND+.06,sand);ribbon(r.pts,r.half*2,GROUND+.09,water);}
   ribbon(SH.COAST,4,.06,flatMat(0xf4f7f8,{transparent:true,opacity:.5}),5);
   ribbon(SH.R134,18,GROUND+.04,paveMat);ribbon(SH.R134,12,GROUND+.07,asphMat);dashes(SH.R134,0,5,6,.16,GROUND+.1,whiteLine);
@@ -990,10 +1021,6 @@ if(WORLD){
     const cg=new T.BufferGeometry();cg.setAttribute('position',new T.Float32BufferAttribute(cab,3));scene.add(new T.LineSegments(cg,new T.LineBasicMaterial({color:0xdfe6ea})));}
 }
 for(const[x,y,h,r]of GLOWS){const s=new T.Sprite(glowMat);s.position.set(x,GROUND+h,y);s.scale.set(r,r,1);scene.add(s);}
-// 横浜の名所は丘の上にもある（港の見える丘公園など）：標高タイルが読めたら、その地点の丘の高さだけ持ち上げる
-const SIGHT_OBJS=scene.children.slice(SIGHT_C0).map(o=>({o,done:false}));
-function liftSights(){for(const q of SIGHT_OBJS){if(q.done)continue;const x=q.o.position.x,z=q.o.position.z;if(!inWorld(x,z)||!KANTO){q.done=true;continue;}
-  if(Math.hypot(x-S.x,z-S.y)<1500&&KANTO.demReady(x-1,z-1,x+1,z+1)){q.o.position.y+=WOFF(x,z);q.done=true;}}}
 /* ===== 湘南の名所（簡単な形。実寸に近い高さ） ===== */
 {const P=id=>SH.SIGHTS.find(s=>s.id===id);
   // 鶴岡八幡宮：大石段の上に朱塗りの本宮、参道の大鳥居
@@ -1024,6 +1051,10 @@ function liftSights(){for(const q of SIGHT_OBJS){if(q.done)continue;const x=q.o.
   for(const part of byTile(rocks)){const im=new T.InstancedMesh(new T.IcosahedronGeometry(1,0),lam(0x6b665e),part.length);
     part.forEach(([x,y,sz],i)=>{dummy.position.set(x,.2,y);dummy.rotation.set(R()*3,R()*3,R()*3);dummy.scale.set(sz*1.3,sz*.8,sz);dummy.updateMatrix();im.setMatrixAt(i,dummy.matrix);});shadowy(fitInstances(im));scene.add(im);}}
 LANDMARK_KEEP.push(...SH.SIGHTS.map(s=>[s.x,s.y,45]));
+// 名所（横浜・湘南）は丘の上にもある（港の見える丘公園・鎌倉の大仏など）：標高タイルが読めたら、その地点の丘の高さだけ持ち上げる
+const SIGHT_OBJS=scene.children.slice(SIGHT_C0).map(o=>({o,done:false}));
+function liftSights(){for(const q of SIGHT_OBJS){if(q.done)continue;const x=q.o.position.x,z=q.o.position.z;if(!inWorld(x,z)||!KANTO){q.done=true;continue;}
+  if(Math.hypot(x-S.x,z-S.y)<1500&&KANTO.demReady(x-1,z-1,x+1,z+1)){q.o.position.y+=WOFF(x,z);q.done=true;}}}
 
 /* ===== 街並みのチャンク生成（近くだけ作り、遠くは消す） ===== */
 const CH=220,chunks=new Map(),colDone=new Set();let CRAD=GFX_LV[GFX].crad;
@@ -1148,7 +1179,7 @@ function ribbonGeo(list,y,off){const pos=[],uv=[];for(const[a,w]of list){for(let
       pos.push(ax+nx,y,az+nz,bx+nx,y,bz+nz,bx-nx,y,bz-nz,ax+nx,y,az+nz,bx-nx,y,bz-nz,ax-nx,y,az-nz);}}
   for(let i=0;i<pos.length;i+=3)uv.push(pos[i]/8,pos[i+2]/8);const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.computeVertexNormals();return g;}
 // 線をチャンクの四角で切る（各区間は中点がチャンクの中にあるものだけ。隣のチャンクと重ならない）
-const WIRE_MAT=new T.LineBasicMaterial({color:0x2a2a2a}),VEND_MAT=new T.MeshLambertMaterial({color:0xffffff,emissive:0x333333,emissiveIntensity:0});EMISSIVE.push(VEND_MAT);
+const SAND_MAT=flatMat(0xe0cc98),WETSAND_MAT=flatMat(0xb9a57a),WIRE_MAT=new T.LineBasicMaterial({color:0x2a2a2a}),VEND_MAT=new T.MeshLambertMaterial({color:0xffffff,emissive:0x333333,emissiveIntensity:0});EMISSIVE.push(VEND_MAT);
 // 海づり施設の桟橋の近くか（係船柱を置かない）
 function nearPier(x,z){for(const p of YP.piers||[])if(segDist(x,z,p.a[0],p.a[1],p.b[0],p.b[1])<p.w/2+12)return true;return false;}
 // 係船柱（ボラード）：低い円柱と頭
@@ -1225,11 +1256,15 @@ function buildWorldChunk(i,j,grp,L,doCol){const X0=i*CH,Y0=j*CH,X1=X0+CH,Y1=Y0+C
       const gp=[],pool=new T.InstancedMesh(LAMP_POOL_GEO,pierPoolM,lp.length);lp.forEach(([x,z,a],k)=>{const hx=x+Math.cos(-a+Math.PI/2)*1.2,hz=z-Math.sin(-a+Math.PI/2)*1.2;gp.push(hx,GROUND+7.3+O(hx,hz),hz);dummy.position.set(hx,GROUND+.2+O(hx,hz),hz);dummy.rotation.set(0,0,0);dummy.scale.setScalar(1);dummy.updateMatrix();pool.setMatrixAt(k,dummy.matrix);});
       pool.renderOrder=3;fitInstances(pool);grp.add(pool);const pg=new T.BufferGeometry();pg.setAttribute('position',new T.Float32BufferAttribute(gp,3));const pts=new T.Points(pg,LAMP_GLOW_PTS);pts.userData.own=true;grp.add(pts);}}
   // 岸壁：まっすぐな水際（8m以上）に白い縁石と係船柱（約18mおき）。縁石は陸側1m、係船柱は陸側0.8m
-  {const cxx=(X0+X1)/2,czz=(Y0+Y1)/2,cope=[],bol=[];const isBox=e=>(Math.abs(e[0]-e[2])<1e-6&&(Math.abs(e[0]-WB.x0)<.5||Math.abs(e[0]-WB.x1)<.5))||(Math.abs(e[1]-e[3])<1e-6&&(Math.abs(e[1]-WB.y0)<.5||Math.abs(e[1]-WB.y1)<.5));
-    for(const e of WORLD.edgesNear(cxx,czz,170)){const mx=(e[0]+e[2])/2,mz=(e[1]+e[3])/2;if(mx<X0||mx>=X1||mz<Y0||mz>=Y1||isBox(e))continue;const dx=e[2]-e[0],dz=e[3]-e[1],l=Math.hypot(dx,dz);if(l<8)continue;
+  {const cxx=(X0+X1)/2,czz=(Y0+Y1)/2,cope=[],bol=[],sand=[],surf=[];const isBox=WORLD.onBoxEdge;
+    for(const e of WORLD.edgesNear(cxx,czz,170)){const mx=(e[0]+e[2])/2,mz=(e[1]+e[3])/2;if(mx<X0||mx>=X1||mz<Y0||mz>=Y1||isBox(e))continue;const dx=e[2]-e[0],dz=e[3]-e[1],l=Math.hypot(dx,dz);if(l<.5)continue;
       let nx=-dz/l,nz=dx/l;if(!isLand(mx+nx*1.5,mz+nz*1.5)){nx=-nx;nz=-nz;}if(!isLand(mx+nx*1.5,mz+nz*1.5))continue;// 陸側の向き
+      if(sandAt(mx+nx*3,mz+nz*3)){sand.push([[e[0]-dx/l*.6+nx*22,e[1]-dz/l*.6+nz*22,e[2]+dx/l*.6+nx*22,e[3]+dz/l*.6+nz*22],46]);surf.push([[e[0]+nx*.5,e[1]+nz*.5,e[2]+nx*.5,e[3]+nz*.5],3]);continue;}// 砂浜：縁石・係船柱なし
+      if(l<8)continue;
       cope.push([[e[0]+nx*.5,e[1]+nz*.5,e[2]+nx*.5,e[3]+nz*.5],1]);if(nearPier(mx,mz))continue;for(let t=6;t<l-3;t+=18){const x=e[0]+dx/l*t+nx*.8,z=e[1]+dz/l*t+nz*.8;if(!colAt(x,z,.3))bol.push([x,z]);}}
     if(cope.length)own(flatOrder(new T.Mesh(ribbonGeo(cope,GROUND+.04,OFF),flatMat(0xd9d6cf)),GROUND+.04));
+    // 砂浜（外海の水際から約45m）と波打ち際の濡れた砂
+    if(sand.length){own(flatOrder(new T.Mesh(ribbonGeo(sand,GROUND+.02,OFF),SAND_MAT),GROUND+.02)).receiveShadow=true;own(flatOrder(new T.Mesh(ribbonGeo(surf,GROUND+.025,OFF),WETSAND_MAT),GROUND+.025));}
     if(bol.length){const im=new T.InstancedMesh(BOLLARD_GEO,BOLLARD_MAT,bol.length);bol.forEach(([x,z],k)=>{dummy.position.set(x,GROUND+O(x,z),z);dummy.rotation.set(0,0,0);dummy.scale.setScalar(1);dummy.updateMatrix();im.setMatrixAt(k,dummy.matrix);});fitInstances(im);im.castShadow=true;grp.add(im);}}
   // 建物
   const ci=Math.floor(X0/WORLD.BT),cj=Math.floor(Y0/WORLD.BT),cell=WORLD.cell(ci,cj);
@@ -1241,7 +1276,12 @@ function buildWorldChunk(i,j,grp,L,doCol){const X0=i*CH,Y0=j*CH,X1=X0+CH,Y1=Y0+C
   if(B.pos.length){const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(B.pos,3));g.setAttribute('normal',new T.Float32BufferAttribute(B.nor,3));
     g.setAttribute('color',new T.Float32BufferAttribute(B.col,3));g.setAttribute('aFacade',new T.Float32BufferAttribute(B.fac,4));g.setAttribute('aBldg',new T.Float32BufferAttribute(B.bld,4));
     const m=own(new T.Mesh(g,FACADE_MAT));m.castShadow=true;m.receiveShadow=true;}
-  if(units.length){const im=new T.InstancedMesh(bGeo,unitMat,units.length);units.forEach((u,k)=>{dummy.position.set(u[0],u[2],u[1]);dummy.rotation.set(0,u[6],0);dummy.scale.set(u[3],u[4],u[5]);dummy.updateMatrix();im.setMatrixAt(k,dummy.matrix);im.setColorAt(k,col.setHex(u[7]===1?0xc9c6bf:u[7]===2?0x8f9aa0:0xa9adb0));});shadowy(fitInstances(im));grp.add(im);}}
+  if(units.length){const im=new T.InstancedMesh(bGeo,unitMat,units.length);units.forEach((u,k)=>{dummy.position.set(u[0],u[2],u[1]);dummy.rotation.set(0,u[6],0);dummy.scale.set(u[3],u[4],u[5]);dummy.updateMatrix();im.setMatrixAt(k,dummy.matrix);im.setColorAt(k,col.setHex(u[7]===1?0xc9c6bf:u[7]===2?0x8f9aa0:0xa9adb0));});shadowy(fitInstances(im));grp.add(im);}
+  // 丘の木（標高8m 超の丘で、建物・道路の無い所。おおよその密度で、実際の植生ではない）
+  if(hilly){const tr=[],st=gfx().trees||13;for(let x=X0;x<X1;x+=st)for(let z=Y0;z<Y1;z+=st){const px=x+hash(Math.round(x),Math.round(z)+7)*st,pz=z+hash(Math.round(z),Math.round(x)+3)*st,o=WOFF(px,pz);
+      if(o<2||!isLand(px,pz)||colAt(px,pz,2)||WORLD.roadAt(px,pz)||WORLD.roadAt(px+3,pz)||WORLD.roadAt(px,pz+3))continue;tr.push([px,pz,GROUND+o,.9+hash(Math.round(px),Math.round(pz))*.6]);}
+    if(tr.length){const tk=new T.InstancedMesh(tkGeo,trunkMat,tr.length),cr=new T.InstancedMesh(crGeo,crownMat,tr.length);tr.forEach(([x,z,g,s2],k)=>{dummy.rotation.set(0,k,0);dummy.position.set(x,g-.3,z);dummy.scale.set(s2*1.3,4*s2,s2*1.3);dummy.updateMatrix();tk.setMatrixAt(k,dummy.matrix);
+        dummy.position.set(x,g+4.3*s2,z);dummy.scale.set(3*s2,3.4*s2,3*s2);dummy.updateMatrix();cr.setMatrixAt(k,dummy.matrix);cr.setColorAt(k,col.setHex([0x4c7a3e,0x5a8547,0x3f6d36][k%3]));});for(const m of[tk,cr]){shadowy(fitInstances(m));grp.add(m);}}}}
 /* 関東の近景チャンク（kanto.js）：10m 格子の地面（実際の標高）、地形に沿わせた道路・鉄道、地面の高さに合わせた建物（外壁シェーダー）、山の木。
    タイルが読めていなければ読み込んでから作り直す */
 // 駅名標：名前ごとに板の絵を1回だけ作る
@@ -1338,7 +1378,7 @@ function buildChunk(i,j){
   // 湘南の丘の森（標高データのある所だけ。木はおおよその密度で、実際の植生ではない）
   if(TERR&&j*CH>8000){const st=gfx().trees||13;for(let x=i*CH;x<(i+1)*CH;x+=st)for(let y=j*CH;y<(j+1)*CH;y+=st){const px=x+R()*st,py=y+R()*st,o=terrOff(px,py);if(o>1.5&&R()<.75&&!onRoad(px,py,3))L.tree.push([px,py,1+R()*.6]);}}
   const grp=new T.Group();const cx0=i*CH+CH/2,cy0=j*CH+CH/2;
-  if(WORLD&&!SH.inShonan(cx0,cy0)&&inWorld(cx0,cy0)){buildWorldChunk(i,j,grp,L,doCol);}
+  if(WORLD&&inWorld(cx0,cy0)){buildWorldChunk(i,j,grp,L,doCol);}
   else if(inKanto(cx0,cy0)){buildKantoChunk(i,j,grp,doCol);}
   else{
   const g0=Math.floor(i*CH/UNIT),g1=Math.floor((i+1)*CH/UNIT),h0=Math.floor(j*CH/UNIT),h1=Math.floor((j+1)*CH/UNIT);
@@ -1442,7 +1482,7 @@ function spawnAlong(around,range){return clamp(around+(rnd()-.5)*2*range,1,ROADT
 function updTraffic(dt,t){
   sChk-=dt;let dRoad=1e9;if(sChk<=0){sChk=.4;const rg=regionAt(S.x,S.y);const reset=()=>{for(const c of CARS){c.on=false;c.g.visible=false;}for(const p of PEDS){p.on=false;p.P.g.visible=false;}};
     if(rg==='kanto'){if(trRegion!=='kanto'){trRegion='kanto';trRoad=null;reset();}updTraffic.d=1e9;return;}
-    if(rg==='shonan'){if(trRegion!=='shonan'){trRegion='shonan';trRoad=null;setTrafficRoad(SH.R134,8);reset();}}
+    if(rg==='shonan'&&!SH_REAL){if(trRegion!=='shonan'){trRegion='shonan';trRoad=null;setTrafficRoad(SH.R134,8);reset();}}
     else{trRegion=rg;const cur=trRoad?roadS(S.x,S.y)[1]:1e9;if(cur>220){const nr=pickTrafficRoad(S.x,S.y);if(nr&&nr!==trRoad){trRoad=nr;const pts=[];for(let k=0;k<nr.a.length;k+=2)pts.push([nr.a[k],nr.a[k+1]]);if(pts.length>1){setTrafficRoad(pts,nr.w/2+2);reset();}}}}
     const r=roadS(S.x,S.y);sPlayer=r[0];dRoad=r[1];updTraffic.d=dRoad;}
   const near=(updTraffic.d||0)<400;
@@ -1986,15 +2026,16 @@ function drawMap2D(c,labels,view){c.lineJoin='round';c.lineCap='round';
     c.strokeStyle='#8f877f';for(const r of WORLD.railsIn(V.x0,V.y0,V.x1,V.y1)){if(r.state===2||r.state===3)continue;c.lineWidth=Math.max(4,1.6*px);c.setLineDash(r.op===0?[]:[6*px,4*px]);c.beginPath();const a=r.a;c.moveTo(a[0],a[1]);for(let k=2;k<a.length;k+=2)c.lineTo(a[k],a[k+1]);c.stroke();}c.setLineDash([]);
     if(V.z>=.6)for(const[ci,cj]of visCells(V)){const cell=WORLD.cell(ci,cj);if(!cell){WORLD.loadCell(ci,cj).then(()=>{if(!$('wmap').hidden)drawWorld();});continue;}c.fillStyle='#cdbfa6';for(const b of cell){if(b.x1<V.x0||b.x0>V.x1||b.y1<V.y0||b.y0>V.y1)continue;const p=b.p;c.beginPath();c.moveTo(p[0],p[1]);for(let k=2;k<p.length;k+=2)c.lineTo(p[k],p[k+1]);c.closePath();c.fill();}}}
 // 湘南：陸・江の島・砂浜・川・国道134号・線路
-  c.beginPath();poly2(c,SH.LAND);poly2(c,SH.ENOSHIMA);c.fillStyle='#e4dfc8';c.fill();
+  if(!SH_REAL){c.beginPath();poly2(c,SH.LAND);poly2(c,SH.ENOSHIMA);c.fillStyle='#e4dfc8';c.fill();
   c.strokeStyle='#ecd596';c.lineWidth=60;pline2(c,SH.COAST);c.stroke();
   for(const r of SH.RIVERS){c.strokeStyle='#2a7aa3';c.lineWidth=r.half*2+8;pline2(c,r.pts);c.stroke();}
-  c.strokeStyle='#ffffff';c.lineWidth=22;pline2(c,SH.R134);c.stroke();c.strokeStyle='#9a9088';c.lineWidth=9;pline2(c,SH.JR);c.stroke();c.lineWidth=7;pline2(c,SH.ENODEN);c.stroke();
+  c.strokeStyle='#ffffff';c.lineWidth=22;pline2(c,SH.R134);c.stroke();c.strokeStyle='#9a9088';c.lineWidth=9;pline2(c,SH.JR);c.stroke();c.lineWidth=7;pline2(c,SH.ENODEN);c.stroke();}
   for(const r of RECTS){c.fillStyle='#b8b3a6';c.fillRect(r.x,r.y,Math.max(r.w,12),Math.max(r.h,12));}
   if(labels){c.textAlign='center';c.textBaseline='middle';c.font=`900 ${130}px ${FONT}`;c.fillStyle='rgba(19,38,59,.6)';for(const[n,x,y]of AREAS)c.fillText(n,x,y);}}
 // 横浜のミニマップ用（実在の範囲。0.1px/m）
-const MAPC=document.createElement('canvas');MAPC.width=Math.max(1,Math.ceil((WB.x1-WB.x0)*.1));MAPC.height=Math.max(1,Math.ceil((WB.y1-WB.y0)*.1));
-{const c=MAPC.getContext('2d');c.fillStyle='#2a7aa3';c.fillRect(0,0,MAPC.width,MAPC.height);c.scale(.1,.1);c.translate(-WB.x0,-WB.y0);drawMap2D(c,false,{x0:WB.x0,y0:WB.y0,x1:WB.x1,y1:WB.y1,z:.1});}
+// 地域ごとに1枚（0.1px/m）。地域を足しても同じ
+const MAPCS=(WORLD?WORLD.worlds:[]).map(w=>{const[x0,y0,x1,y1]=w.bbox,cv=document.createElement('canvas');cv.width=Math.max(1,Math.ceil((x1-x0)*.1));cv.height=Math.max(1,Math.ceil((y1-y0)*.1));
+  const c=cv.getContext('2d');c.fillStyle='#2a7aa3';c.fillRect(0,0,cv.width,cv.height);c.scale(.1,.1);c.translate(-x0,-y0);drawMap2D(c,false,{x0,y0,x1,y1,z:.1});return{cv,x0,y0};});
 // 湘南のミニマップ用（x:-23000〜3500, y:8200〜15700。等倍）
 const MAPC2=document.createElement('canvas');MAPC2.width=2650;MAPC2.height=750;
 {const c=MAPC2.getContext('2d');c.fillStyle='#2a7aa3';c.fillRect(0,0,2650,750);c.scale(.1,.1);c.translate(23000,-8200);drawMap2D(c,false);}
@@ -2023,7 +2064,7 @@ function kantoMini(){const now=performance.now();
     KM.cv=cv;KM.x0=x0;KM.y0=y0;}
   return KM.cv?{cv:KM.cv,x0:KM.x0,y0:KM.y0}:null;}
 function drawMini(){const c=miniC,W=208,R=W/2,z=2.6;c.save();c.clearRect(0,0,W,W);c.beginPath();c.arc(R,R,R,0,7);c.clip();c.fillStyle='#2a7aa3';c.fillRect(0,0,W,W);
-  c.translate(R,R);c.rotate(yaw);c.scale(z,z);c.translate(-S.x*.1,-S.y*.1);c.drawImage(MAPC,WB.x0*.1,WB.y0*.1);c.drawImage(MAPC2,-2300,820);if(inKanto(S.x,S.y)){const k=kantoMini();if(k)c.drawImage(k.cv,k.x0*.1,k.y0*.1,KM_SIZE*.1,KM_SIZE*.1);}
+  c.translate(R,R);c.rotate(yaw);c.scale(z,z);c.translate(-S.x*.1,-S.y*.1);for(const m of MAPCS)c.drawImage(m.cv,m.x0*.1,m.y0*.1);if(!SH_REAL)c.drawImage(MAPC2,-2300,820);if(inKanto(S.x,S.y)){const k=kantoMini();if(k)c.drawImage(k.cv,k.x0*.1,k.y0*.1,KM_SIZE*.1,KM_SIZE*.1);}
   for(const sp of SPOTS){c.fillStyle='#1b7d82';c.beginPath();c.arc(sp.x*.1,sp.y*.1,3,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=.8;c.stroke();}
   for(const s of STATIONS){c.fillStyle='#2f6fb0';c.fillRect(s.x*.1-1.6,s.y*.1-1.6,3.2,3.2);}
   for(const s of SIGHTS){c.fillStyle=S.stamps[s.id]?'#f6f2e8':'#f1b746';c.beginPath();c.arc(s.x*.1,s.y*.1,2,0,7);c.fill();}
@@ -2234,12 +2275,12 @@ function buildNet(){const t0=performance.now();
   // 道はなるべく陸の縁から3m以上内側を通す（狭い岸壁・防波堤の端を通って海に落ちないように。無理なら縁も通る）
   const land=(x,y)=>(isLand(x,y)||!!rectAt(x,y))&&!colAt(x,y,1),inner=(x,y)=>land(x,y)&&land(x+3,y)&&land(x-3,y)&&land(x,y+3)&&land(x,y-3);
   // 横浜は実在の道（world.js）を使うので、代わりの道は湘南だけ
-  const trunks=[{pts:SH.R134,w:12,kind:'primary',name:'国道134号（おおよそ）'}];
-  const targets=SPOTS.filter(sp=>sp.region==='shonan').map(sp=>({id:sp.id,x:sp.x,y:sp.y,name:sp.n,car:!sp.sh||sp.sh.type==='port'||sp.sh.type==='breakwater'}));
+  const trunks=SH_REAL?[]:[{pts:SH.R134,w:12,kind:'primary',name:'国道134号（おおよそ）'}];
+  const targets=SPOTS.filter(sp=>sp.region==='shonan'&&!SH_REAL).map(sp=>({id:sp.id,x:sp.x,y:sp.y,name:sp.n,car:!sp.sh||sp.sh.type==='port'||sp.sh.type==='breakwater'}));
   const fb=NV.fallback(trunks,targets,land,{cell:8,radius:1500,strict:inner});
   let roads=fb.roads,lots=fb.lots,bikeParks=[],fuel=[];const osm=[];
   // 横浜の釣り場の近くの駐車スペース（推定）：釣り場に一番近い、車の通れる道の脇の陸。実在の駐車場の位置・台数・料金ではない
-  if(WORLD)for(const sp of SPOTS){if(sp.region!=='yokohama')continue;const r=WORLD.nearestRoad(sp.x,sp.y,700,q=>q.car&&q.lv===0);if(!r)continue;
+  if(WORLD)for(const sp of SPOTS){if(!inWorld(sp.x,sp.y))continue;const r=WORLD.nearestRoad(sp.x,sp.y,700,q=>q.car&&q.lv===0);if(!r)continue;
     const d=Math.hypot(sp.x-r.x,sp.y-r.y)||1,o=r.road.w/2+9;let x=r.x+(sp.x-r.x)/d*o,y=r.y+(sp.y-r.y)/d*o;if(!isLand(x,y)){x=r.x-(sp.x-r.x)/d*o;y=r.y-(sp.y-r.y)/d*o;}if(!isLand(x,y)){x=r.x;y=r.y;}
     lots.push({id:'estlot_'+sp.id,x,y,r:9,name:sp.n+' 近くの駐車スペース（推定）',capacity:20,feePerHour:300,hours:'24時間（推定）',full:false,est:true,src:'est',why:'実在の駐車場の情報がない。位置・台数・料金はゲーム用の推定',for:sp.id});}
   for(const[name,D]of Object.entries(OSM_SET)){if(!D||!D.roads||!D.roads.length)continue;const B=osmBox(D);osm.push({name,D,B});
@@ -2256,10 +2297,10 @@ function buildNet(){const t0=performance.now();
 buildNet();
 // ゲーム用の地物（実在データではない）を地図データに足す
 {const A=(layer,id,pts,props,src)=>MAPD.add(layer,{id,pts,src:src||'game_approx',props:props||{},name:props&&props.name||null});
-  A('coastline','game_coast',SH.COAST,{name:'海岸線（ゲーム用・手描き）'});A('land','game_land',SH.LAND);A('land','game_enoshima',SH.ENOSHIMA,{name:'江の島'});
+  if(!SH_REAL){A('coastline','game_coast',SH.COAST,{name:'海岸線（ゲーム用・手描き）'});A('land','game_land',SH.LAND);A('land','game_enoshima',SH.ENOSHIMA,{name:'江の島'});
   for(const r of SH.RIVERS)A('rivers','river_'+r.n,r.pts,{name:r.n,widthM:r.w});
   for(const r of SH.STRUCTS)A('structures','st_'+r.n,[[r.x,r.y],[r.x+r.w,r.y],[r.x+r.w,r.y+r.h],[r.x,r.y+r.h],[r.x,r.y]],{name:r.n,bridge:!!r.bridge});
-  A('beaches','game_beach_band',SH.COAST,{name:'砂浜（海岸線から約24mの帯・ゲーム用）',band:24});
+  A('beaches','game_beach_band',SH.COAST,{name:'砂浜（海岸線から約24mの帯・ゲーム用）',band:24});}
   for(const r of NET.roads)if(r.approx&&r.pts.every(p=>SH.inShonan(p[0],p[1])))A('roads',r.id,r.pts,{name:r.name,car:!!r.car});
   for(const l of NET.lots)if(SH.inShonan(l.x,l.y)&&l.src!=='osm')A('parking',l.id,[[l.x,l.y]],{name:l.name,why:l.why},'game_est');
   for(const g of SH.GSPOTS)MAPD.add('fishing_spots',{id:g.id,ll:[g.latlon],pts:[[g.x,g.y]],src:'user',name:g.name,props:{type:g.type,accessStatus:g.accessStatus}});
@@ -2276,7 +2317,7 @@ const GSHHS_COAST=[];for(const f of MAPD.real('coastline')){let cur=[];const y0=
   for(let i=0;i<f.pts.length;i++){const p=f.pts[i],q=f.pts[i-1];if(q&&(q[1]>=y0)!==(p[1]>=y0)){const t=(y0-q[1])/(p[1]-q[1]);const m=[q[0]+(p[0]-q[0])*t,y0];if(p[1]>=y0)cur=[m];else{cur.push(m);if(cur.length>1)GSHHS_COAST.push(cur);cur=[];}}if(p[1]>=y0)cur.push(p);}
   if(cur.length>1)GSHHS_COAST.push(cur);}
 const FAR_LAND=[];
-for(const f of MAPD.real('land')){let p=f.pts.slice(0,-1);p=clipY(p,GEO.SHONAN.y0);if(p.length<3)continue;
+if(!KANTO)for(const f of MAPD.real('land')){let p=f.pts.slice(0,-1);p=clipY(p,GEO.SHONAN.y0);if(p.length<3)continue;
   for(const q of[clipX(p,SH.COAST[0][0],true),clipX(p,SH.COAST[SH.COAST.length-1][0],false)]){if(q.length<3)continue;
     // 横浜の実在の地図の範囲とは重ねない（その外側だけ：西・東・南に分ける）
     if(!WORLD){FAR_LAND.push(q);continue;}const mid=clipX(clipX(q,WB.x0,false),WB.x1,true);
@@ -2286,13 +2327,13 @@ if(FAR_LAND.length){const g=new T.ExtrudeGeometry(FAR_LAND.map(shp),{depth:8,bev
 if(/geodebug/.test(location.hash))for(const f of GSHHS_COAST.map(pts=>({pts}))){const g=new T.BufferGeometry().setFromPoints(f.pts.map(([x,y])=>new V3(x,GROUND+.6,y)));scene.add(new T.Line(g,new T.LineBasicMaterial({color:0xe04a3b})));}
 // 道の上には建物を建てない（okSpot から呼ぶ）
 // 道路の上か（横浜は実在の道＝world.js、湘南は道路網のマス目）
-function roadCellAt(x,y){return inWorld(x,y)&&!SH.inShonan(x,y)?WORLD.roadAt(x,y):NET.M.at(x,y);}
+function roadCellAt(x,y){return inWorld(x,y)?WORLD.roadAt(x,y):NET.M.at(x,y);}
 function onRoad(cx,cy,half){const c=NET.M.cell;for(let x=cx-half-2;x<=cx+half+2;x+=c)for(let y=cy-half-2;y<=cy+half+2;y+=c)if(roadCellAt(x,y))return true;return false;}
 // 路面：岩場（磯）・階段（江の島）は乗ったまま進めない。砂浜・公園・舗装路
 function surfaceAt(x,y){const sh=SH.inShonan(x,y);const rc=roadCellAt(x,y);
   if(sh){for(const g of ISO_SPOTS)if(Math.hypot(x-g.x,y-g.y)<40)return'rock';if(pip(SH.ENOSHIMA,x,y)&&!(rc&&rc.car))return'steps';}
   if(rc&&rc.car)return'paved';
-  if(sh&&SH.lineDist(SH.COAST,x,y)<60)return'sand';
+  if(sh&&(SH_REAL?sandAt(x,y):SH.lineDist(SH.COAST,x,y)<60))return'sand';
   if(rc)return rc.surface||'paved';
   return'paved';}
 const SURF_LABEL={paved:'舗装路',gravel:'砂利・未舗装',sand:'砂浜',grass:'芝・公園',rock:'岩場',steps:'階段'};
@@ -2543,7 +2584,7 @@ function drawKanto(w,h,d){const c=wmCv.getContext('2d'),v=WM.v,z=v.z,px=1/z;c.se
     note=(KT.fictional?'架空のテスト用データ（実在の地図ではない）・':'© OpenStreetMap contributors・')+`タイル z${tz}・${uniq.length}枚`+(KT.pending?'・読み込み中…':'');}
   else{// タイルなし：GSHHS（湘南〜横浜の概形）だけ
     if(FAR_LAND.length){c.fillStyle='#d3d8c6';for(const q of FAR_LAND){c.beginPath();poly2(c,q);c.fill();}}
-    c.fillStyle='#e4dfc8';c.beginPath();poly2(c,SH.LAND);poly2(c,SH.ENOSHIMA);c.fill();c.strokeStyle='#7a3fb0';c.lineWidth=2*px;c.setLineDash([6*px,4*px]);for(const l of GSHHS_COAST){pline2(c,l);c.stroke();}c.setLineDash([]);
+    c.fillStyle='#e4dfc8';c.beginPath();if(SH_REAL){worldPath(c,WB.x0,WB.y0,WB.x1,WB.y1);c.fill('evenodd');}else{poly2(c,SH.LAND);poly2(c,SH.ENOSHIMA);c.fill();}c.strokeStyle='#7a3fb0';c.lineWidth=2*px;c.setLineDash([6*px,4*px]);for(const l of GSHHS_COAST){pline2(c,l);c.stroke();}c.setLineDash([]);
     note=KT.status==='missing'?'関東の実在地図（OSM）のタイルはまだありません。表示は湘南のゲーム地形と GSHHS の概形だけ':'読み込み中…';}
   // 釣り場（湘南）と現在地（湘南にいるとき）
   for(const sp of SPOTS)if(sp.sh){c.fillStyle='#1b7d82';c.beginPath();c.arc(sp.x,sp.y,6*px,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=1.5*px;c.stroke();fishGlyph(c,sp.x,sp.y,3.6*px);}
@@ -2755,9 +2796,12 @@ function frame(now){const rdt=(now-last)/1000;const dt=Math.min(.05,rdt);last=no
 /* ===== 開始 ===== */
 function start(fromSave,where){const ld=fromSave&&load();if(ld){TK.migrate(ld,TACKLE);TK.migrateGear(ld,TACKLE);migrateMap(ld);}S=ld?Object.assign(fresh(),ld):fresh();if(!ld)S.base=today0();VH.migrate(S);restoreRide();
   if(where==='hiratsuka'){const p=hiratsukaStart();S.x=p[0];S.y=p[1];}
-  F.st='idle';N=null;$('title').hidden=true;updMoney();lastClock='';updClock();yaw=0;updChunks(true);if(!walk(S.x,S.y)){S.x=2130;S.y=1880;updChunks(true);}snapCam();save();
+  F.st='idle';N=null;$('title').hidden=true;updMoney();lastClock='';updClock();yaw=0;updChunks(true);rescuePos();snapCam();save();
   if(!ld)setTimeout(()=>toast(where==='hiratsuka'?'平塚の海岸から。メニュー→乗り物で自転車や車も買える':'まずは釣り場へ。歩くか、青い丸看板のバス停からバスで'),500);}
 // セーブから：乗っていた乗り物に乗ったまま再開（データが壊れていたら降りた扱い）
+// 歩けない所で再開した（地図を実在のものに作り直した後の古いセーブなど）：400m 以内の歩ける所 → 同じ地域の一番近い駅 → 最初の場所
+function rescuePos(){if(RIDE||walk(S.x,S.y))return;ensureCollision();if(walk(S.x,S.y))return;for(let r=5;r<=400;r+=5)for(let a=0;a<6.28;a+=Math.min(1,6/r)){const x=S.x+Math.cos(a)*r,y=S.y+Math.sin(a)*r;if(walk(x,y)&&!colAt(x,y,1)){S.x=x;S.y=y;updChunks(true);return;}}
+  const rg=regionAt(S.x,S.y);let b=null,bd=1e18;for(const st of STATIONS){if(st.region!==rg)continue;const d=Math.hypot(st.x-S.x,st.y-S.y);if(d<bd){bd=d;b=st;}}const p=b||START;S.x=p.x;S.y=p.y;updChunks(true);}
 function restoreRide(){RIDE=null;const u=S.veh.using;if(u==null)return;const o=VH.owned(S,u);if(!o||!VH.specOf(o)){S.veh.using=null;return;}setRide(o,S.veh.h!=null?S.veh.h:0);}
 $('factSpots').textContent=SPOTS.filter(sp=>!sp.sh||(sp.sh.accessStatus!=='unverified'&&sp.sh.accessStatus!=='protected')).length;$('factFish').textContent=FISH_IDS.length;$('factSights').textContent=SIGHTS.length;
 $('newBtn').onclick=()=>{SND.init();start(false);};$('hiraBtn').onclick=()=>{SND.init();start(false,'hiratsuka');};$('contBtn').onclick=()=>{SND.init();start(true);};

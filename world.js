@@ -100,6 +100,33 @@ function create(D,opt){opt=opt||{};const unit=D.unit||.1;const W={name:D.name,me
     pending.set(k,pr);return pr;};
   W.dropCell=(i,j)=>bcache.delete(i+','+j);
   return W;}
-const API={create,CELL,RCELL,CTG_NAME,undelta};
+/* ===== 複数の地域をまとめる（横浜・湘南・今後の地域）。点の問い合わせはその点を含む地域へ、範囲の問い合わせは全地域を合わせる ===== */
+function combine(worlds){worlds=worlds.filter(Boolean);if(worlds.length===1&&!worlds[0].worlds){const w=worlds[0];w.worlds=[w];w.at=(x,y)=>w.inBox(x,y)?w:null;w.onBoxEdge=e=>onBoxOf(w,e);w.nearBox=(x,y,h)=>nearB(w,x,y,h);return w;}
+  const at=(x,y)=>{for(const w of worlds)if(w.inBox(x,y))return w;return null;};
+  const bb=[Math.min(...worlds.map(w=>w.bbox[0])),Math.min(...worlds.map(w=>w.bbox[1])),Math.max(...worlds.map(w=>w.bbox[2])),Math.max(...worlds.map(w=>w.bbox[3]))];
+  const hit=(w,x0,y0,x1,y1)=>x1>=w.bbox[0]&&x0<=w.bbox[2]&&y1>=w.bbox[1]&&y0<=w.bbox[3];
+  const cat=(f,x0,y0,x1,y1)=>{const out=[];for(const w of worlds)if(hit(w,x0,y0,x1,y1))for(const o of f(w))out.push(o);return out;};
+  const C={name:worlds.map(w=>w.name).join('+'),worlds,bbox:bb,at,BT:worlds[0].BT,
+    inBox:(x,y)=>!!at(x,y),isLand:(x,y)=>{const w=at(x,y);return!!w&&w.isLand(x,y);},
+    edgesNear:(x,y,R)=>cat(w=>w.edgesNear(x,y,R),x-R,y-R,x+R,y+R),
+    nearestCoast:(x,y,R)=>{let best=null;for(const w of worlds){if(!hit(w,x-(R||200),y-(R||200),x+(R||200),y+(R||200)))continue;const c=w.nearestCoast(x,y,R);if(c&&(!best||c.d<best.d))best=c;}return best;},
+    coastDist:(x,y,R)=>{const c=C.nearestCoast(x,y,R);return c?c.d:Infinity;},
+    roadsIn:(x0,y0,x1,y1)=>cat(w=>w.roadsIn(x0,y0,x1,y1),x0,y0,x1,y1),railsIn:(x0,y0,x1,y1)=>cat(w=>w.railsIn(x0,y0,x1,y1),x0,y0,x1,y1),
+    nearestRoad:(x,y,R,f)=>{let best=null;for(const w of worlds){const r=w.nearestRoad(x,y,R,f);if(r&&(!best||r.d<best.d))best=r;}return best;},
+    roadAt:(x,y)=>{const w=at(x,y);return w?w.roadAt(x,y):null;},bridgeAt:(x,y)=>{const w=at(x,y);return w?w.bridgeAt(x,y):null;},
+    // 経路用の道路網は1つの地域の中だけ（点の番号が地域ごとなので混ぜない）。範囲の中心の地域
+    graphRoads:(x0,y0,x1,y1,snap)=>{const w=x0==null?worlds[0]:at((x0+x1)/2,(y0+y1)/2)||worlds.find(q=>hit(q,x0,y0,x1,y1));return w?w.graphRoads(x0,y0,x1,y1,snap):[];},
+    cellOf:(x,y)=>[Math.floor(x/worlds[0].BT),Math.floor(y/worlds[0].BT)],
+    cell:(i,j)=>{const w=at((i+.5)*C.BT,(j+.5)*C.BT)||worlds.find(q=>hit(q,i*C.BT,j*C.BT,(i+1)*C.BT,(j+1)*C.BT));return w?w.cell(i,j):[];},
+    loadCell:(i,j)=>{const w=at((i+.5)*C.BT,(j+.5)*C.BT)||worlds.find(q=>hit(q,i*C.BT,j*C.BT,(i+1)*C.BT,(j+1)*C.BT));return w?w.loadCell(i,j):Promise.resolve([]);},
+    dropCell:(i,j)=>{for(const w of worlds)w.dropCell(i,j);},
+    onBoxEdge:e=>worlds.some(w=>onBoxOf(w,e)),nearBox:(x,y,h)=>worlds.some(w=>nearB(w,x,y,h))};
+  for(const k of['rings','land','roads','rails','bridges','names','breakwaters','structs'])C[k]=[].concat(...worlds.map(w=>w[k]||[]));
+  C.findName=(re,code)=>C.names.filter(n=>(code==null||n.code===code)&&(typeof re==='string'?n.text===re:re.test(n.text)));
+  return C;}
+// 範囲の四角の縁（陸の多角形を範囲で切った辺。水際ではない）か
+function onBoxOf(w,e){const[bx0,by0,bx1,by1]=w.bbox;return(Math.abs(e[0]-e[2])<1e-6&&(Math.abs(e[0]-bx0)<.5||Math.abs(e[0]-bx1)<.5))||(Math.abs(e[1]-e[3])<1e-6&&(Math.abs(e[1]-by0)<.5||Math.abs(e[1]-by1)<.5));}
+function nearB(w,x,y,h){const[bx0,by0,bx1,by1]=w.bbox;return x>bx0-h&&x<bx1+h&&y>by0-h&&y<by1+h;}
+const API={create,combine,CELL,RCELL,CTG_NAME,undelta};
 if(typeof module!=='undefined'&&module.exports)module.exports=API;else root.HamaWorld=API;
 })(typeof self!=='undefined'?self:this);

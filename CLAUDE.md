@@ -26,7 +26,7 @@
 - `data/tackle-data.js` — 上から400件を書き出した自動生成ファイル（`python3 tools/build_tackle.py`）。直接編集しない。
 - `tackle.js` — 釣具の所持（`S.tk`）・装備（ルアー `S.eq`、ロッド `S.rodId`、リール `S.reelId`）・購入・ロスト・ロッドの適合重量・リールの一致・飛距離・糸の強さ・巻き速度・Lv（図鑑2種ごと）・検索（`window.HamaTackle`）。
 - `data/shonan-spots.js` — 湘南（鎌倉市〜大磯町）の釣り場39か所と規制エリアA〜G。ユーザー提供の資料のデータモデル。位置はおおよそ（実測でない）、出現確率は持たない、ゲーム用の数値は推定。
-- `shonan.js` — 湘南の地理（緯度経度→ゲーム座標、海岸線・江の島・川・防波堤・橋・国道134号・JR・江ノ電・駅・名所）と、釣りできるかの判定 `canFish`（未確認・自然保護は不可、利用時間、夏の遊泳区域、高波の磯、荒天閉鎖、禁止された釣り方）、規制エリア `restrictedAt`（`window.HamaShonan`）。
+- `shonan.js` — 湘南の地理（緯度経度→ゲーム座標、駅・名所。手描きの海岸線・川・防波堤・国道134号・JR・江ノ電は、実在の地図が無い時の代わり）と、釣りできるかの判定 `canFish`（未確認・自然保護は不可、利用時間、夏の遊泳区域、高波の磯、荒天閉鎖、禁止された釣り方）、規制エリア `restrictedAt`（`window.HamaShonan`）。
 - `data/fish/species.json` — 魚種のマスター（126種：既存36＋新規90。魚類118・頭足類7・甲殻類1。海・河口で釣れる104、淡水22）。学名・生息（釣り場の種類ごとの多さ）・水深・底質・季節・時間帯・潮・適水温・釣り方・サイズ・重さ係数・速さ・警戒心・引き・ファイトの型・レア度・価格・見た目。元は `tools/fish/species_rows.txt`（新規）と `existing_extra.txt`（既存の追加情報）、`node tools/fish/build_species.mjs` で `species.json`・`species.js` を作る（直接編集しない）。既存の値（体長・釣り方・旬など）は index.html の FISH から。
 - `data/fish/images.js` — 魚の写真の一覧（出典・ライセンス・改変内容つき）。`tools/fish/fetch_images.py`（Wikimedia Commons を検索→目で確認して approve→WebP・AVIF・サムネイルに変換）。41種（2026-10。釣れる104種のうち。残りは候補が料理・標本・浮世絵などで不採用か、候補なし）。続きは `fetch_images.py download --k 1`（次の候補）→ 目で確認 → approved_src → `build --from-dir`。写真の無い魚は仮の図（「実物の写真ではありません」と表示）。
 - `fish-ai.js` — 魚のAI。`fight.js` — フッキングとファイト。`sound.js` — 効果音と環境音。
@@ -42,6 +42,7 @@
 - `tools/fetch_osm.mjs` — OSM の取得と変換（`node tools/fetch_osm.mjs hiratsuka|all`、`--from-file`）。出力は `data/osm/`（説明は `data/osm/README.md`。ODbL）。
 - `world.js` — 実在の地図（等倍）の読み込みと問い合わせ（`window.HamaWorld`）：陸か `isLand`、水際 `nearestCoast`、道路 `roadsIn`・`roadAt`（車が通れるか）・経路用 `graphRoads`、橋 `bridgeAt`、地名 `names`、建物 `loadCell`（440m 四方の .bin を必要なときだけ）。
 - `data/world/yokohama-base.js`・`yokohama-bld/` — 横浜の実在の地図（自動生成）。`tools/gsi/fetch_tiles.py`（国土地理院ベクトルタイル optimal_bvmap-v1 z16 を data-build/gsi へ）→ `tools/gsi/build_world.py yokohama`。直接編集しない。
+- `data/world/shonan-base.js`・`shonan-bld/` — 湘南の実在の地図（自動生成。`tools/gsi/fetch_tiles.py shonan 35.2801,139.2825,35.3459,139.5699` → `tools/gsi/build_world.py shonan`）。WORLD は `HamaWorld.combine` で横浜・湘南をまとめる（地域の差は docs/REGION_PARITY.md）。
 - `data/yokohama-places.js` — 横浜の釣り場・名所・バス停・海づり施設の桟橋・ベイブリッジの位置（出典メモつき）。
 - `gsi.js`・`gsi-worker.js`・`kanto.js` — （gsi-worker.js はタイルの取得・解読を別スレッドで）国土地理院タイルの直接読み込み（`window.HamaGSI`）と、横浜・湘南の外の関東の近景（`window.HamaKanto`：10m 格子の地面・陸の判定・建物・道路・鉄道・水域・地名）。index.html の `buildKantoChunk`、ワールドマップ「関東」→「散策に行く」（釣り場はなし）。
 - `terrain.js` — 国土地理院の標高タイルの復号と高さ（`window.HamaTerrain`）。湘南の丘は `data/terrain/shonan-game.js`（`tools/terrain/build_game_grid.mjs`）。

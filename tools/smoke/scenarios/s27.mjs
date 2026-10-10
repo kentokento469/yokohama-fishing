@@ -19,12 +19,12 @@ export default async (page, SP) => {
   const c=await page.evaluate(()=>{const D=__D,V=window.HamaVehicles;D.buyVeh(V.byId('car_kei'));const o=D.S.veh.owned.find(q=>q.id==='car_kei');const pk=D.S.veh.parked[o.uid];return{lot:pk.lotId,dist:Math.hypot(pk.x-D.S.x,pk.y-D.S.y).toFixed(0),route:D.NAVR&&D.NAVR.legs.length};});log({car:c});
   const d=await page.evaluate(()=>{const D=__D;const o=D.S.veh.owned.find(q=>q.id==='car_kei');const pk=D.S.veh.parked[o.uid];D.S.x=pk.x;D.S.y=pk.y;D.updChunks(true);D.mount(o);const f0=o.fuel;
     // 道路に向けて走る：一番近い車道の点の方へ向きを合わせる
-    const ne=window.HamaRouting.nearestEdge(D.NET.G,D.S.x,D.S.y,'car');const A=D.NET.G.nodes[ne.e.a],B=D.NET.G.nodes[ne.e.b];D.RIDE.st.h=Math.atan2(B.x-A.x,B.y-A.y);D.setYaw(D.RIDE.st.h+Math.PI);
+    const rr=D.WORLD.nearestRoad(D.S.x,D.S.y,300,q=>q.car&&q.lv===0);const ra=rr.road.a;let bi=0,bd=1e9;for(let k=0;k<ra.length-2;k+=2){const d=Math.hypot(ra[k]-rr.x,ra[k+1]-rr.y);if(d<bd){bd=d;bi=k;}}D.RIDE.st.h=Math.hypot(rr.x-D.S.x,rr.y-D.S.y)>2?Math.atan2(rr.x-D.S.x,rr.y-D.S.y):Math.atan2(ra[bi+2]-ra[bi],ra[bi+3]-ra[bi+1]);// 駐車場から道へ// 地域共通の実在の道（world.js）D.setYaw(D.RIDE.st.h+Math.PI);
     const x0=D.S.x,y0=D.S.y;let t=1;D.setJoy(0,-1);for(let i=0;i<400;i++)D.update(.05,t+=.05);D.setJoy(0,0);
-    return{f0,f1:o.fuel,moved:Math.hypot(D.S.x-x0,D.S.y-y0).toFixed(0),onRoad:!!D.NET.M.at(D.S.x,D.S.y),v:D.RIDE.st.v.toFixed(1)};});log({drive:d});
+    return{f0,f1:o.fuel,moved:Math.hypot(D.S.x-x0,D.S.y-y0).toFixed(0),onRoad:!!D.roadCellAt(D.S.x,D.S.y),v:D.RIDE.st.v.toFixed(1)};});log({drive:d});
   await page.screenshot({path:SP+'/v_car.png'});
   // 道の外へ：海の方（南）へ向けても出られない
-  const e=await page.evaluate(()=>{const D=__D;let bad=0;D.RIDE.st.h=0;let t=1;D.setJoy(0,-1);for(let i=0;i<300;i++){D.update(.05,t+=.05);if(!D.carOk(D.S.x,D.S.y))bad++;}D.setJoy(0,0);return{bad,onRoad:!!D.NET.M.at(D.S.x,D.S.y)};});log({offroad:e});
+  const e=await page.evaluate(()=>{const D=__D;let bad=0;D.RIDE.st.h=0;let t=1;D.setJoy(0,-1);for(let i=0;i<300;i++){D.update(.05,t+=.05);if(!D.carOk(D.S.x,D.S.y))bad++;}D.setJoy(0,0);return{bad,onRoad:!!D.roadCellAt(D.S.x,D.S.y)};});log({offroad:e});
   // ルート：釣り場へ
   const f=await page.evaluate(()=>{const D=__D;const sp=window.HamaShonan.GSPOTS.find(g=>g.id==='shinko_east');D.setDest({x:sp.x,y:sp.y,name:sp.name,spot:'shinko_east'});return D.plans(D.S.veh.dest).map(p=>({m:p.mode,fail:p.fail,min:p.time&&Math.round(p.time/60),len:p.len&&Math.round(p.len),lot:p.lot&&p.lot.name}));});log({plans:f});
   await page.evaluate(()=>{__D.openMenu();__D.setTab('map','nav');__D.renderTab();});await page.waitForTimeout(300);await page.screenshot({path:SP+'/v_nav.png'});

@@ -40,6 +40,9 @@ Phase A の原因と修正（2026-10-10）：①カメラは常にプレイヤ�
 - 最後の正常動作確認：npm test 142件合格・npm run smoke 6/6 OK（Phase 0 完了時）
 - 現在のエラー：なし
 
+## 最優先修正：横浜・湘南の機能統一（2026-10-11）
+湘南も国土地理院データの実在の地図（data/world/shonan-*）にし、WORLD を地域共通（world.js の combine）に。結果・未完了は docs/REGION_PARITY.md。確認は tools/smoke/scenarios/parity.mjs（横浜と湘南で同じ操作）。
+
 ## 外部データの経路（2026-10-10 確認）
 | 取得先 | 状態 | 使い方 |
 |---|---|---|
