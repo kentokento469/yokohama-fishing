@@ -15,6 +15,7 @@ const CASES=[
   ['kanto','関東（横須賀・箱根）を散策：地形・陸・チャンク',[/kanto_yokosuka {"rg":"kanto","land":true,"gy":([4-9]|[1-3]\d)\./,/kanto_hakone {"rg":"kanto","land":true,"gy":(8\d|9\d|1[0-3]\d)\./,/0pending/,/kanto_nostation \{"rg":"[a-z]+","paid":0\}/,/kanto_yokosuka [^\n]*"st":"[^"]*駅","std":\d{1,2}[,}]/,/kanto_hakone [^\n]*"st":"箱根湯本駅"/,/kanto_bridge \{"walk":true,"water":true,"dy":0(\.[0-4]\d*)?[,}]/]],
   ['p10','魚拓・生き餌（泳がせ）',[/p10 \{"gy":1,"best":true,"cv":[1-9]\d*,"noGear":0,"live":1,"liveCand":true,[^\n]*"back":2,"fish3d":true/,/p8 \{"cats":true,"det":true,"leader":true,"rough":true,"hooks":10\}/]],
   ['p11','魚市場アプリ・買取所・移動買取・地図',[/p11 \{"counts":\{"yokohama":([5-9]|\d\d),"shonan":(\d\d)[^\n]*"conf":true,"quoted":[1-9]\d*,"gain":[1-9]\d*,"once":true,"left":1,"favKept":true,"cmpRows":([5-9]|\d\d),"pts":([3-9]|\d\d),"rec":true,"npc":([4-9]|10),"vis":true,"mStats":2\}/,/p11map \{"orange":[1-9]\d+/]],
+  ['fightui','ファイトUI：上部HUD・中央を空ける・危険/緩みの表示・カメラ・マルチタッチ',[/fightui \{"st":"fight","top":true,"bottom":true,"noOverlap":true,"miniHidden":true,"danger":true,"slack":true,"cueTop":true,"btnNoText":true,"camD":[3-8]\.\d,"h1":true,"h2":true,"h3":false\}/]],
   ['s60','横浜の6釣り場で投げられる',[/\["kanazawa",[^\]]*"kanazawa","kanazawa"\]/,/\["honmoku",[^\]]*"honmoku","honmoku"\]/]]];
 const only=process.argv.slice(2);let fail=0;
 for(const[id,name,want]of CASES){if(only.length&&!only.includes(id))continue;let out='';
