@@ -1024,11 +1024,11 @@ float h12(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(
 float bx(float x,float a,float b,float w){return smoothstep(a-w,a+w,x)-smoothstep(b-w,b+w,x);}`)
     .replace('#include <color_fragment>',`#include <color_fragment>
 gWin=0.;gEm=vec3(0.);
-float u=vFacade.x,v=vFacade.y,fh=max(vFacade.z,1.),sd=vFacade.w,cat=vBldg.y;float fy=v/fh,row=floor(fy),col=floor(u);float fx=fract(u),fr=fract(fy);
+float u=vFacade.x,v=vFacade.y,fh=max(vFacade.z,1.),sd=floor(vFacade.w*4096.+.5)/4096.,cat=floor(vBldg.y+.5);/* 補間の揺れで乱数がばらつかないよう丸める */float fy=v/fh,row=floor(fy),col=floor(u);float fx=fract(u),fr=fract(fy);
 float dist=length(vWP-cameraPosition);float wx=clamp(fwidth(u),1e-4,.06),wy=clamp(fwidth(fy),1e-4,.06),far=smoothstep(60.,240.,dist);// 微分は分岐の外で（極端な値は抑える）。遠さは距離で
 if(vBldg.w<.5){
   vec4 r=vec4(.14,.86,.3,.82);if(cat<.5)r=vec4(.26,.74,.36,.78);if(cat>4.5&&cat<5.5)r=vec4(.02,.98,.22,1.);
-  vec2 room=vec2(col+mod(sd*4096.,61.)*17.,row+mod(sd*4096.,53.)*13.);float rr=h12(room);
+  float sid=floor(sd*4096.+.5);vec2 room=vec2(col+mod(sid,61.)*17.,row+mod(sid,53.)*13.);float rr=h12(room);
   bool shop=row<.5&&cat>1.5&&cat<3.5;if(shop)r=vec4(.04,.96,.05,.78);
   float valid=step(v,vBldg.x-.6)*step(.4,v);if(cat>5.5)valid*=step(.9,h12(room+3.));if((cat<1.5)&&rr<.2&&!shop)valid=0.;
   float inW=bx(fx,r.x,r.y,wx)*bx(fr,r.z,r.w,wy)*valid;
@@ -1037,11 +1037,11 @@ if(vBldg.w<.5){
   vec3 wall=diffuseColor.rgb*(.92+.16*h12(vec2(floor(vWP.x*.7),floor(vWP.y*1.3+vWP.z*.7))));
   wall*=mix(.82,1.,smoothstep(0.,2.5,v));// 足もとの汚れ
   vec3 c=mix(wall,glass,inW);c=mix(c,vec3(.55,.56,.57),frame*.8);
-  if(shop){float band=bx(fr,.84,.985,wy);vec3 sc=.5+.5*cos(6.283*(h12(vec2(col,sd*97.))+vec3(0.,.33,.67)));c=mix(c,sc*.9,band);gEm+=sc*band*uNight*.9;}
+  if(shop){float band=bx(fr,.84,.985,wy);vec3 sc=.5+.5*cos(6.283*(h12(vec2(col,mod(sid,97.)))+vec3(0.,.33,.67)));c=mix(c,sc*.9,band);gEm+=sc*band*uNight*.9;}
   // 夜の窓：点灯の割合（店 .75・事務所 .32・住宅 .22）×建物ごとの差
-  float base=shop?.75:(cat>2.5?.32:.22);base*=mix(.35,1.9,h12(vec2(sd*311.,1.)));if(cat>4.5&&cat<5.5&&vBldg.x>70.)base*=.35;
+  float base=shop?.75:(cat>2.5?.32:.22);base*=mix(.35,1.9,h12(vec2(mod(sid,311.),1.)));if(cat>4.5&&cat<5.5&&vBldg.x>70.)base*=.35;
   float lit=step(h12(room+11.),base)*inW*(1.-frame);
-  vec3 lc=cat>2.5?mix(vec3(1.,.97,.9),vec3(.85,.93,1.),h12(vec2(sd*17.,3.))):mix(vec3(1.,.82,.58),vec3(1.,.93,.8),h12(room+5.));
+  vec3 lc=cat>2.5?mix(vec3(1.,.97,.9),vec3(.85,.93,1.),h12(vec2(mod(sid,17.),3.))):mix(vec3(1.,.82,.58),vec3(1.,.93,.8),h12(room+5.));
   gEm+=lc*lit*uNight*(.55+.45*h12(room+9.));gWin=inW;
   diffuseColor.rgb=c;}
 else{diffuseColor.rgb*=.92+.1*h12(floor(vWP.xz*.5));}`)
