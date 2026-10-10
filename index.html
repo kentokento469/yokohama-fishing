@@ -351,6 +351,7 @@ addEventListener('error',e=>{try{let d=document.getElementById('bootErr');if(!d)
 <script src="data/geo/geo-data.js?v=202610101400"></script>
 <script src="tiles.js?v=202610101400"></script>
 <script src="gsi.js?v=202610101400"></script>
+<script src="kanto.js?v=202610101600"></script>
 <script src="routing.js?v=202610101400"></script>
 <script src="nav.js?v=202610101400"></script>
 <script src="vehicles.js?v=202610101400"></script>
@@ -374,11 +375,15 @@ const YP=window.HamaYokohamaPlaces||{spots:[],sights:[],stations:[],areas:[],old
 const WORLD=window.HamaWorld&&window.HamaWorldData&&HamaWorldData.yokohama?HamaWorld.create(HamaWorldData.yokohama):null;
 const WB=WORLD?{x0:WORLD.bbox[0],y0:WORLD.bbox[1],x1:WORLD.bbox[2],y1:WORLD.bbox[3]}:{x0:0,y0:0,x1:0,y1:0};
 const inWorld=(x,y)=>!!WORLD&&WORLD.inBox(x,y);
+// 関東（横浜・湘南の外）：国土地理院タイルから直接（kanto.js）。地面の高さ・陸・建物・道路
+const GSIS=window.HamaGSI?HamaGSI.create({}):null;
+const KANTO=GSIS&&window.HamaKanto?HamaKanto.create({gsi:GSIS,geo:window.HamaGeo,ground:2}):null;
+const inKanto=(x,y)=>!!KANTO&&!SH.inShonan(x,y)&&!inWorld(x,y);
 const RECTS=[];// 歩ける桟橋・橋（湘南の防波堤・橋。横浜の桟橋は陸の形に含まれる）
 const TETRA_LINES=[];
 const LANDMARK_KEEP=[];// 名所・施設のまわり：自動の建物を置かない [x,y,半径]
 function pip(p,x,y){let c=false;for(let i=0,j=p.length-1;i<p.length;j=i++){const xi=p[i][0],yi=p[i][1],xj=p[j][0],yj=p[j][1];if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))c=!c;}return c;}
-function isLand(x,y){return inWorld(x,y)?WORLD.isLand(x,y):SH.isLand(x,y);}
+function isLand(x,y){return inWorld(x,y)?WORLD.isLand(x,y):inKanto(x,y)?KANTO.isLand(x,y):SH.isLand(x,y);}
 // 横浜の水の上を渡る道（運河の橋・八景島への橋など）は歩ける。高さは岸とほぼ同じ
 const WBRIDGE={k:'bridge',top:2.4};
 function rectAt(x,y){for(const r of RECTS)if(x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h)return r;if(inWorld(x,y)&&WORLD.bridgeAt(x,y))return WBRIDGE;return null;}
@@ -496,7 +501,7 @@ for(const g of SH.GSPOTS){SPOTS.push({id:g.id,n:g.name,x:g.x,y:g.y,dir:Math.PI/2
 for(const s of SH.SIGHTS)SIGHTS.push(s);for(const s of SH.STATIONS)STATIONS.push(s);
 for(const[n,a,o]of[['鎌倉',35.318,139.548],['長谷・稲村ヶ崎',35.310,139.528],['腰越・江の島',35.309,139.488],['藤沢',35.336,139.485],['鵠沼・辻堂',35.322,139.455],['茅ヶ崎',35.324,139.405],['平塚',35.322,139.350],['大磯',35.306,139.312]]){const[x,y]=SH.toGame(a,o);AREAS.push([n,x,y]);}
 for(const r of SH.STRUCTS)RECTS.push({x:r.x,y:r.y,w:r.w,h:r.h,k:r.bridge?'bridge':'pier',top:2.6,name:r.n});
-function regionAt(x,y){return SH.inShonan(x,y)?'shonan':'yokohama';}
+function regionAt(x,y){return SH.inShonan(x,y)?'shonan':inKanto(x,y)?'kanto':'yokohama';}
 
 /* ===== 状態 ===== */
 const SAVE_KEY='hama-tsuri-v2';
@@ -644,7 +649,6 @@ function farTileMesh(t,n){const pos=[],col=[],idx=[],c=new T.Color();const W=t.w
   for(let j=0;j<n-1;j++)for(let i=0;i<n-1;i++){const a=j*n+i;idx.push(a,a+n,a+1,a+1,a+n,a+n+1);}
   const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('color',new T.Float32BufferAttribute(col,3));g.setIndex(idx);g.computeVertexNormals();
   const m=new T.Mesh(g,FAR_MAT);m.frustumCulled=false;return m;}
-const GSIS=window.HamaGSI?HamaGSI.create({}):null;
 // カメラのまわりの遠景タイル（z12 を 3×3、z9 を 3×3）を必要なときだけ読み、離れたものは捨てる
 function updFarTerrain(){if(!GSIS)return;const[lat,lon]=GEO.toLatLon(camera.position.x,camera.position.z,GEO.SHONAN);const want=new Set();
   for(const[z,r,n]of[[12,1,48],[9,1,40]]){const cx=Math.floor(HamaGSI.lon2tx(lon,z)),cy=Math.floor(HamaGSI.lat2ty(lat,z));for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){const k=z+'/'+(cx+dx)+'/'+(cy+dy);want.add(k);
@@ -663,12 +667,12 @@ function inPolyPad(p,x,z,pad){let c=false;const n=p.length/2;for(let i=0,j=n-1;i
 function colAt(x,z,pad){const a=cgrid.get(Math.floor(x/CG)+','+Math.floor(z/CG));if(!a)return null;for(const o of a)if(x>o.x0-pad&&x<o.x1+pad&&z>o.z0-pad&&z<o.z1+pad&&(!o.poly||inPolyPad(o.poly,x,z,pad)))return o;return null;}
 // チャンクを消すときに、その建物の当たり判定も外す
 function removeCols(list){for(const o of list)for(let gx=Math.floor(o.x0/CG);gx<=Math.floor(o.x1/CG);gx++)for(let gz=Math.floor(o.z0/CG);gz<=Math.floor(o.z1/CG);gz++){const a=cgrid.get(gx+','+gz);if(a){const i=a.indexOf(o);if(i>=0)a.splice(i,1);}}}
-function walk(x,y){let ok=false;if(SH.inShonan(x,y))ok=SH.isLand(x,y)||!!rectAt(x,y);else if(inWorld(x,y))ok=WORLD.isLand(x,y)||!!rectAt(x,y);
+function walk(x,y){let ok=false;if(SH.inShonan(x,y))ok=SH.isLand(x,y)||!!rectAt(x,y);else if(inWorld(x,y))ok=WORLD.isLand(x,y)||!!rectAt(x,y);else if(inKanto(x,y))ok=KANTO.isLand(x,y);
   return ok&&!colAt(x,y,.35);}
 // 湘南の丘（国土地理院の標高。標高20mより上だけを立体にする。海沿いの平地・横浜は平らのまま）
 const TERR=window.HamaTerrain&&window.HamaTerrainData&&HamaTerrainData.shonan?HamaTerrain.gameGrid(HamaTerrainData.shonan):null;
 function terrOff(x,y){return TERR&&y>8200?TERR.offAt(x,y):0;}
-function groundY(x,y){const r=rectAt(x,y);return r?r.top:GROUND+terrOff(x,y);}
+function groundY(x,y){const r=rectAt(x,y);if(r)return r.top;if(inKanto(x,y)){const g=KANTO.groundY(x,y);return g==null?GROUND:Math.max(g,0);}return GROUND+terrOff(x,y);}
 
 /* ===== テクスチャ（窓・壁は世界座標で貼るので、建物の大きさに関係なく窓の大きさが一定） ===== */
 function plainCorner(c,w,h,col){c.fillStyle=col;c.fillRect(w-6,0,6,6);}
@@ -1087,23 +1091,23 @@ else{diffuseColor.rgb*=.92+.1*h12(floor(vWP.xz*.5));}`)
   m.customProgramCacheKey=()=>'facade1';return m;})();
 function newBldAcc(){return{pos:[],nor:[],col:[],fac:[],bld:[]};}
 // 1棟：壁（地面の下1.5mから、パラペット分だけ上へ）、平らな屋根（少し低く）または小さい家の三角屋根、屋上の設備
-function buildingInto(B,b,area,h,sd,units){const p=b.p,n=p.length/2,ccw=polyArea(p)>0,cat=bldCat(b.code,area,h,sd);
+function buildingInto(B,b,area,h,sd,units,G0=GROUND){const p=b.p,n=p.length/2,ccw=polyArea(p)>0,cat=bldCat(b.code,area,h,sd);
   const pal=FAC_COL[cat][(sd*4096|0)%4],tone=.92+.24*hash(Math.round(sd*1e5),7);const cr=pal[0]*tone,cg=pal[1]*tone,cb=pal[2]*tone;
   const floors=Math.max(1,Math.round(h/3.2)),fh=clamp(h/floors,2.5,6);
   // 三角屋根：住宅・13m未満・単純な形（最も長い辺の向きの長方形を8割近く埋める）
   let pitched=null;if(cat===0&&h<13&&n<=8){let bl=0,ux=1,uz=0;for(let k=0;k<n;k++){const j=(k+1)%n,dx=p[2*j]-p[2*k],dz=p[2*j+1]-p[2*k+1],l=Math.hypot(dx,dz);if(l>bl){bl=l;ux=dx/l;uz=dz/l;}}
     let a0=1e9,a1=-1e9,b0=1e9,b1=-1e9;for(let k=0;k<n;k++){const a=p[2*k]*ux+p[2*k+1]*uz,c=-p[2*k]*uz+p[2*k+1]*ux;a0=Math.min(a0,a);a1=Math.max(a1,a);b0=Math.min(b0,c);b1=Math.max(b1,c);}
     if(area>=(a1-a0)*(b1-b0)*.78)pitched={ux,uz,a0,a1,b0,b1,rise:Math.min(2.6,(b1-b0)*.25,Math.max(.8,h-2.4))};}
-  const par=pitched?0:cat===0?.3:h>30?1.2:.75,top=h+par,y0=GROUND-1.5;let u=0;
+  const par=pitched?0:cat===0?.3:h>30?1.2:.75,top=h+par,y0=G0-1.5;let u=0;
   const push=(x,y,z,nx,ny,nz,fu,fv,roof)=>{B.pos.push(x,y,z);B.nor.push(nx,ny,nz);B.col.push(cr,cg,cb);B.fac.push(fu,fv,fh,sd);B.bld.push(h,cat,BAY[cat],roof);};
   for(let k=0;k<n;k++){const j=(k+1)%n;let ax=p[2*k],az=p[2*k+1],bx2=p[2*j],bz=p[2*j+1];if(!ccw){[ax,bx2]=[bx2,ax];[az,bz]=[bz,az];}const dx=bx2-ax,dz=bz-az,l=Math.hypot(dx,dz)||1;
-    const nx=dz/l,nz=-dx/l,du=Math.max(1,Math.round(l/BAY[cat])),u0=0,u1=du;const v0=y0-GROUND,v1=top;
-    push(ax,y0,az,nx,0,nz,u0,v0,0);push(bx2,y0,bz,nx,0,nz,u1,v0,0);push(bx2,GROUND+top,bz,nx,0,nz,u1,v1,0);push(ax,y0,az,nx,0,nz,u0,v0,0);push(bx2,GROUND+top,bz,nx,0,nz,u1,v1,0);push(ax,GROUND+top,az,nx,0,nz,u0,v1,0);}
+    const nx=dz/l,nz=-dx/l,du=Math.max(1,Math.round(l/BAY[cat])),u0=0,u1=du;const v0=y0-G0,v1=top;
+    push(ax,y0,az,nx,0,nz,u0,v0,0);push(bx2,y0,bz,nx,0,nz,u1,v0,0);push(bx2,G0+top,bz,nx,0,nz,u1,v1,0);push(ax,y0,az,nx,0,nz,u0,v0,0);push(bx2,G0+top,bz,nx,0,nz,u1,v1,0);push(ax,G0+top,az,nx,0,nz,u0,v1,0);}
   if(units&&(cat===1||cat===2)&&floors>=3&&!pitched){let bl=0,bk=0;for(let k=0;k<n;k++){const j=(k+1)%n,l=Math.hypot(p[2*j]-p[2*k],p[2*j+1]-p[2*k+1]);if(l>bl){bl=l;bk=k;}}
     if(bl>8){const k=bk,j=(k+1)%n;let ax=p[2*k],az=p[2*k+1],bx2=p[2*j],bz=p[2*j+1];if(!ccw){[ax,bx2]=[bx2,ax];[az,bz]=[bz,az];}const dx=(bx2-ax)/bl,dz=(bz-az)/bl,nx=dz,nz=-dx;const ang=-Math.atan2(dz,dx);
-      for(let f=1;f<floors;f++){const y=GROUND+f*fh;units.push([(ax+bx2)/2+nx*.55,(az+bz)/2+nz*.55,y-.12,bl*.92,.12,1.05,ang,1]);units.push([(ax+bx2)/2+nx*1.05,(az+bz)/2+nz*1.05,y,bl*.92,1.0,.06,ang,2]);}}}
+      for(let f=1;f<floors;f++){const y=G0+f*fh;units.push([(ax+bx2)/2+nx*.55,(az+bz)/2+nz*.55,y-.12,bl*.92,.12,1.05,ang,1]);units.push([(ax+bx2)/2+nx*1.05,(az+bz)/2+nz*1.05,y,bl*.92,1.0,.06,ang,2]);}}}
   const rc=[cr*.82,cg*.82,cb*.82];
-  if(pitched){const{ux,uz,a0,a1,b0,b1,rise}=pitched;const P=(a,c)=>[a*ux-c*uz,a*uz+c*ux];const bm=(b0+b1)/2,ov=.4,yy=GROUND+h,yr=yy+rise;
+  if(pitched){const{ux,uz,a0,a1,b0,b1,rise}=pitched;const P=(a,c)=>[a*ux-c*uz,a*uz+c*ux];const bm=(b0+b1)/2,ov=.4,yy=G0+h,yr=yy+rise;
     const roofC=[[.42,.3,.26],[.32,.36,.42],[.36,.35,.33],[.3,.38,.32]][(sd*977|0)%4];
     // 三角形を、指定の外向き n に表が向くよう並べ替えて足す
     const tri=(A,Bv,C,n,col,roof)=>{const cx=(Bv[1]-A[1])*(C[2]-A[2])-(Bv[2]-A[2])*(C[1]-A[1]),cy=(Bv[2]-A[2])*(C[0]-A[0])-(Bv[0]-A[0])*(C[2]-A[2]),cz=(Bv[0]-A[0])*(C[1]-A[1])-(Bv[1]-A[1])*(C[0]-A[0]);
@@ -1113,13 +1117,13 @@ function buildingInto(B,b,area,h,sd,units){const p=b.p,n=p.length/2,ccw=polyArea
     tri(V(a0-ov,b0-ov,yy),V(a1+ov,b0-ov,yy),V(a1+ov,bm,yr),n1,roofC,1);tri(V(a0-ov,b0-ov,yy),V(a1+ov,bm,yr),V(a0-ov,bm,yr),n1,roofC,1);
     tri(V(a0-ov,b1+ov,yy),V(a1+ov,b1+ov,yy),V(a1+ov,bm,yr),n2,roofC,1);tri(V(a0-ov,b1+ov,yy),V(a1+ov,bm,yr),V(a0-ov,bm,yr),n2,roofC,1);
     for(const[a,nn]of[[a0,-1],[a1,1]])tri(V(a,b0,yy),V(a,b1,yy),V(a,bm,yr),[ux*nn,0,uz*nn],[cr,cg,cb],1);}
-  else{const v=[];for(let k=0;k<n;k++)v.push(new T.Vector2(p[2*k],p[2*k+1]));let tri;try{tri=T.ShapeUtils.triangulateShape(v,[]);}catch(e){tri=[];}const yr=GROUND+h;
+  else{const v=[];for(let k=0;k<n;k++)v.push(new T.Vector2(p[2*k],p[2*k+1]));let tri;try{tri=T.ShapeUtils.triangulateShape(v,[]);}catch(e){tri=[];}const yr=G0+h;
     for(const t of tri){const a=v[t[0]],bb=v[t[1]],c=v[t[2]];const crs=(bb.x-a.x)*(c.y-a.y)-(bb.y-a.y)*(c.x-a.x);const[q,r]=crs>0?[bb,c]:[c,bb];
       for(const w of[a,r,q]){B.pos.push(w.x,yr,w.y);B.nor.push(0,1,0);B.col.push(...rc);B.fac.push(0,0,fh,sd);B.bld.push(h,cat,1,1);}}
     // 屋上の設備：平らな屋根 70m² 超・高さ 7m 超
     if(units&&area>70&&h>7){const want=Math.min(5,Math.floor(area/160)+1);let x0=1e9,z0=1e9,x1=-1e9,z1=-1e9;for(let k=0;k<n;k++){x0=Math.min(x0,p[2*k]);x1=Math.max(x1,p[2*k]);z0=Math.min(z0,p[2*k+1]);z1=Math.max(z1,p[2*k+1]);}
       for(let t=0,got=0;t<want*6&&got<want;t++){const hx=hash(Math.round(sd*1e4)+t,11),hz=hash(Math.round(sd*1e4)+t,13);const x=x0+(x1-x0)*hx,z=z0+(z1-z0)*hz;const big=floors>=4&&got===0&&area>110;const w=big?3.2:1+hz,d=big?3.2:.6+hx*.6,hh=big?2.8:.9+hx*.8;
-        if(!inPolyPadInner(p,x,z,Math.max(w,d)/2+.7))continue;units.push([x,z,GROUND+h,w,hh,d,Math.atan2(p[3]-p[1],p[2]-p[0])]);got++;}}}}
+        if(!inPolyPadInner(p,x,z,Math.max(w,d)/2+.7))continue;units.push([x,z,G0+h,w,hh,d,Math.atan2(p[3]-p[1],p[2]-p[0])]);got++;}}}}
 // 点が多角形の内側で、縁から d 以上離れているか
 function inPolyPadInner(p,x,z,d){if(!inPolyPad(p,x,z,0))return false;const n=p.length/2;for(let i=0,j=n-1;i<n;j=i++)if(segDist(x,z,p[2*i],p[2*i+1],p[2*j],p[2*j+1])<d)return false;return true;}
 function polyArea(p){let a=0;const n=p.length/2;for(let k=0;k<n;k++){const j=(k+1)%n;a+=p[2*k]*p[2*j+1]-p[2*j]*p[2*k+1];}return a/2;}
@@ -1220,6 +1224,45 @@ function buildWorldChunk(i,j,grp,L,doCol){const X0=i*CH,Y0=j*CH,X1=X0+CH,Y1=Y0+C
     g.setAttribute('color',new T.Float32BufferAttribute(B.col,3));g.setAttribute('aFacade',new T.Float32BufferAttribute(B.fac,4));g.setAttribute('aBldg',new T.Float32BufferAttribute(B.bld,4));
     const m=own(new T.Mesh(g,FACADE_MAT));m.castShadow=true;m.receiveShadow=true;}
   if(units.length){const im=new T.InstancedMesh(bGeo,unitMat,units.length);units.forEach((u,k)=>{dummy.position.set(u[0],u[2],u[1]);dummy.rotation.set(0,u[6],0);dummy.scale.set(u[3],u[4],u[5]);dummy.updateMatrix();im.setMatrixAt(k,dummy.matrix);im.setColorAt(k,col.setHex(u[7]===1?0xc9c6bf:u[7]===2?0x8f9aa0:0xa9adb0));});shadowy(fitInstances(im));grp.add(im);}}
+/* 関東の近景チャンク（kanto.js）：10m 格子の地面（実際の標高）、地形に沿わせた道路・鉄道、地面の高さに合わせた建物（外壁シェーダー）、山の木。
+   タイルが読めていなければ読み込んでから作り直す */
+const KANTO_GROUND_MAT=lam(0xffffff,{vertexColors:true});
+function drapeRibbon(list,lift){const pos=[],uv=[];const gy=(x,z)=>{const g=KANTO.groundY(x,z);return(g==null?GROUND:Math.max(g,.2))+lift;};
+  for(const[a,w]of list)for(let i=0;i<a.length-2;i+=2){const ax=a[i],az=a[i+1],bx=a[i+2],bz=a[i+3];const dx=bx-ax,dz=bz-az,l=Math.hypot(dx,dz)||1;const nx=-dz/l*w/2,nz=dx/l*w/2;const m=Math.max(1,Math.ceil(l/4));
+    for(let k=0;k<m;k++){const t0=k/m,t1=(k+1)/m,x0=ax+dx*t0,z0=az+dz*t0,x1=ax+dx*t1,z1=az+dz*t1;const p=[x0+nx,z0+nz],q=[x1+nx,z1+nz],r=[x1-nx,z1-nz],s=[x0-nx,z0-nz];
+      for(const v of[p,q,r,p,r,s])pos.push(v[0],gy(v[0],v[1]),v[1]);}}
+  for(let i=0;i<pos.length;i+=3)uv.push(pos[i]/8,pos[i+2]/8);const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.computeVertexNormals();return g;}
+function buildKantoChunk(i,j,grp,doCol){const X0=i*CH,Y0=j*CH,X1=X0+CH,Y1=Y0+CH;const own=m=>{m.userData.own=true;grp.add(m);return m;};
+  if(!KANTO.ready(X0,Y0,X1,Y1)){grp.userData.pending=true;KANTO.load(X0,Y0,X1,Y1).then(()=>{const k=i+','+j,g=chunks.get(k);if(g&&g.userData.pending){disposeChunk(g);chunks.delete(k);buildChunk(i,j);}});return;}
+  // 地面：10m 格子（kanto.js と同じ三角形の分け方）。色は高さ・傾き・水で（植生・土地利用のデータではない目安）
+  const S0=KANTO.STEP,n=CH/S0+1,i0=X0/S0,j0=Y0/S0,pos=[],colr=[],idx=[],nd=[];let land=0;
+  for(let b=0;b<n;b++)for(let a=0;a<n;a++){const v=KANTO.node(i0+a,j0+b)||{y:-4,sea:true,water:true,h:null};nd.push(v);pos.push(X0+a*S0,v.y,Y0+b*S0);if(!v.sea)land++;}
+  for(let b=0;b<n;b++)for(let a=0;a<n;a++){const v=nd[b*n+a],hx=nd[b*n+Math.min(n-1,a+1)].y-nd[b*n+Math.max(0,a-1)].y,hz=nd[Math.min(n-1,b+1)*n+a].y-nd[Math.max(0,b-1)*n+a].y,sl=Math.hypot(hx,hz)/(2*S0);
+    const r=hash(i0+a,j0+b)*.06;let c;if(v.sea)c=[.62,.58,.48];else if(v.water)c=[.32,.42,.44];else if(sl<.07&&v.h<60)c=[.58+r,.58+r,.53+r];else if(sl>.35||v.h>40)c=[.3+r,.4+r,.24+r];else c=[.47+r,.53+r,.38+r];colr.push(...c);}
+  for(let b=0;b<n-1;b++)for(let a=0;a<n-1;a++){const A=b*n+a,B=A+1,C=A+n+1,D=A+n;idx.push(A,C,B,A,D,C);}
+  if(land){const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('color',new T.Float32BufferAttribute(colr,3));g.setIndex(idx);g.computeVertexNormals();own(new T.Mesh(g,KANTO_GROUND_MAT)).receiveShadow=true;}
+  else return;// 海だけ
+  const F=KANTO.featuresIn(X0,Y0,X1,Y1);
+  // 道路（地上は地形に沿わせる。高架・トンネルは今は描かない）
+  const car=[],foot=[];for(const r of F.roads){if(r.code===2704||r.mw||r.lv>0)continue;for(const seg of clipLine(r.a,X0,Y0,X1,Y1))(r.car?car:foot).push([seg,r.w]);}
+  if(foot.length)own(flatOrder(new T.Mesh(drapeRibbon(foot,.12),paveMat),GROUND+.05)).receiveShadow=true;
+  if(car.length)own(flatOrder(new T.Mesh(drapeRibbon(car,.16),asphMat),GROUND+.08)).receiveShadow=true;
+  // 鉄道（地上：砂利とレール）
+  {const gr=[];for(const r of F.rails){if(r.state!==0)continue;for(const seg of clipLine(r.a,X0,Y0,X1,Y1))gr.push([seg,r.station?14:6]);}
+    if(gr.length){own(flatOrder(new T.Mesh(drapeRibbon(gr,.14),flatMat(0x8d8478)),GROUND+.06));const rails=[];for(const[seg]of gr)for(const o of[-.75,.75])rails.push([offLine(seg,o),.15]);own(flatOrder(new T.Mesh(drapeRibbon(rails,.22),flatMat(0x4a4a4a)),GROUND+.12));}}
+  // 建物：地面のいちばん低い所から（実測の高さは無いので種類と面積からの推定）
+  const B=newBldAcc(),units=[];
+  for(const b of F.blds){const area=Math.abs(polyArea(b.p));if(area<6)continue;let g0=1e9;for(let k=0;k<b.p.length;k+=2){const g=KANTO.groundY(b.p[k],b.p[k+1]);if(g!=null)g0=Math.min(g0,g);}if(g0>1e8||g0<.3)continue;
+    const cx=(b.x0+b.x1)/2,cy=(b.y0+b.y1)/2,sd=hash(Math.round(cx*10),Math.round(cy*10)),h=bldStyle(b.code,area,sd)[0];buildingInto(B,b,area,h,sd,units,g0);if(doCol&&area>8)addColPoly(b.p,h);}
+  if(B.pos.length){const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(B.pos,3));g.setAttribute('normal',new T.Float32BufferAttribute(B.nor,3));
+    g.setAttribute('color',new T.Float32BufferAttribute(B.col,3));g.setAttribute('aFacade',new T.Float32BufferAttribute(B.fac,4));g.setAttribute('aBldg',new T.Float32BufferAttribute(B.bld,4));
+    const m=own(new T.Mesh(g,FACADE_MAT));m.castShadow=true;m.receiveShadow=true;}
+  if(units.length){const im=new T.InstancedMesh(bGeo,unitMat,units.length);units.forEach((u,k)=>{dummy.position.set(u[0],u[2],u[1]);dummy.rotation.set(0,u[6],0);dummy.scale.set(u[3],u[4],u[5]);dummy.updateMatrix();im.setMatrixAt(k,dummy.matrix);im.setColorAt(k,col.setHex(u[7]===1?0xc9c6bf:u[7]===2?0x8f9aa0:0xa9adb0));});shadowy(fitInstances(im));grp.add(im);}
+  // 木：急な斜面・標高40m超の格子点のまわり（道路・建物は避ける）
+  const tr=[],st=gfx().trees||13;for(let b=0;b<n-1;b++)for(let a=0;a<n-1;a++){const v=nd[b*n+a];if(v.water||v.sea)continue;const c=colr.slice(3*(b*n+a),3*(b*n+a)+3);if(c[1]>.46)continue;
+    for(let q=0;q<Math.max(1,Math.round(100/(st*st)*1.4));q++){const x=X0+(a+hash(i0+a+q*7,j0+b))*S0,z=Y0+(b+hash(j0+b+q*5,i0+a))*S0;if(colAt(x,z,1.5))continue;const g=KANTO.groundY(x,z);if(g==null||g<.5)continue;tr.push([x,z,g,.9+hash(Math.round(x),Math.round(z))*.6]);}}
+  if(tr.length){const tk=new T.InstancedMesh(tkGeo,trunkMat,tr.length),cr=new T.InstancedMesh(crGeo,crownMat,tr.length);tr.forEach(([x,z,g,s],k)=>{dummy.rotation.set(0,k,0);dummy.position.set(x,g-.3,z);dummy.scale.set(s*1.3,4*s,s*1.3);dummy.updateMatrix();tk.setMatrixAt(k,dummy.matrix);
+      dummy.position.set(x,g+4.3*s,z);dummy.scale.set(3*s,3.4*s,3*s);dummy.updateMatrix();cr.setMatrixAt(k,dummy.matrix);cr.setColorAt(k,col.setHex([0x4c7a3e,0x5a8547,0x3f6d36][k%3]));});for(const m of[tk,cr]){shadowy(fitInstances(m));grp.add(m);}}}
 function buildChunk(i,j){
   const key=i+','+j;const R=mulberry((i*73856093)^(j*19349663)^0x5bd1e995);const L={glass:[],apt:[],house:[],wh:[],cont:[],roof:[],unit:[],tree:[]};
   const doCol=!colDone.has(key);colDone.add(key);
@@ -1228,6 +1271,7 @@ function buildChunk(i,j){
   if(TERR&&j*CH>8000){const st=gfx().trees||13;for(let x=i*CH;x<(i+1)*CH;x+=st)for(let y=j*CH;y<(j+1)*CH;y+=st){const px=x+R()*st,py=y+R()*st,o=terrOff(px,py);if(o>1.5&&R()<.75&&!onRoad(px,py,3))L.tree.push([px,py,1+R()*.6]);}}
   const grp=new T.Group();const cx0=i*CH+CH/2,cy0=j*CH+CH/2;
   if(WORLD&&!SH.inShonan(cx0,cy0)&&inWorld(cx0,cy0)){buildWorldChunk(i,j,grp,L,doCol);}
+  else if(inKanto(cx0,cy0)){buildKantoChunk(i,j,grp,doCol);}
   else{
   const g0=Math.floor(i*CH/UNIT),g1=Math.floor((i+1)*CH/UNIT),h0=Math.floor(j*CH/UNIT),h1=Math.floor((j+1)*CH/UNIT);
   for(let gx=g0;gx<g1;gx++)for(let gy=h0;gy<h1;gy++){
@@ -1329,6 +1373,7 @@ let sPlayer=0,sChk=0;
 function spawnAlong(around,range){return clamp(around+(rnd()-.5)*2*range,1,ROADTOT-1);}
 function updTraffic(dt,t){
   sChk-=dt;let dRoad=1e9;if(sChk<=0){sChk=.4;const rg=regionAt(S.x,S.y);const reset=()=>{for(const c of CARS){c.on=false;c.g.visible=false;}for(const p of PEDS){p.on=false;p.P.g.visible=false;}};
+    if(rg==='kanto'){if(trRegion!=='kanto'){trRegion='kanto';trRoad=null;reset();}updTraffic.d=1e9;return;}
     if(rg==='shonan'){if(trRegion!=='shonan'){trRegion='shonan';trRoad=null;setTrafficRoad(SH.R134,8);reset();}}
     else{trRegion=rg;const cur=trRoad?roadS(S.x,S.y)[1]:1e9;if(cur>220){const nr=pickTrafficRoad(S.x,S.y);if(nr&&nr!==trRoad){trRoad=nr;const pts=[];for(let k=0;k<nr.a.length;k+=2)pts.push([nr.a[k],nr.a[k+1]]);if(pts.length>1){setTrafficRoad(pts,nr.w/2+2);reset();}}}}
     const r=roadS(S.x,S.y);sPlayer=r[0];dRoad=r[1];updTraffic.d=dRoad;}
@@ -1727,6 +1772,11 @@ function renderTab(){
   if(tab==='veh'){renderVeh(sb);return;}
   if(tab==='set'){renderSettings(sb);return;}
   if(tab==='map'&&mapView==='spots'){renderSpotList(sb);
+  }else if(tab==='map'&&regionAt(S.x,S.y)==='kanto'){// 関東の散策中：横浜・湘南へ戻る（運賃・時間はゲームの目安）
+    const rows=[['yokohama','横浜駅'],['shonan','平塚']].map(([rg,nm])=>{const st=STATIONS.find(q=>q.region===rg&&q.n.includes(nm))||STATIONS.find(q=>q.region===rg);const f=kantoFare(st.x,st.y);
+      return `<button class="item" data-kback="${STATIONS.indexOf(st)}"><div class="tx"><b>${st.n}へ戻る</b><span>電車・バスを乗り継いで約${f.min}分（目安）</span></div><div class="pr">¥${f.yen}</div></button>`;}).join('');
+    sb.innerHTML=`<p class="sub">関東を散策中（国土地理院の地形・建物・道路）。ここには釣り場がありません。釣りは横浜・湘南の釣り場で。</p><div class="list">${rows}</div>`;
+    sb.querySelectorAll('[data-kback]').forEach(b=>b.onclick=()=>{const st=STATIONS[+b.dataset.kback],f=kantoFare(st.x,st.y);if(S.money<f.yen){toast('お金が足りません');return;}S.money-=f.yen;advance(f.min);S.x=st.x;S.y=st.y;N=null;closeSheet();updMoney();updChunks(true);snapCam();toast(`${st.n}に到着（${fmtTime(S.min)}）`);save();});
   }else if(tab==='map'){const[cur,cd]=nearestStation();const atStop=cd<40;
     h=`<div class="seg"><button data-mv="go" class="on">行き先</button><button data-mv="spots">釣り場一覧</button><button data-mv="nav">地図・ルート</button></div><canvas id="mapCv"></canvas><p class="sub">${atStop?`「${cur.n}」にいます。行き先を選んでください。待ち時間は便によって変わります。${cur.n==='横浜駅'?'湘南（鎌倉〜大磯）へはJRで行けます。':''}`:`電車やバスに乗るには、まず駅・バス停まで歩いてください。一番近いのは「${cur.n}」（約${Math.round(cd)}m）。`}</p><div class="list">`;
     for(const{s,i}of routesFrom(cur)){const f=fare(s);const sp=SPOTS.find(p=>Math.hypot(p.x-s.x,p.y-s.y)<(s.region==='shonan'?250:500));if(busWait[i]==null)busWait[i]=2+Math.floor(rnd()*(f.mode==='バス'?14:10));
@@ -1887,8 +1937,20 @@ function drawMapCv(cvs){const sh=regionAt(S.x,S.y)==='shonan';const B=sh?{x0:-23
   if(selSpot){const sp=SPOTS.find(p=>p.id===selSpot);if(sp){c.strokeStyle='#f1b746';c.lineWidth=30;c.beginPath();c.arc(sp.x,sp.y,170,0,7);c.stroke();}}
   c.fillStyle='#e04a3b';c.beginPath();c.arc(S.x,S.y,90,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=24;c.stroke();}
 const miniC=$('mini').getContext('2d');let miniT=0;
+// 関東のミニマップ：周り1.2km を 0.5px/m の画像に（陸・水・道路・建物）。中心から300m 離れるか、タイルが読めたら描き直す
+const KM_SIZE=1200,KM={cv:null,x:0,y:0,n:-1,t:0};
+function kantoMini(){const now=performance.now();
+  if(!KM.cv||Math.hypot(S.x-KM.x,S.y-KM.y)>300||(KM.n===1&&now-KM.t>3000)){KM.t=now;KM.x=S.x;KM.y=S.y;const x0=S.x-KM_SIZE/2,y0=S.y-KM_SIZE/2,P=.5;KM.n=KANTO.ready(x0,y0,x0+KM_SIZE,y0+KM_SIZE)?0:1;
+    const cv=KM.cv||document.createElement('canvas');cv.width=cv.height=KM_SIZE*P;const c=cv.getContext('2d');c.clearRect(0,0,cv.width,cv.height);
+    for(let y=0;y<KM_SIZE;y+=20)for(let x=0;x<KM_SIZE;x+=20){const n=KANTO.node(Math.round((x0+x)/10),Math.round((y0+y)/10));if(!n||n.sea)continue;c.fillStyle=n.water?'#5f9fbe':n.h>40?'#b9cfa6':'#e9e5d8';c.fillRect(x*P,y*P,20*P+.5,20*P+.5);}
+    const F=KANTO.featuresIn(x0,y0,x0+KM_SIZE,y0+KM_SIZE);const path=(a,close)=>{c.beginPath();for(let k=0;k<a.length;k+=2){const px=(a[k]-x0)*P,py=(a[k+1]-y0)*P;k?c.lineTo(px,py):c.moveTo(px,py);}if(close)c.closePath();};
+    c.fillStyle='#7fb3cf';for(const w of F.water){path(w.p,true);c.fill();}
+    c.strokeStyle='#ffffff';c.lineCap='round';for(const r of F.roads){if(r.code===2704)continue;c.lineWidth=Math.max(1,r.w*P);path(r.a);c.stroke();}
+    c.fillStyle='#c9c2b4';for(const b of F.blds){path(b.p,true);c.fill();}
+    KM.cv=cv;KM.x0=x0;KM.y0=y0;}
+  return KM.cv?{cv:KM.cv,x0:KM.x0,y0:KM.y0}:null;}
 function drawMini(){const c=miniC,W=208,R=W/2,z=2.6;c.save();c.clearRect(0,0,W,W);c.beginPath();c.arc(R,R,R,0,7);c.clip();c.fillStyle='#2a7aa3';c.fillRect(0,0,W,W);
-  c.translate(R,R);c.rotate(yaw);c.scale(z,z);c.translate(-S.x*.1,-S.y*.1);c.drawImage(MAPC,WB.x0*.1,WB.y0*.1);c.drawImage(MAPC2,-2300,820);
+  c.translate(R,R);c.rotate(yaw);c.scale(z,z);c.translate(-S.x*.1,-S.y*.1);c.drawImage(MAPC,WB.x0*.1,WB.y0*.1);c.drawImage(MAPC2,-2300,820);if(inKanto(S.x,S.y)){const k=kantoMini();if(k)c.drawImage(k.cv,k.x0*.1,k.y0*.1,KM_SIZE*.1,KM_SIZE*.1);}
   for(const sp of SPOTS){c.fillStyle='#1b7d82';c.beginPath();c.arc(sp.x*.1,sp.y*.1,3,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=.8;c.stroke();}
   for(const s of STATIONS){c.fillStyle='#2f6fb0';c.fillRect(s.x*.1-1.6,s.y*.1-1.6,3.2,3.2);}
   for(const s of SIGHTS){c.fillStyle=S.stamps[s.id]?'#f6f2e8':'#f1b746';c.beginPath();c.arc(s.x*.1,s.y*.1,2,0,7);c.fill();}
@@ -2073,7 +2135,7 @@ function updSky(){const h=hourF();const tp=keyLerp(SKYTOP,h),hr=keyLerp(SKYHOR,h
   const dk=keyLerp(DARK,h);FACADE_U.uNight.value=dk;FACADE_U.uSkyH.value.copy(skyU.hor.value);FACADE_U.uSkyT.value.copy(skyU.top.value);hemi.color.setRGB(lerp(.9,.5,dk),lerp(.95,.58,dk),lerp(1,.88,dk));hemi.groundColor.setRGB(lerp(.55,.12,dk),lerp(.5,.12,dk),lerp(.42,.16,dk));
   const sa=(h-6)/12*Math.PI;const sd=new V3(Math.cos(sa),Math.max(.08,Math.sin(sa)),-.35).normalize();skyU.sd.value.copy(sd);{const sk=sI*(1-cf)*(1-cf);skyU.sunc.value.setRGB(sc[0]/255*sk,sc[1]/255*sk*.9,sc[2]/255*sk*.75);}
   sun.position.set(S.x+sd.x*300,sd.y*300,S.y+sd.z*300);sun.target.position.set(S.x,0,S.y);sun.castShadow=sI>.05;
-  scene.fog.near=lerp(220,120,dk)*(1-cf*.5)*gfx().fog;scene.fog.far=Math.min(camera.far*.95,lerp(1000,650,dk)*(1-cf*.45)*gfx().fog);
+  scene.fog.near=lerp(220,120,dk)*(1-cf*.5)*gfx().fog;scene.fog.far=Math.min(gfx().far*.95,lerp(1000,650,dk)*(1-cf*.45)*gfx().fog);
   for(const m of EMISSIVE)m.emissiveIntensity=dk*1.2;glowMat.opacity=clamp(dk*1.1,0,.95);for(const m of NIGHT_GLOW)m.opacity=m===pierPoolM?clamp(dk*.5,0,.45):clamp(dk*1.1,0,.95);seaMat.shininess=lerp(90,30,dk);
   headMat.color.setHex(dk>.3?0xfff6dc:0xd8d8d0);}
 
@@ -2422,12 +2484,20 @@ let kRaf=0;function kRedraw(){if(kRaf)return;kRaf=requestAnimationFrame(()=>{kRa
 function kantoTap(px,py){const[x,y]=GEO.screenToWorld(WM.v,px,py);const[lat,lon]=GEO.toLatLon(x,y);const box=$('wmInfo');
   const rs=KT.regions.filter(r=>lon>=r.bbox[0]&&lon<=r.bbox[2]&&lat>=r.bbox[1]&&lat<=r.bbox[3]).sort((a,b)=>b.level-a.level||a.area_km2-b.area_km2);
   const sp=SPOTS.filter(q=>q.sh).map(q=>[q,Math.hypot(q.x-x,q.y-y)]).sort((a,b)=>a[1]-b[1])[0];
-  const play=SH.inShonan(x,y)&&isLand(x,y);const nearSp=sp&&sp[1]<20/WM.v.z;
+  const play=SH.inShonan(x,y)&&isLand(x,y);const nearSp=sp&&sp[1]<20/WM.v.z;const kw=!nearSp&&!!KANTO&&!SH.inShonan(x,y)&&!inWorld(x,y)&&lat>34.85&&lat<37.2&&lon>138.4&&lon<141;const kf=kw?kantoFare(x,y):null;
   box.innerHTML=`<b>${nearSp?esc(sp[0].n):rs[0]?esc(rs[0].name):'この地点'}</b><span>北緯 ${lat.toFixed(4)}°・東経 ${lon.toFixed(4)}°${rs.length?'・'+rs.slice(0,2).map(r=>esc(r.name)).join(' / ')+'（範囲はおおよそ）':''}</span>
-    <span>${nearSp||play?'ゲームで行ける場所（湘南）':'この地域はまだ遊べません（地形・釣り場が未整備。OSM に水深・魚の情報は無い）'}</span>
-    <div class="row2">${nearSp||play?`<button class="btnA" id="kGo">ここへ行く</button>`:''}<button class="btnB" id="wmClose">閉じる</button></div>`;box.hidden=false;
+    <span>${nearSp||play?'ゲームで行ける場所（湘南）':kw?'散策で行ける（国土地理院の地形・建物・道路。釣り場はない）':'この地域はまだ遊べません'}</span>
+    <div class="row2">${nearSp||play?`<button class="btnA" id="kGo">ここへ行く</button>`:kw?`<button class="btnA" id="kWalk">散策に行く（約${kf.min}分・¥${kf.yen}）</button>`:''}<button class="btnB" id="wmClose">閉じる</button></div>`;box.hidden=false;
   if($('kGo'))$('kGo').onclick=()=>{const tx=nearSp?sp[0].x:x,ty=nearSp?sp[0].y:y;if(regionAt(S.x,S.y)!=='shonan'){toast('湘南へは電車で（移動→行き先）');return;}setDest({x:tx,y:ty,name:nearSp?sp[0].n:'選んだ地点',spot:nearSp?sp[0].id:undefined});const p=NAVR;toast(p&&!p.fail?`ルートを表示：約${fmtDur(p.time)}`:'ルートが見つからない');box.hidden=true;drawWorld();};
+  if($('kWalk'))$('kWalk').onclick=()=>{box.hidden=true;kantoGo(x,y);};
   $('wmClose').onclick=()=>{box.hidden=true;};}
+// 関東の散策：運賃と時間はゲームの目安（直線距離から。実際の運賃・時刻ではない）
+function kantoFare(x,y){const d=Math.hypot(x-S.x,y-S.y)/1000;return{yen:Math.round((200+d*22)/10)*10,min:Math.round(15+d/35*60)};}
+// 横浜・湘南の外の陸へ（タイルを読んでから、近くの歩ける所に降ろす）
+async function kantoGo(x,y){if(RIDE){toast('乗り物を停めてから');return;}const f=kantoFare(x,y);if(S.money<f.yen){toast('お金が足りません');return;}toast('地形を読み込み中…');
+  await KANTO.load(x-260,y-260,x+260,y+260);const ox=S.x,oy=S.y;S.x=x;S.y=y;ensureCollision();// 建物の当たり判定を作ってから、建物の外の歩ける所を探す
+  let best=null;for(let r=0;r<=250&&!best;r+=5)for(let a=0;a<6.28&&!best;a+=r?Math.min(1,4/r):7){const px=x+Math.cos(a)*r,py=y+Math.sin(a)*r;if(inKanto(px,py)&&walk(px,py)&&!colAt(px,py,1.5))best=[px,py];}
+  if(!best){S.x=ox;S.y=oy;toast('近くに歩ける陸がない');return;}S.money-=f.yen;advance(f.min);S.x=best[0];S.y=best[1];N=null;if(!$("wmap").hidden)closeWorld();updMoney();updChunks(true);snapCam();toast(`${f.min}分かけて到着（${fmtTime(S.min)}）。散策のみ・釣り場はない`);save();}
 $('wmQ').oninput=()=>{const q=$('wmQ').value.trim();const R=q?KT.regions.filter(r=>(r.name||'').includes(q)||(r.name_en||'').toLowerCase().includes(q.toLowerCase())).slice(0,8):[];
   $('wmQR').innerHTML=R.map((r,i)=>`<button data-ri="${i}">${esc(r.name)}<small>（${r.level===4?'都県':r.level===7?'市・区':'町・区'}）</small></button>`).join('')||(q&&KT.status!=='ok'?'<button disabled>地域索引がありません（タイル未作成）</button>':'');
   $('wmQR').querySelectorAll('[data-ri]').forEach(b=>b.onclick=()=>{const r=R[+b.dataset.ri];const p0=GEO.toGame(r.bbox[3],r.bbox[0]),p1=GEO.toGame(r.bbox[1],r.bbox[2]);const v=GEO.fit({x0:p0[0],x1:p1[0],y0:p0[1],y1:p1[1]},innerWidth,innerHeight,40);Object.assign(WM.v,{cx:v.cx,cy:v.cy,z:v.z});$('wmQR').innerHTML='';drawWorld();});};
@@ -2565,7 +2635,7 @@ function update(dt,t){
   chunkT-=dt;if(chunkT<=0){chunkT=.25;updChunks(false);}
   updTraffic(dt,t);
   coastChk-=dt;if(coastChk<=0){coastChk=.5;if(!nearSpot&&!S.tip.coast&&!rectAt(S.x,S.y)&&nearCoast(S.x,S.y,8)){S.tip.coast=1;toast('ここの岸壁は釣り禁止。青い魚マークの釣り場へ行こう');}}
-  let best='',bd=1e9;for(const[n,x,y]of AREAS){const d=Math.hypot(x-S.x,y-S.y);if(d<bd){bd=d;best=n;}}const ae=$('area');if(ae.textContent!==best)ae.textContent=best;
+  let best='',bd=1e9;if(inKanto(S.x,S.y))best=KANTO.nameNear(S.x,S.y)||'関東';else for(const[n,x,y]of AREAS){const d=Math.hypot(x-S.x,y-S.y);if(d<bd){bd=d;best=n;}}const ae=$('area');if(ae.textContent!==best)ae.textContent=best;
   acc+=dt;if(acc>8){acc=0;save();}
 }
 let farT=0;
@@ -2586,7 +2656,8 @@ function render(dt,t){
   // 遠景パス → 深度を消す → 近景
   farCam.position.copy(camera.position);farCam.quaternion.copy(camera.quaternion);if(farCam.aspect!==camera.aspect||farCam.fov!==camera.fov){farCam.aspect=camera.aspect;farCam.fov=camera.fov;farCam.updateProjectionMatrix();}
   farHemi.intensity=hemi.intensity*1.3;farHemi.color.copy(hemi.color);farSun.intensity=sun.intensity*.7;farSun.color.copy(sun.color);farSun.position.copy(sun.position).sub(sun.target.position).normalize();
-  farSea.position.x=camera.position.x;farSea.position.z=camera.position.z;farScene.fog.color.copy(scene.fog.color);if(FAR_MAT.userData.sh)FAR_MAT.userData.sh.uniforms.uHole.value=camera.far*.92+200;
+  farSea.position.x=camera.position.x;farSea.position.z=camera.position.z;farScene.fog.color.copy(scene.fog.color);const kz=inKanto(S.x,S.y),nf=kz?Math.min(gfx().far,(CRAD+.5)*CH):gfx().far;if(camera.far!==nf){camera.far=nf;camera.updateProjectionMatrix();}// 関東：近景はチャンクの範囲まで、その先は遠景の地形
+  if(FAR_MAT.userData.sh)FAR_MAT.userData.sh.uniforms.uHole.value=kz?camera.far*.85:camera.far*.92+200;
   farT-=dt;if(farT<=0){farT=1;updFarTerrain();}
   renderer.clear();renderer.render(farScene,farCam);renderer.clearDepth();renderer.render(scene,camera);
   miniT-=dt;if(miniT<=0){miniT=.08;drawMini();}}

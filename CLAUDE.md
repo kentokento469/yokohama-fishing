@@ -43,6 +43,7 @@
 - `world.js` — 実在の地図（等倍）の読み込みと問い合わせ（`window.HamaWorld`）：陸か `isLand`、水際 `nearestCoast`、道路 `roadsIn`・`roadAt`（車が通れるか）・経路用 `graphRoads`、橋 `bridgeAt`、地名 `names`、建物 `loadCell`（440m 四方の .bin を必要なときだけ）。
 - `data/world/yokohama-base.js`・`yokohama-bld/` — 横浜の実在の地図（自動生成）。`tools/gsi/fetch_tiles.py`（国土地理院ベクトルタイル optimal_bvmap-v1 z16 を data-build/gsi へ）→ `tools/gsi/build_world.py yokohama`。直接編集しない。
 - `data/yokohama-places.js` — 横浜の釣り場・名所・バス停・海づり施設の桟橋・ベイブリッジの位置（出典メモつき）。
+- `gsi.js`・`kanto.js` — 国土地理院タイルの直接読み込み（`window.HamaGSI`）と、横浜・湘南の外の関東の近景（`window.HamaKanto`：10m 格子の地面・陸の判定・建物・道路・鉄道・水域・地名）。index.html の `buildKantoChunk`、ワールドマップ「関東」→「散策に行く」（釣り場はなし）。
 - `terrain.js` — 国土地理院の標高タイルの復号と高さ（`window.HamaTerrain`）。湘南の丘は `data/terrain/shonan-game.js`（`tools/terrain/build_game_grid.mjs`）。
 - `docs/ASSETS.md` — 素材とライセンスの一覧（素材を足したら追記）。
 - `legacy/2026-10-pre-visual/` — グラフィック改善前の遊べるコピー。
