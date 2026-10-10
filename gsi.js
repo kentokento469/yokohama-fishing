@@ -16,7 +16,7 @@ const ty2lat=(y,z)=>{const n=Math.PI-2*Math.PI*y/Math.pow(2,z);return 180/Math.P
 function demFromRGBA(px,n){const out=new Float32Array(n);for(let i=0;i<n;i++){const x=px[4*i]*65536+px[4*i+1]*256+px[4*i+2];out[i]=x===NA?NaN:(x<NA?x:x-16777216)*.01;}return out;}
 function create(opt){opt=opt||{};const fetchFn=opt.fetch||(typeof fetch!=='undefined'?fetch.bind(root):null);const base=opt.base||BASE;
   const maxConc=opt.concurrency||6,lruMax=opt.lru||400;let active=0;const queue=[];
-  const mem=new Map(),pending=new Map(),missing=new Set();const stats={req:0,hit:0,miss404:0,err:0,bytes:0};
+  const mem=new Map(),pending=new Map(),missing=new Set(),failed=new Set();/* failed：通信の失敗（次に聞かれたら読み直す） */const stats={req:0,hit:0,miss404:0,err:0,bytes:0};
   const cacheP=(typeof caches!=='undefined'&&opt.persist!==false)?caches.open('hama-gsi-v1').catch(()=>null):Promise.resolve(null);
   function lruSet(k,v){mem.set(k,v);if(mem.size>lruMax){const f=mem.keys().next().value;mem.delete(f);}}
   function slot(){return new Promise(res=>{if(active<maxConc){active++;res();}else queue.push(res);});}
@@ -36,7 +36,7 @@ function create(opt){opt=opt||{};const fetchFn=opt.fetch||(typeof fetch!=='undef
     const p=raw(url).then(async u8=>{if(!u8){missing.add(key);return null;}let v;
       if(s.png){const im=await decodePng(u8);v={w:im.w,h:im.h,z,x,y,kind,hgt:demFromRGBA(im.data,im.w*im.h)};}
       else{const T=opt.tiles||root.HamaTiles||(typeof require==='function'?require('./tiles.js'):null);v=T.decodeMVT(await gunzipMaybe(u8));v.z=z;v.x=x;v.y=y;}
-      lruSet(key,v);return v;}).catch(e=>{stats.err++;return null;}).finally(()=>pending.delete(key));
+      failed.delete(key);lruSet(key,v);return v;}).catch(e=>{stats.err++;failed.add(key);return null;}).finally(()=>pending.delete(key));
     pending.set(key,p);return p;}
   // 標高：その地点のタイル（5m を優先、無ければ 10m、低いズームの dem_png は遠景用）
   async function demTileAt(lat,lon,zLow){if(zLow!=null){const z=zLow;return tile('dem10',z,Math.floor(lon2tx(lon,z)),Math.floor(lat2ty(lat,z)));}
@@ -48,7 +48,7 @@ function create(opt){opt=opt||{};const fetchFn=opt.fetch||(typeof fetch!=='undef
     if(isNaN(a)||isNaN(b)||isNaN(c)||isNaN(d)){const n=H[Math.round(Math.max(0,Math.min(t.h-1,fy)))*W+Math.round(Math.max(0,Math.min(W-1,fx)))];return isNaN(n)?null:n;}
     return a*(1-u)*(1-v)+b*u*(1-v)+c*(1-u)*v+d*u*v;}
   function cachedDem(lat,lon){for(const kind of['dem5a','dem10']){const z=SRC[kind].z;const key=kind+'/'+z+'/'+Math.floor(lon2tx(lon,z))+'/'+Math.floor(lat2ty(lat,z));const t=mem.get(key);if(t){const h=sample(t,lat,lon);if(h!=null||kind==='dem10')return{h,res:SRC[kind].res};}}return null;}
-  return{tile,demTileAt,sample,cachedDem,stats,missing,SRC,mem};}
+  return{tile,demTileAt,sample,cachedDem,stats,missing,failed,SRC,mem};}
 // Node 用：8bit RGB/RGBA の PNG を zlib で復号（テスト・ツール用。ブラウザは canvas を使う）
 function nodeDecodePng(u8){const zlib=require('zlib');const dv=new DataView(u8.buffer,u8.byteOffset,u8.byteLength);let o=8,w=0,h=0,ct=0;const idat=[];
   while(o<u8.length){const len=dv.getUint32(o);const type=String.fromCharCode(u8[o+4],u8[o+5],u8[o+6],u8[o+7]);const d=u8.subarray(o+8,o+8+len);

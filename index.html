@@ -672,7 +672,10 @@ function walk(x,y){let ok=false;if(SH.inShonan(x,y))ok=SH.isLand(x,y)||!!rectAt(
 // 湘南の丘（国土地理院の標高。標高20mより上だけを立体にする。海沿いの平地・横浜は平らのまま）
 const TERR=window.HamaTerrain&&window.HamaTerrainData&&HamaTerrainData.shonan?HamaTerrain.gameGrid(HamaTerrainData.shonan):null;
 function terrOff(x,y){return TERR&&y>8200?TERR.offAt(x,y):0;}
-function groundY(x,y){const r=rectAt(x,y);if(r)return r.top;if(inKanto(x,y)){const g=KANTO.groundY(x,y);return g==null?GROUND:Math.max(g,0);}return GROUND+terrOff(x,y);}
+// 横浜の丘：標高8mより上だけを盛り上げる（岸壁・浜・釣り場の高さは今のまま）。標高タイルが無い所は平ら
+const HILL_TH=8,hillF=h=>h==null?0:Math.max(0,h-HILL_TH);
+function WOFF(x,z){if(!KANTO||!inWorld(x,z))return 0;const v=KANTO.demInterp(x,z,hillF);return v>0?v:0;}
+function groundY(x,y){const r=rectAt(x,y);if(r)return r.top;if(inWorld(x,y))return GROUND+WOFF(x,y);if(inKanto(x,y)){const g=KANTO.groundY(x,y);return g==null?GROUND:Math.max(g,0);}return GROUND+terrOff(x,y);}
 
 /* ===== テクスチャ（窓・壁は世界座標で貼るので、建物の大きさに関係なく窓の大きさが一定） ===== */
 function plainCorner(c,w,h,col){c.fillStyle=col;c.fillRect(w-6,0,6,6);}
@@ -927,6 +930,7 @@ if(WORLD){const segs=[],pods=[],R=mulberry(57);for(const b of WORLD.breakwaters)
 const WS={glass:16,apt:12,house:7,wh:6};
 function tower(x,z,w,d,h,key,c){const m=shadowy(box(w,h,d,worldUV(winMats[key].clone(),WS[key])));m.material.color.setHex(c||0xffffff);EMISSIVE.push(m.material);add(m,x,GROUND,z);addCol(x-w/2,z-d/2,x+w/2,z+d/2,h);return m;}
 const SG=id=>SIGHTS.find(s=>s.id===id);const GLOWS=[];let WHEEL=null;
+const SIGHT_C0=scene.children.length;
 if(WORLD){
   // 横浜ランドマークタワー（高さ約296m。国土地理院の高層建物の形の位置）
   {const x=8892,z=-3859;const g=new T.CylinderGeometry(24,42,296,4,1);g.rotateY(Math.PI/4);g.translate(0,148,0);const m=shadowy(new T.Mesh(g,worldUV(winMats.glass.clone(),16)));m.material.color.setHex(0xd6dfe6);EMISSIVE.push(m.material);add(m,x,GROUND,z);addCol(x-30,z-30,x+30,z+30,296);
@@ -985,6 +989,10 @@ if(WORLD){
     const cg=new T.BufferGeometry();cg.setAttribute('position',new T.Float32BufferAttribute(cab,3));scene.add(new T.LineSegments(cg,new T.LineBasicMaterial({color:0xdfe6ea})));}
 }
 for(const[x,y,h,r]of GLOWS){const s=new T.Sprite(glowMat);s.position.set(x,GROUND+h,y);s.scale.set(r,r,1);scene.add(s);}
+// 横浜の名所は丘の上にもある（港の見える丘公園など）：標高タイルが読めたら、その地点の丘の高さだけ持ち上げる
+const SIGHT_OBJS=scene.children.slice(SIGHT_C0).map(o=>({o,done:false}));
+function liftSights(){for(const q of SIGHT_OBJS){if(q.done)continue;const x=q.o.position.x,z=q.o.position.z;if(!inWorld(x,z)||!KANTO){q.done=true;continue;}
+  if(Math.hypot(x-S.x,z-S.y)<1500&&KANTO.demReady(x-1,z-1,x+1,z+1)){q.o.position.y+=WOFF(x,z);q.done=true;}}}
 /* ===== 湘南の名所（簡単な形。実寸に近い高さ） ===== */
 {const P=id=>SH.SIGHTS.find(s=>s.id===id);
   // 鶴岡八幡宮：大石段の上に朱塗りの本宮、参道の大鳥居
@@ -1133,7 +1141,9 @@ function extrudeInto(acc,p,h){const n=p.length/2,ccw=polyArea(p)>0,y0=GROUND,y1=
     const nx=dz/l,nz=-dx/l;P.push(ax,y0,az,bx,y0,bz,bx,y1,bz,ax,y0,az,bx,y1,bz,ax,y1,az);for(let q=0;q<6;q++)N.push(nx,0,nz);}
   const v=[];for(let k=0;k<n;k++)v.push(new T.Vector2(p[2*k],p[2*k+1]));let tri;try{tri=T.ShapeUtils.triangulateShape(v,[]);}catch(e){tri=[];}
   for(const t of tri){const a=v[t[0]],b=v[t[1]],c=v[t[2]];const cr=(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);const[q,r]=cr>0?[b,c]:[c,b];P.push(a.x,y1,a.y,r.x,y1,r.y,q.x,y1,q.y);N.push(0,1,0,0,1,0,0,1,0);}}
-function ribbonGeo(list,y){const pos=[],uv=[];for(const[a,w]of list){for(let i=0;i<a.length-2;i+=2){const ax=a[i],az=a[i+1],bx=a[i+2],bz=a[i+3];const dx=bx-ax,dz=bz-az,l=Math.hypot(dx,dz)||1;const nx=-dz/l*w/2,nz=dx/l*w/2;
+function ribbonGeo(list,y,off){const pos=[],uv=[];for(const[a,w]of list){for(let i=0;i<a.length-2;i+=2){const ax=a[i],az=a[i+1],bx=a[i+2],bz=a[i+3];const dx=bx-ax,dz=bz-az,l=Math.hypot(dx,dz)||1;const nx=-dz/l*w/2,nz=dx/l*w/2;
+      if(off){const m=Math.max(1,Math.ceil(l/5)),Y=(x,z)=>y+off(x,z);for(let k=0;k<m;k++){const x0=ax+dx*k/m,z0=az+dz*k/m,x1=ax+dx*(k+1)/m,z1=az+dz*(k+1)/m;// 丘：5m ごとに地面の高さへ
+          pos.push(x0+nx,Y(x0+nx,z0+nz),z0+nz,x1+nx,Y(x1+nx,z1+nz),z1+nz,x1-nx,Y(x1-nx,z1-nz),z1-nz,x0+nx,Y(x0+nx,z0+nz),z0+nz,x1-nx,Y(x1-nx,z1-nz),z1-nz,x0-nx,Y(x0-nx,z0-nz),z0-nz);}continue;}
       pos.push(ax+nx,y,az+nz,bx+nx,y,bz+nz,bx-nx,y,bz-nz,ax+nx,y,az+nz,bx-nx,y,bz-nz,ax-nx,y,az-nz);}}
   for(let i=0;i<pos.length;i+=3)uv.push(pos[i]/8,pos[i+2]/8);const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.computeVertexNormals();return g;}
 // 線をチャンクの四角で切る（各区間は中点がチャンクの中にあるものだけ。隣のチャンクと重ならない）
@@ -1145,30 +1155,37 @@ const BOLLARD_GEO=mergeGeos([new T.CylinderGeometry(.18,.22,.55,10).translate(0,
 function offLine(a,o){const n=a.length/2,out=[];for(let k=0;k<n;k++){const p=Math.max(0,k-1),q=Math.min(n-1,k+1);const dx=a[2*q]-a[2*p],dz=a[2*q+1]-a[2*p+1],l=Math.hypot(dx,dz)||1;out.push(a[2*k]-dz/l*o,a[2*k+1]+dx/l*o);}return out;}
 function clipLine(a,X0,Y0,X1,Y1){const out=[];let cur=null;for(let i=0;i<a.length-2;i+=2){const mx=(a[i]+a[i+2])/2,my=(a[i+1]+a[i+3])/2;if(mx>=X0&&mx<X1&&my>=Y0&&my<Y1){if(!cur){cur=[a[i],a[i+1]];out.push(cur);}cur.push(a[i+2],a[i+3]);}else cur=null;}return out;}
 function buildWorldChunk(i,j,grp,L,doCol){const X0=i*CH,Y0=j*CH,X1=X0+CH,Y1=Y0+CH;const own=m=>{m.userData.own=true;grp.add(m);return m;};
+  // 丘：標高タイルを読んでから作る。丘の無いチャンクは今までどおり平ら
+  if(KANTO&&!KANTO.demReady(X0,Y0,X1,Y1)){grp.userData.pending=true;KANTO.demLoad(X0,Y0,X1,Y1).then(()=>{const k=i+','+j,g=chunks.get(k);if(g&&g.userData.pending){disposeChunk(g);chunks.delete(k);buildChunk(i,j);}});return;}
+  let hilly=false;if(KANTO)for(let x=X0;x<=X1&&!hilly;x+=10)for(let z=Y0;z<=Y1;z+=10)if(WOFF(x,z)>0){hilly=true;break;}
+  const OFF=hilly?WOFF:null,O=(x,z)=>OFF?OFF(x,z):0;
+  if(hilly){const S0=10,n=CH/S0+1,pos=[],uv=[],idx=[],off=[];for(let b=0;b<n;b++)for(let a=0;a<n;a++){const x=X0+a*S0,z=Y0+b*S0,o=WOFF(x,z);off.push(o);pos.push(x,GROUND+(o>0?o:-.3),z);uv.push(x/12,z/12);}
+    for(let b=0;b<n-1;b++)for(let a=0;a<n-1;a++){const A=b*n+a,B=A+1,C=A+n+1,D=A+n;if(off[A]>0||off[B]>0||off[C]>0||off[D]>0)idx.push(A,C,B,A,D,C);}
+    const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();own(new T.Mesh(g,land.material[0])).receiveShadow=true;}
   // 道路（地上）・高架
   const ground={car:[],foot:[]},elev=[];
   for(const r of WORLD.roadsIn(X0,Y0,X1,Y1)){if(r.code===2704)continue;// トンネル
     for(const seg of clipLine(r.a,X0,Y0,X1,Y1)){if(r.mw||r.lv>0)elev.push([seg,r.w,r.lv||1]);else (r.car?ground.car:ground.foot).push([seg,r.w]);}}
-  if(ground.foot.length)own(flatOrder(new T.Mesh(ribbonGeo(ground.foot,GROUND+.05),paveMat),GROUND+.05)).receiveShadow=true;
+  if(ground.foot.length)own(flatOrder(new T.Mesh(ribbonGeo(ground.foot,GROUND+.05,OFF),paveMat),GROUND+.05)).receiveShadow=true;
   {const carr=[],side=[];for(const[seg,w]of ground.car){if(w>=9){const cw=w*.7,sw=(w-cw)/2;carr.push([seg,cw]);for(const o of[-1,1])side.push([offLine(seg,o*(cw/2+sw/2)),sw]);}else carr.push([seg,w]);}
-    if(side.length)own(flatOrder(new T.Mesh(ribbonGeo(side,GROUND+.16),paveMat),GROUND+.16)).receiveShadow=true;
-    if(carr.length)own(flatOrder(new T.Mesh(ribbonGeo(carr,GROUND+.08),asphMat),GROUND+.08)).receiveShadow=true;}
+    if(side.length)own(flatOrder(new T.Mesh(ribbonGeo(side,GROUND+.16,OFF),paveMat),GROUND+.16)).receiveShadow=true;
+    if(carr.length)own(flatOrder(new T.Mesh(ribbonGeo(carr,GROUND+.08,OFF),asphMat),GROUND+.08)).receiveShadow=true;}
   // 中央線（幅9m以上の道）
   {const pos=[];for(const[seg,w]of ground.car){if(w<9)continue;for(let k=0;k<seg.length-2;k+=2){const ax=seg[k],az=seg[k+1],bx=seg[k+2],bz=seg[k+3],l=Math.hypot(bx-ax,bz-az);if(l<1)continue;const ux=(bx-ax)/l,uz=(bz-az)/l,hx=-uz*.08,hz=ux*.08;
-      for(let t=1;t<l-4;t+=10){const x0=ax+ux*t,z0=az+uz*t,x1=x0+ux*5,z1=z0+uz*5,y=GROUND+.1;pos.push(x0+hx,y,z0+hz,x1+hx,y,z1+hz,x1-hx,y,z1-hz,x0+hx,y,z0+hz,x1-hx,y,z1-hz,x0-hx,y,z0-hz);}}}
+      for(let t=1;t<l-4;t+=10){const x0=ax+ux*t,z0=az+uz*t,x1=x0+ux*5,z1=z0+uz*5,y=GROUND+.1+O(x0,z0);pos.push(x0+hx,y,z0+hz,x1+hx,y,z1+hz,x1-hx,y,z1-hz,x0+hx,y,z0+hz,x1-hx,y,z1-hz,x0-hx,y,z0-hz);}}}
     if(pos.length){const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.computeVertexNormals();own(flatOrder(new T.Mesh(g,whiteLine),GROUND+.1));}}
   // 高架（首都高など）：床版と柱
   if(elev.length){const deck=[],pil=[];for(const[seg,w,lv]of elev){const y=GROUND+7+lv*3;for(let k=0;k<seg.length-2;k+=2){const ax=seg[k],az=seg[k+1],bx=seg[k+2],bz=seg[k+3],l=Math.hypot(bx-ax,bz-az);if(l<.5)continue;
       deck.push([ax,az,bx,bz,w,y,l]);for(let t=0;t<l;t+=36){const px=ax+(bx-ax)*t/l,pz=az+(bz-az)*t/l;if(isLand(px,pz))pil.push([px,pz,y]);}}}
     const dm=lam(0xc9ccc8),gd=new T.BoxGeometry(1,1,1);const im=new T.InstancedMesh(gd,dm,deck.length);deck.forEach(([ax,az,bx,bz,w,y,l],k)=>{dummy.position.set((ax+bx)/2,y,(az+bz)/2);dummy.rotation.set(0,-Math.atan2(bz-az,bx-ax),0);dummy.scale.set(l+.3,1.4,w);dummy.updateMatrix();im.setMatrixAt(k,dummy.matrix);});
     shadowy(fitInstances(im));grp.add(im);
-    if(pil.length){const pm=new T.InstancedMesh(new T.CylinderGeometry(1,1,1,8).translate(0,.5,0),dm,pil.length);pil.forEach(([x,z,y],k)=>{dummy.position.set(x,GROUND,z);dummy.rotation.set(0,0,0);dummy.scale.set(1.2,y-GROUND,1.2);dummy.updateMatrix();pm.setMatrixAt(k,dummy.matrix);});shadowy(fitInstances(pm));grp.add(pm);}}
+    if(pil.length){const pm=new T.InstancedMesh(new T.CylinderGeometry(1,1,1,8).translate(0,.5,0),dm,pil.length);pil.forEach(([x,z,y],k)=>{dummy.position.set(x,GROUND+O(x,z),z);dummy.rotation.set(0,0,0);dummy.scale.set(1.2,y-GROUND,1.2);dummy.updateMatrix();pm.setMatrixAt(k,dummy.matrix);});shadowy(fitInstances(pm));grp.add(pm);}}
   // 鉄道：地上は砂利とレール、高架は床版と柱（トンネル・地下は描かない）
   {const gr=[],el=[];for(const r of WORLD.railsIn(X0,Y0,X1,Y1)){if(!r.above)continue;for(const seg of clipLine(r.a,X0,Y0,X1,Y1))(r.state===1?el:gr).push([seg,r.station?14:6]);}
-    if(gr.length){own(flatOrder(new T.Mesh(ribbonGeo(gr,GROUND+.06),flatMat(0x8d8478)),GROUND+.06));const rails=[];for(const[seg]of gr)for(const o of[-.75,.75])rails.push([offLine(seg,o),.15]);own(flatOrder(new T.Mesh(ribbonGeo(rails,GROUND+.12),flatMat(0x4a4a4a)),GROUND+.12));}
+    if(gr.length){own(flatOrder(new T.Mesh(ribbonGeo(gr,GROUND+.06,OFF),flatMat(0x8d8478)),GROUND+.06));const rails=[];for(const[seg]of gr)for(const o of[-.75,.75])rails.push([offLine(seg,o),.15]);own(flatOrder(new T.Mesh(ribbonGeo(rails,GROUND+.12,OFF),flatMat(0x4a4a4a)),GROUND+.12));}
     if(el.length){const dm=lam(0xbfc2bd),list=[],pil=[];for(const[seg,w]of el)for(let k=0;k<seg.length-2;k+=2){const ax=seg[k],az=seg[k+1],bx=seg[k+2],bz=seg[k+3],l=Math.hypot(bx-ax,bz-az);if(l<.5)continue;list.push([ax,az,bx,bz,Math.max(8,w),l]);for(let t=0;t<l;t+=30){const px=ax+(bx-ax)*t/l,pz=az+(bz-az)*t/l;if(isLand(px,pz))pil.push([px,pz]);}}
       const im=new T.InstancedMesh(new T.BoxGeometry(1,1,1),dm,list.length);list.forEach(([ax,az,bx,bz,w,l],k)=>{dummy.position.set((ax+bx)/2,GROUND+8,(az+bz)/2);dummy.rotation.set(0,-Math.atan2(bz-az,bx-ax),0);dummy.scale.set(l+.3,1.2,w);dummy.updateMatrix();im.setMatrixAt(k,dummy.matrix);});shadowy(fitInstances(im));grp.add(im);
-      if(pil.length){const pm=new T.InstancedMesh(new T.CylinderGeometry(1,1,1,8).translate(0,.5,0),dm,pil.length);pil.forEach(([x,z],k)=>{dummy.position.set(x,GROUND,z);dummy.rotation.set(0,0,0);dummy.scale.set(1,8,1);dummy.updateMatrix();pm.setMatrixAt(k,dummy.matrix);});shadowy(fitInstances(pm));grp.add(pm);}}}
+      if(pil.length){const pm=new T.InstancedMesh(new T.CylinderGeometry(1,1,1,8).translate(0,.5,0),dm,pil.length);pil.forEach(([x,z],k)=>{dummy.position.set(x,GROUND+O(x,z),z);dummy.rotation.set(0,0,0);dummy.scale.set(1,8,1);dummy.updateMatrix();pm.setMatrixAt(k,dummy.matrix);});shadowy(fitInstances(pm));grp.add(pm);}}}
   // 交差点（3本以上の道の端が集まる点）：横断歩道（縞 0.45m×3m を 0.9m おき）と停止線（左側通行で手前の左半分）。点がチャンクの中にあるものだけ
   {const ends=new Map(),key=(x,y)=>Math.round(x)+','+Math.round(y);for(const r of WORLD.roadsIn(X0-30,Y0-30,X1+30,Y1+30)){if(r.mw||r.lv>0||r.code===2704)continue;const a=r.a,n=a.length/2;
       for(const[e,nb]of[[0,1],[n-1,n-2]]){const k=key(a[2*e],a[2*e+1]);let l=ends.get(k);if(!l){l=[];ends.set(k,l);}l.push({r,x:a[2*e],y:a[2*e+1],dx:a[2*nb]-a[2*e],dy:a[2*nb+1]-a[2*e+1]});}}
@@ -1178,48 +1195,48 @@ function buildWorldChunk(i,j,grp,L,doCol){const X0=i*CH,Y0=j*CH,X1=X0+CH,Y1=Y0+C
       for(const o of cars){const L=Math.hypot(o.dx,o.dy);if(L<wmax/2+6)continue;const ux=o.dx/L,uy=o.dy/L,nx=-uy,ny=ux,cw=o.r.w>=9?o.r.w*.7:o.r.w,d=wmax/2+2.5;
         for(let t=-cw/2+.45;t<cw/2-.2;t+=.9){const cx=x+ux*(d+1.5)+nx*t,cy=y+uy*(d+1.5)+ny*t;zebra.push([cx-ux*1.5,cy-uy*1.5,cx+ux*1.5,cy+uy*1.5,.45]);}
         const sx=x+ux*(d+4.5),sy=y+uy*(d+4.5);stop.push([sx,sy,sx-nx*cw/2,sy-ny*cw/2,.45]);}}
-    const paint=list=>{const pos=[],y=GROUND+.11;for(const[ax,ay,bx,by,w]of list){const dx=bx-ax,dy=by-ay,l=Math.hypot(dx,dy)||1,hx=-dy/l*w/2,hy=dx/l*w/2;pos.push(ax+hx,y,ay+hy,bx+hx,y,by+hy,bx-hx,y,by-hy,ax+hx,y,ay+hy,bx-hx,y,by-hy,ax-hx,y,ay-hy);}
+    const paint=list=>{const pos=[];for(const[ax,ay,bx,by,w]of list){const y=GROUND+.11+O(ax,ay);const dx=bx-ax,dy=by-ay,l=Math.hypot(dx,dy)||1,hx=-dy/l*w/2,hy=dx/l*w/2;pos.push(ax+hx,y,ay+hy,bx+hx,y,by+hy,bx-hx,y,by-hy,ax+hx,y,ay+hy,bx-hx,y,by-hy,ax-hx,y,ay-hy);}
       const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.computeVertexNormals();return g;};
     if(zebra.length||stop.length)own(flatOrder(new T.Mesh(paint(zebra.concat(stop)),whiteLine),GROUND+.11));
     // 信号機（幅9m以上の道が2本以上交わる所の四隅）
     if(sig.length){const pl=[];for(const[x,y,w]of sig)for(let q=0;q<4;q++){const a=q*Math.PI/2+.785,o=w/2+1.5;const px=x+Math.cos(a)*o,py=y+Math.sin(a)*o;if(isLand(px,py))pl.push([px,py,a+Math.PI]);}
       if(pl.length){const pole=new T.InstancedMesh(new T.CylinderGeometry(.09,.11,5.2,6).translate(0,2.6,0),lam(0x9aa3a8),pl.length),head=new T.InstancedMesh(new T.BoxGeometry(1.2,.4,.35).translate(1.2,5.1,0),lam(0x3a3e42),pl.length);
-        pl.forEach(([x,z,a],k)=>{dummy.position.set(x,GROUND,z);dummy.rotation.set(0,-a,0);dummy.scale.setScalar(1);dummy.updateMatrix();pole.setMatrixAt(k,dummy.matrix);head.setMatrixAt(k,dummy.matrix);});for(const m of[pole,head]){shadowy(fitInstances(m));grp.add(m);}}}}
+        pl.forEach(([x,z,a],k)=>{dummy.position.set(x,GROUND+O(x,z),z);dummy.rotation.set(0,-a,0);dummy.scale.setScalar(1);dummy.updateMatrix();pole.setMatrixAt(k,dummy.matrix);head.setMatrixAt(k,dummy.matrix);});for(const m of[pole,head]){shadowy(fitInstances(m));grp.add(m);}}}}
   // 電柱と電線（幅3〜9mの道の片側に約30mおき）、街路樹（幅13m以上の歩道に12mおき）、自動販売機（歩道の脇にときどき）
   {const poles=[],wires=[],trees=[],vend=[];for(const[seg,w]of ground.car){for(let k=0;k<seg.length-2;k+=2){const ax=seg[k],az=seg[k+1],bx=seg[k+2],bz=seg[k+3],l=Math.hypot(bx-ax,bz-az);if(l<1)continue;const ux=(bx-ax)/l,uz=(bz-az)/l;
       if(w>=3&&w<9){let prev=null;for(let t=((ax*3+az*5)%30+30)%30;t<l;t+=30){const o=w/2+.45,x=ax+ux*t-uz*o,z=az+uz*t+ux*o;if(!isLand(x,z)||colAt(x,z,.3))continue;poles.push([x,z,Math.atan2(uz,ux)]);if(prev)wires.push([prev,[x,z]]);prev=[x,z];}}
       if(w>=13)for(let t=6;t<l;t+=12)for(const sd of[-1,1]){const o=w/2-1.2,x=ax+ux*t-uz*o*sd,z=az+uz*t+ux*o*sd;if(isLand(x,z))trees.push([x,z,.8+hash(Math.round(x),Math.round(z))*.5]);}
       if(w>=6&&hash(Math.round(ax),Math.round(az))<.12){const o=w/2+.9,t=l*.5,x=ax+ux*t-uz*o,z=az+uz*t+ux*o;if(isLand(x,z)&&!colAt(x,z,.6))vend.push([x,z,Math.atan2(uz,ux)]);}}}
     if(poles.length){const pg=new T.InstancedMesh(new T.CylinderGeometry(.13,.17,10,6).translate(0,5,0),lam(0x9e9a92),poles.length),cg=new T.InstancedMesh(new T.BoxGeometry(1.6,.1,.1).translate(0,9.2,0),lam(0x55585a),poles.length);
-      poles.forEach(([x,z,a],k)=>{dummy.position.set(x,GROUND,z);dummy.rotation.set(0,-a+Math.PI/2,0);dummy.scale.setScalar(1);dummy.updateMatrix();pg.setMatrixAt(k,dummy.matrix);cg.setMatrixAt(k,dummy.matrix);});for(const m of[pg,cg]){fitInstances(m);m.castShadow=true;grp.add(m);}
+      poles.forEach(([x,z,a],k)=>{dummy.position.set(x,GROUND+O(x,z),z);dummy.rotation.set(0,-a+Math.PI/2,0);dummy.scale.setScalar(1);dummy.updateMatrix();pg.setMatrixAt(k,dummy.matrix);cg.setMatrixAt(k,dummy.matrix);});for(const m of[pg,cg]){fitInstances(m);m.castShadow=true;grp.add(m);}
       const wp=[];for(const[[ax,az],[bx,bz]]of wires)for(const o of[-.6,.6])for(let k=0;k<6;k++){const t0=k/6,t1=(k+1)/6,sag=t=>-Math.sin(t*Math.PI)*.5,dx=bz-az,dz=-(bx-ax),L=Math.hypot(dx,dz)||1;
-        wp.push(lerp(ax,bx,t0)+dx/L*o,GROUND+9.2+sag(t0),lerp(az,bz,t0)+dz/L*o,lerp(ax,bx,t1)+dx/L*o,GROUND+9.2+sag(t1),lerp(az,bz,t1)+dz/L*o);}
+        const xa=lerp(ax,bx,t0),za=lerp(az,bz,t0),xb=lerp(ax,bx,t1),zb=lerp(az,bz,t1);wp.push(xa+dx/L*o,GROUND+9.2+sag(t0)+O(xa,za),za+dz/L*o,xb+dx/L*o,GROUND+9.2+sag(t1)+O(xb,zb),zb+dz/L*o);}
       if(wp.length){const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(wp,3));const ls=new T.LineSegments(g,WIRE_MAT);ls.userData.own=true;grp.add(ls);}}
-    if(trees.length){const tk=new T.InstancedMesh(tkGeo,trunkMat,trees.length),cr=new T.InstancedMesh(crGeo,crownMat,trees.length);trees.forEach(([x,z,s2],k)=>{dummy.rotation.set(0,k,0);dummy.position.set(x,GROUND+.16,z);dummy.scale.set(s2,3*s2,s2);dummy.updateMatrix();tk.setMatrixAt(k,dummy.matrix);
-        dummy.position.set(x,GROUND+.16+3.6*s2,z);dummy.scale.set(1.9*s2,2.2*s2,1.9*s2);dummy.updateMatrix();cr.setMatrixAt(k,dummy.matrix);cr.setColorAt(k,col.setHex([0x5e9150,0x6d9f58,0x4f8447][k%3]));});for(const m of[tk,cr]){shadowy(fitInstances(m));grp.add(m);}}
-    if(vend.length){const vm=new T.InstancedMesh(new T.BoxGeometry(.95,1.8,.75).translate(0,.9,0),VEND_MAT,vend.length);vend.forEach(([x,z,a],k)=>{dummy.position.set(x,GROUND,z);dummy.rotation.set(0,-a,0);dummy.scale.setScalar(1);dummy.updateMatrix();vm.setMatrixAt(k,dummy.matrix);vm.setColorAt(k,col.setHex([0xd8312c,0x2d6fb7,0xf0f0ee,0x2f8a4e][k%4]));});fitInstances(vm);vm.castShadow=true;grp.add(vm);}}
+    if(trees.length){const tk=new T.InstancedMesh(tkGeo,trunkMat,trees.length),cr=new T.InstancedMesh(crGeo,crownMat,trees.length);trees.forEach(([x,z,s2],k)=>{dummy.rotation.set(0,k,0);dummy.position.set(x,GROUND+.16+O(x,z),z);dummy.scale.set(s2,3*s2,s2);dummy.updateMatrix();tk.setMatrixAt(k,dummy.matrix);
+        dummy.position.set(x,GROUND+.16+3.6*s2+O(x,z),z);dummy.scale.set(1.9*s2,2.2*s2,1.9*s2);dummy.updateMatrix();cr.setMatrixAt(k,dummy.matrix);cr.setColorAt(k,col.setHex([0x5e9150,0x6d9f58,0x4f8447][k%3]));});for(const m of[tk,cr]){shadowy(fitInstances(m));grp.add(m);}}
+    if(vend.length){const vm=new T.InstancedMesh(new T.BoxGeometry(.95,1.8,.75).translate(0,.9,0),VEND_MAT,vend.length);vend.forEach(([x,z,a],k)=>{dummy.position.set(x,GROUND+O(x,z),z);dummy.rotation.set(0,-a,0);dummy.scale.setScalar(1);dummy.updateMatrix();vm.setMatrixAt(k,dummy.matrix);vm.setColorAt(k,col.setHex([0xd8312c,0x2d6fb7,0xf0f0ee,0x2f8a4e][k%4]));});fitInstances(vm);vm.castShadow=true;grp.add(vm);}}
   // 街灯（幅9m以上の道の両側に約30mおき）
   {const lp=[];for(const[seg,w]of ground.car){if(w<9)continue;for(let k=0;k<seg.length-2;k+=2){const ax=seg[k],az=seg[k+1],bx=seg[k+2],bz=seg[k+3],l=Math.hypot(bx-ax,bz-az);if(l<1)continue;const ux=(bx-ax)/l,uz=(bz-az)/l;
       for(let t=((ax*7+az*3)%30+30)%30;t<l;t+=30)for(const sd of[-1,1]){const o=w/2+1.2,x=ax+ux*t-uz*o*sd,z=az+uz*t+ux*o*sd;if(isLand(x,z))lp.push([x,z,Math.atan2(uz,ux)+(sd>0?Math.PI:0)]);}}}
     if(lp.length){const geo=new T.CylinderGeometry(.07,.09,7.5,6).translate(0,3.75,0),arm=new T.BoxGeometry(1.4,.08,.08).translate(.6,7.4,0),lm=lam(0x4c565e);const a1=new T.InstancedMesh(geo,lm,lp.length),a2=new T.InstancedMesh(arm,lm,lp.length);
-      lp.forEach(([x,z,a],k)=>{dummy.position.set(x,GROUND,z);dummy.rotation.set(0,-a+Math.PI/2,0);dummy.scale.setScalar(1);dummy.updateMatrix();a1.setMatrixAt(k,dummy.matrix);a2.setMatrixAt(k,dummy.matrix);});for(const m of[a1,a2]){fitInstances(m);grp.add(m);}
+      lp.forEach(([x,z,a],k)=>{dummy.position.set(x,GROUND+O(x,z),z);dummy.rotation.set(0,-a+Math.PI/2,0);dummy.scale.setScalar(1);dummy.updateMatrix();a1.setMatrixAt(k,dummy.matrix);a2.setMatrixAt(k,dummy.matrix);});for(const m of[a1,a2]){fitInstances(m);grp.add(m);}
       // 夜：灯具の光（点）と足元の明かり（加算の円）。濃さは updSky で（夜だけ）
-      const gp=[],pool=new T.InstancedMesh(LAMP_POOL_GEO,pierPoolM,lp.length);lp.forEach(([x,z,a],k)=>{const hx=x+Math.cos(-a+Math.PI/2)*1.2,hz=z-Math.sin(-a+Math.PI/2)*1.2;gp.push(hx,GROUND+7.3,hz);dummy.position.set(hx,GROUND+.2,hz);dummy.rotation.set(0,0,0);dummy.scale.setScalar(1);dummy.updateMatrix();pool.setMatrixAt(k,dummy.matrix);});
+      const gp=[],pool=new T.InstancedMesh(LAMP_POOL_GEO,pierPoolM,lp.length);lp.forEach(([x,z,a],k)=>{const hx=x+Math.cos(-a+Math.PI/2)*1.2,hz=z-Math.sin(-a+Math.PI/2)*1.2;gp.push(hx,GROUND+7.3+O(hx,hz),hz);dummy.position.set(hx,GROUND+.2+O(hx,hz),hz);dummy.rotation.set(0,0,0);dummy.scale.setScalar(1);dummy.updateMatrix();pool.setMatrixAt(k,dummy.matrix);});
       pool.renderOrder=3;fitInstances(pool);grp.add(pool);const pg=new T.BufferGeometry();pg.setAttribute('position',new T.Float32BufferAttribute(gp,3));const pts=new T.Points(pg,LAMP_GLOW_PTS);pts.userData.own=true;grp.add(pts);}}
   // 岸壁：まっすぐな水際（8m以上）に白い縁石と係船柱（約18mおき）。縁石は陸側1m、係船柱は陸側0.8m
   {const cxx=(X0+X1)/2,czz=(Y0+Y1)/2,cope=[],bol=[];const isBox=e=>(Math.abs(e[0]-e[2])<1e-6&&(Math.abs(e[0]-WB.x0)<.5||Math.abs(e[0]-WB.x1)<.5))||(Math.abs(e[1]-e[3])<1e-6&&(Math.abs(e[1]-WB.y0)<.5||Math.abs(e[1]-WB.y1)<.5));
     for(const e of WORLD.edgesNear(cxx,czz,170)){const mx=(e[0]+e[2])/2,mz=(e[1]+e[3])/2;if(mx<X0||mx>=X1||mz<Y0||mz>=Y1||isBox(e))continue;const dx=e[2]-e[0],dz=e[3]-e[1],l=Math.hypot(dx,dz);if(l<8)continue;
       let nx=-dz/l,nz=dx/l;if(!isLand(mx+nx*1.5,mz+nz*1.5)){nx=-nx;nz=-nz;}if(!isLand(mx+nx*1.5,mz+nz*1.5))continue;// 陸側の向き
       cope.push([[e[0]+nx*.5,e[1]+nz*.5,e[2]+nx*.5,e[3]+nz*.5],1]);if(nearPier(mx,mz))continue;for(let t=6;t<l-3;t+=18){const x=e[0]+dx/l*t+nx*.8,z=e[1]+dz/l*t+nz*.8;if(!colAt(x,z,.3))bol.push([x,z]);}}
-    if(cope.length)own(flatOrder(new T.Mesh(ribbonGeo(cope,GROUND+.04),flatMat(0xd9d6cf)),GROUND+.04));
-    if(bol.length){const im=new T.InstancedMesh(BOLLARD_GEO,BOLLARD_MAT,bol.length);bol.forEach(([x,z],k)=>{dummy.position.set(x,GROUND,z);dummy.rotation.set(0,0,0);dummy.scale.setScalar(1);dummy.updateMatrix();im.setMatrixAt(k,dummy.matrix);});fitInstances(im);im.castShadow=true;grp.add(im);}}
+    if(cope.length)own(flatOrder(new T.Mesh(ribbonGeo(cope,GROUND+.04,OFF),flatMat(0xd9d6cf)),GROUND+.04));
+    if(bol.length){const im=new T.InstancedMesh(BOLLARD_GEO,BOLLARD_MAT,bol.length);bol.forEach(([x,z],k)=>{dummy.position.set(x,GROUND+O(x,z),z);dummy.rotation.set(0,0,0);dummy.scale.setScalar(1);dummy.updateMatrix();im.setMatrixAt(k,dummy.matrix);});fitInstances(im);im.castShadow=true;grp.add(im);}}
   // 建物
   const ci=Math.floor(X0/WORLD.BT),cj=Math.floor(Y0/WORLD.BT),cell=WORLD.cell(ci,cj);
   if(!cell){grp.userData.pending=true;WORLD.loadCell(ci,cj).then(()=>{const k=i+','+j,g=chunks.get(k);if(g&&g.userData.pending){disposeChunk(g);chunks.delete(k);buildChunk(i,j);}});return;}
   const B=newBldAcc(),units=[];
   for(const b of cell){const cx=(b.x0+b.x1)/2,cy=(b.y0+b.y1)/2;if(cx<X0||cx>=X1||cy<Y0||cy>=Y1)continue;if(LANDMARK_KEEP.some(([a,c,r])=>Math.hypot(a-cx,c-cy)<r))continue;
     const area=Math.abs(polyArea(b.p));if(area<6)continue;const sd=hash(Math.round(cx*10),Math.round(cy*10));const st=bldStyle(b.code,area,sd);const h=b.h>1?b.h:st[0];
-    buildingInto(B,b,area,h,sd,units);if(doCol&&area>8)addColPoly(b.p,h);}
+    let g0=GROUND;if(OFF){let m=1e9;for(let k=0;k<b.p.length;k+=2)m=Math.min(m,OFF(b.p[k],b.p[k+1]));g0+=m;}buildingInto(B,b,area,h,sd,units,g0);if(doCol&&area>8)addColPoly(b.p,h);}
   if(B.pos.length){const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(B.pos,3));g.setAttribute('normal',new T.Float32BufferAttribute(B.nor,3));
     g.setAttribute('color',new T.Float32BufferAttribute(B.col,3));g.setAttribute('aFacade',new T.Float32BufferAttribute(B.fac,4));g.setAttribute('aBldg',new T.Float32BufferAttribute(B.bld,4));
     const m=own(new T.Mesh(g,FACADE_MAT));m.castShadow=true;m.receiveShadow=true;}
@@ -1428,9 +1445,9 @@ function updTraffic(dt,t){
     const px=S.x-x,py=S.y-y;const ahead=px*fx+py*fy,lat=Math.abs(px*-fy+py*fx-(-(c.lane*3.4-1.7)));if(ahead>0&&ahead<14&&Math.hypot(px,py)<16&&Math.abs(px*-uy+py*ux)<10)vt=0;
     c.v+=(vt-c.v)*Math.min(1,dt*(vt<c.v?3:1));c.s+=c.v*c.dir*dt;if(c.s<1||c.s>ROADTOT-1)c.on=false;
     const off=(c.lane*3.4-1.7)*-c.dir;const[x2,y2,ux2,uy2]=roadAt(c.s);const nx=-uy2,ny=ux2;
-    c.g.position.set(x2+nx*off,GROUND+.07,y2+ny*off);c.g.rotation.y=-Math.atan2(uy2*c.dir,ux2*c.dir);}
+    c.g.position.set(x2+nx*off,groundY(x2+nx*off,y2+ny*off)+.07,y2+ny*off);c.g.rotation.y=-Math.atan2(uy2*c.dir,ux2*c.dir);}
   for(const p of PEDS){if(PEDS.indexOf(p)>=gfx().peds){p.P.g.visible=false;p.on=false;continue;}if(!p.on||Math.abs(p.s-sPlayer)>260){if(!near){p.P.g.visible=false;p.on=false;continue;}p.s=spawnAlong(sPlayer,240);p.side=rnd()<.5?1:-1;p.dir=rnd()<.5?1:-1;p.v=1.1+rnd()*.5;p.on=true;p.P.g.visible=true;p.off=TRP.ped+rnd()*2.5;}
-    p.s+=p.v*p.dir*dt;p.ph+=dt*p.v*3.3;const[x,y,ux,uy]=roadAt(p.s);const nx=-uy,ny=ux;p.P.g.position.set(x+nx*p.off*p.side,GROUND,y+ny*p.off*p.side);p.P.g.rotation.y=Math.atan2(ux*p.dir,uy*p.dir);animHuman(p.P,p.ph,.75,t);}}
+    p.s+=p.v*p.dir*dt;p.ph+=dt*p.v*3.3;const[x,y,ux,uy]=roadAt(p.s);const nx=-uy,ny=ux;p.P.g.position.set(x+nx*p.off*p.side,groundY(x+nx*p.off*p.side,y+ny*p.off*p.side),y+ny*p.off*p.side);p.P.g.rotation.y=Math.atan2(ux*p.dir,uy*p.dir);animHuman(p.P,p.ph,.75,t);}}
 
 /* ===== 竿・糸・ウキ ===== */
 const rodMat=new T.MeshPhongMaterial({color:0x1e2a33,specular:0x667788,shininess:60});const rodMesh=new T.Mesh(new T.BufferGeometry(),rodMat);rodMesh.frustumCulled=false;rodMesh.castShadow=true;scene.add(rodMesh);
@@ -2675,7 +2692,7 @@ function update(dt,t){
   const target=F.st!=='idle'?Math.atan2(Math.cos(F.ang),Math.sin(F.ang)):(nearSpot&&!moving)?Math.atan2(Math.cos(idleDir),Math.sin(idleDir)):face;
   P.rotation.y=RIDE?RIDE.st.h:angLerp(P.rotation.y,target,Math.min(1,dt*10));P.position.set(S.x,gy+(RIDE&&RIDE.sp.kind==='bike'?.45:0),S.y);P.visible=!(RIDE&&RIDE.sp.kind==='car');updVehMeshes();
   const amp=RIDE?(RIDE.sp.kind==='bike'?clamp(speedNow/4,0,.6):0):clamp(speedNow/3,0,1.35);animHuman(ME,walkT,amp,t);poseFishing(t);
-  chunkT-=dt;if(chunkT<=0){chunkT=.25;updChunks(false);}
+  chunkT-=dt;if(chunkT<=0){chunkT=.25;updChunks(false);liftSights();}
   updTraffic(dt,t);
   coastChk-=dt;if(coastChk<=0){coastChk=.5;if(!nearSpot&&!S.tip.coast&&!rectAt(S.x,S.y)&&nearCoast(S.x,S.y,8)){S.tip.coast=1;toast('ここの岸壁は釣り禁止。青い魚マークの釣り場へ行こう');}}
   let best='',bd=1e9;if(inKanto(S.x,S.y))best=KANTO.nameNear(S.x,S.y)||'関東';else for(const[n,x,y]of AREAS){const d=Math.hypot(x-S.x,y-S.y);if(d<bd){bd=d;best=n;}}const ae=$('area');if(ae.textContent!==best)ae.textContent=best;

@@ -33,8 +33,13 @@ function create(opt){const G=opt.gsi,GEO=opt.geo,base=opt.ground!=null?opt.groun
     for(const[kind,z]of[['dem5a',S.dem5a.z],['dem10',S.dem10.z],['vec',VZ]]){const tx0=Math.floor(lon2tx(lo0,z)),tx1=Math.floor(lon2tx(lo1,z)),ty0=Math.floor(lat2ty(la1,z)),ty1=Math.floor(lat2ty(la0,z));
       for(let x=tx0;x<=tx1;x++)for(let y=ty0;y<=ty1;y++)out.push([kind,z,x,y]);}
     return out;}
-  const have=(k,z,x,y)=>G.mem.has(k+'/'+z+'/'+x+'/'+y)||G.missing.has(k+'/'+z+'/'+x+'/'+y);
+  // 読めた・データなし（404）・通信の失敗（その場は平地・海として扱い、待ち続けない）
+  const have=(k,z,x,y)=>{const q=k+'/'+z+'/'+x+'/'+y;return G.mem.has(q)||G.missing.has(q)||!!(G.failed&&G.failed.has(q));};
   function ready(X0,Y0,X1,Y1){return tilesFor(X0-STEP,Y0-STEP,X1+STEP,Y1+STEP).every(t=>have(...t));}
+  // 標高だけ（横浜の丘など、ベクトルは要らない所）
+  const demTiles=(X0,Y0,X1,Y1)=>tilesFor(X0-STEP,Y0-STEP,X1+STEP,Y1+STEP).filter(t=>t[0]!=='vec');
+  function demReady(X0,Y0,X1,Y1){return demTiles(X0,Y0,X1,Y1).every(t=>have(...t));}
+  function demLoad(X0,Y0,X1,Y1){return Promise.all(demTiles(X0,Y0,X1,Y1).map(t=>G.tile(...t)));}
   function load(X0,Y0,X1,Y1){return Promise.all(tilesFor(X0-STEP,Y0-STEP,X1+STEP,Y1+STEP).map(t=>G.tile(...t)));}
   // 標高（m）。海・データなしは null。タイルが読めていなければ undefined
   function demAt(x,y){const[lat,lon]=ll(x,y);const k5=key('dem5a',S.dem5a.z,lat,lon),k10=key('dem10',S.dem10.z,lat,lon);
@@ -71,11 +76,16 @@ function create(opt){const G=opt.gsi,GEO=opt.geo,base=opt.ground!=null?opt.groun
   // 補間（格子の三角形：(i,j)-(i+1,j)-(i+1,j+1) と (i,j)-(i+1,j+1)-(i,j+1)）
   function groundY(x,y){const fx=x/STEP,fz=y/STEP,i=Math.floor(fx),j=Math.floor(fz),u=fx-i,v=fz-j;const a=node(i,j),b=node(i+1,j),c=node(i+1,j+1),d=node(i,j+1);if(!a||!b||!c||!d)return null;
     return u>=v?a.y+(b.y-a.y)*u+(c.y-b.y)*v:a.y+(c.y-d.y)*u+(d.y-a.y)*v;}
+  // 標高の格子（10m、水域の判定なし）を f(標高 or null) で補間。タイルが無ければ null
+  const dlat=new Map();
+  function demNode(ix,iz){const k=(ix+60000)*200000+(iz+60000);if(dlat.has(k))return dlat.get(k);const h=demAt(ix*STEP,iz*STEP);if(h===undefined)return undefined;if(dlat.size>400000)dlat.clear();dlat.set(k,h);return h;}
+  function demInterp(x,y,f){const fx=x/STEP,fz=y/STEP,i=Math.floor(fx),j=Math.floor(fz),u=fx-i,v=fz-j;const A=demNode(i,j),B=demNode(i+1,j),C=demNode(i+1,j+1),D=demNode(i,j+1);
+    if(A===undefined||B===undefined||C===undefined||D===undefined)return null;const a=f(A),b=f(B),c=f(C),d=f(D);return u>=v?a+(b-a)*u+(c-b)*v:a+(c-d)*u+(d-a)*v;}
   function isLand(x,y){const g=groundY(x,y);if(g==null||g<.4)return false;const fx=Math.round(x/STEP),fz=Math.round(y/STEP),n=node(fx,fz);if(n&&n.water)return false;return !inWater(x,y);}
   // いちばん近い地名（読み込み済みのタイルから。なければ null）
   function nameNear(x,y,r){r=r||1500;let best=null,bd=r;for(const[kind,z,tx,ty]of tilesFor(x-r,y-r,x+r,y+r)){if(kind!=='vec')continue;const f=features(G.mem.get('vec/'+z+'/'+tx+'/'+ty));if(!f)continue;
       for(const n of f.names){const d=Math.hypot(n.x-x,n.y-y)*(n.code<300?.6:1);if(d<bd){bd=d;best=n.t;}}}return best;}
-  return{STEP,nameNear,tilesFor,ready,load,demAt,node,groundY,isLand,inWater,featuresIn,features};}
+  return{STEP,nameNear,demReady,demLoad,demNode,demInterp,tilesFor,ready,load,demAt,node,groundY,isLand,inWater,featuresIn,features};}
 const API={create,clipPoly,clipLine,STEP};
 if(typeof module!=='undefined'&&module.exports)module.exports=API;else root.HamaKanto=API;
 })(typeof self!=='undefined'?self:this);
