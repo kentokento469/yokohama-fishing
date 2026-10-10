@@ -14,7 +14,7 @@
 
 ## 現状のファイル構成
 
-- `index.html` — ゲームのすべて（HTML/CSS/JS、約13万文字）。three.js r149 を jsDelivr の UMD ビルドから読み込む。
+- `index.html` — ゲームのすべて（HTML/CSS/JS、約30万文字）。three.js r149 を jsDelivr の UMD ビルドから読み込む。
   - 単体のブラウザでそのまま開ける。ビルド不要。
   - セーブは `localStorage`（キー `hama-tsuri-v2`）。
 - `fishing-sim.js` — 水中の物理と環境（three.js・DOM に依存しない。`window.HamaSim` / Node の `require` 両対応）。釣り場の水深・底質 `SPOT_ENV`、仕掛け・ルアーの性質 `RIGS`、魚の泳層 `LAYER`、調整値 `TUNE`。
@@ -24,7 +24,7 @@
 - `data/shonan-spots.js` — 湘南（鎌倉市〜大磯町）の釣り場39か所と規制エリアA〜G。ユーザー提供の資料のデータモデル。位置はおおよそ（実測でない）、出現確率は持たない、ゲーム用の数値は推定。
 - `shonan.js` — 湘南の地理（緯度経度→ゲーム座標、海岸線・江の島・川・防波堤・橋・国道134号・JR・江ノ電・駅・名所）と、釣りできるかの判定 `canFish`（未確認・自然保護は不可、利用時間、夏の遊泳区域、高波の磯、荒天閉鎖、禁止された釣り方）、規制エリア `restrictedAt`（`window.HamaShonan`）。
 - `data/fish/species.json` — 魚種のマスター（126種：既存36＋新規90。魚類118・頭足類7・甲殻類1。海・河口で釣れる104、淡水22）。学名・生息（釣り場の種類ごとの多さ）・水深・底質・季節・時間帯・潮・適水温・釣り方・サイズ・重さ係数・速さ・警戒心・引き・ファイトの型・レア度・価格・見た目。元は `tools/fish/species_rows.txt`（新規）と `existing_extra.txt`（既存の追加情報）、`node tools/fish/build_species.mjs` で `species.json`・`species.js` を作る（直接編集しない）。既存の値（体長・釣り方・旬など）は index.html の FISH から。
-- `data/fish/images.js` — 魚の写真の一覧（出典・ライセンス・改変内容つき）。`tools/fish/fetch_images.py`（Wikimedia Commons を検索→目で確認して approve→WebP・AVIF・サムネイルに変換）。**今は空**（作業環境から取得できない）。写真の無い魚は仮の図（「実物の写真ではありません」と表示）。
+- `data/fish/images.js` — 魚の写真の一覧（出典・ライセンス・改変内容つき）。`tools/fish/fetch_images.py`（Wikimedia Commons を検索→目で確認して approve→WebP・AVIF・サムネイルに変換）。41種（2026-10。釣れる104種のうち。残りは候補が料理・標本・浮世絵などで不採用か、候補なし）。続きは `fetch_images.py download --k 1`（次の候補）→ 目で確認 → approved_src → `build --from-dir`。写真の無い魚は仮の図（「実物の写真ではありません」と表示）。
 - `fish-ai.js` — 魚のAI。`fight.js` — フッキングとファイト。`sound.js` — 効果音と環境音。
 - `geo.js` — 共通の座標システム（`window.HamaGeo`）。緯度経度⇔ゲーム座標（湘南の原点固定）、地図表示の view（拡大・移動・回転）、縮尺バー。3D・ミニマップ・地図画面・今後の全画面マップで共有。
 - `mapdata.js` — 地図データのレイヤー管理（`window.HamaMapData`）。海岸線・陸地・道路・建物・河川・砂浜・駐車場・駐輪場・構造物・釣り場・現在地。地物の出どころ（実在 gshhs/osm、ゲーム用 game_approx/game_est）を区別し、ないものは空。GeoJSON の読み込みと検査。
@@ -36,7 +36,10 @@
 - `nav.js` — OSM がないときの代わりの道路網（幹線＋各釣り場への取り付け道路。`approx:true`）、推定駐車場（`est:true`）、道のマス目 `raster`、行き方 `plan`（車→駐車場→徒歩、自転車→徒歩）（`window.HamaNav`）。
 - `vehicles.js` — 自転車5種・車6種（架空の車名）とクーラー。購入・走行 `ride`・燃料・電池・体力・耐久・積載・給油・修理・駐車（`window.HamaVehicles`）。価格・性能・地形補正は `BIKES`/`CARS` で変える。セーブは `S.veh`。
 - `tools/fetch_osm.mjs` — OSM の取得と変換（`node tools/fetch_osm.mjs hiratsuka|all`、`--from-file`）。出力は `data/osm/`（説明は `data/osm/README.md`。ODbL）。
-- `terrain.js` — 国土地理院の標高タイルの復号と、緯度経度での高さ（`window.HamaTerrain`）。データは `tools/terrain/fetch_dem.py` → `data/terrain/`（未取得）。まだ3Dには使っていない。
+- `world.js` — 実在の地図（等倍）の読み込みと問い合わせ（`window.HamaWorld`）：陸か `isLand`、水際 `nearestCoast`、道路 `roadsIn`・`roadAt`（車が通れるか）・経路用 `graphRoads`、橋 `bridgeAt`、地名 `names`、建物 `loadCell`（440m 四方の .bin を必要なときだけ）。
+- `data/world/yokohama-base.js`・`yokohama-bld/` — 横浜の実在の地図（自動生成）。`tools/gsi/fetch_tiles.py`（国土地理院ベクトルタイル optimal_bvmap-v1 z16 を data-build/gsi へ）→ `tools/gsi/build_world.py yokohama`。直接編集しない。
+- `data/yokohama-places.js` — 横浜の釣り場・名所・バス停・海づり施設の桟橋・ベイブリッジの位置（出典メモつき）。
+- `terrain.js` — 国土地理院の標高タイルの復号と高さ（`window.HamaTerrain`）。湘南の丘は `data/terrain/shonan-game.js`（`tools/terrain/build_game_grid.mjs`）。
 - `docs/ASSETS.md` — 素材とライセンスの一覧（素材を足したら追記）。
 - `legacy/2026-10-pre-visual/` — グラフィック改善前の遊べるコピー。
 - `tests/*.test.js` — 動作テスト。`node --test tests/*.test.js` で実行。
@@ -60,8 +63,8 @@
 
 - **リアル志向**。等身・縮尺は実寸に近づける。単位はメートル、主人公の身長は約1.73m。
 - **湘南は等倍**（2026-10 ユーザー決定）：緯度経度から実際のメートルで置く（`geo.js` の `SHONAN.sc=1`、東西約27km）。遠いので電車・バス・自転車・車で移動する前提。関東の実在地図（OSM）も同じ変換。
-- **横浜は約1/3のまま**：手描きの地図（`SC=3`、元の地図座標×3＝メートル）。緯度経度とは一律に対応しない。実データで作り直すときに等倍にする。
-- 距離の表示は地域の縮め方で直す（`realM`、`GEO.regionAt(x,y).sc`）。古いセーブの湘南の位置は `migrateMap`（`S.mapv=2`）で等倍に直す。
+- **横浜も等倍**（2026-10 ユーザー決定「全て1/1」）：国土地理院ベクトルタイルから作った実在の地図（`world.js`・`data/world/`）。湘南と同じ変換（`geo.js`）なので横浜と湘南は実際の位置関係。以前の手描き（約1/3）は `legacy/2026-10-pre-visual/` に残る。
+- 距離の表示は地域の縮め方で直す（`realM`、`GEO.regionAt(x,y).sc`。今はどこも1）。古いセーブは `migrateMap`：湘南（`S.mapv=2`）、横浜（`S.mapv=3`、同じ名前のバス停・釣り場の新しい位置へ）。
 - **移動とバスは残す**。「都会のうっとおしさ」が良いという評価。バス停まで歩き、便の待ち時間がある。
 - **釣りは実在の釣り場だけ**：横浜は6か所（大黒・本牧・磯子の海づり施設、末広・杉田・金沢の水際緑地。横浜市は海づり施設などを除きふ頭・防波堤が釣り禁止のため）。湘南は資料の39か所のうち、未確認・自然保護の3か所（腰越漁港・江の島湘南大堤防・照ヶ崎）を除く36か所。規制エリアは釣り場にしない。どこでも釣れる仕様にはしない。
 - **釣りの手応えは好評**：長押しで巻く／テンションが赤になったら離す、のテンション管理を崩さない。
@@ -71,12 +74,12 @@
 
 ## コードの主な構成（index.html の script 内、上から順）
 
-1. 地図データ：`LAND`（本土の海岸線）、`DAIKOKU`、`ISLE`（八景島）、`RECTS`（桟橋・大さん橋・橋）、`INDUSTRY`、`PARKS`、`ROAD`/`ROADS2`/`RAIL`、`TETRA_LINES`
+1. 地図データ：横浜は `WORLD`（world.js）と `YP`（data/yokohama-places.js）、`RECTS`（湘南の防波堤・橋）。`isLand`/`walk`/`rectAt`/`nearCoast` は横浜と湘南の両方を見る
 2. 魚 `FISH`（35種）：体長範囲 `L`、重さ係数 `a`（g = a×L³）、買取単価 `kg`（円/kg）、仕掛け `bait`、時間帯 `tm`、旬 `mo`、特性（`blue`/`rock`/`near`/`far`/`poison`/`venom`）
 3. 釣り場 `SPOTS`（各釣り場の魚の重み `w`）、名所 `SIGHTS`、バス停 `STATIONS`
 4. 時間・潮（月齢から大潮〜若潮を計算）・季節
 5. three.js の初期化、空（シェーダー）、影、テクスチャ（窓は `worldUV` で世界座標に貼る）
-6. 街並みのチャンク生成 `buildChunk`（220m 四方、プレイヤーの周囲だけ生成し遠くは破棄。衝突判定 `addCol` は高さ付き）
+6. 街並みのチャンク生成 `buildChunk`（220m 四方。横浜は `buildWorldChunk`＝実在の建物・道路・鉄道・高架、湘南は自動生成。衝突判定 `addCol`（箱）・`addColPoly`（建物の形））
 7. 名所の3Dモデル、電柱・街灯・街路樹・バス停
 8. 人型 `makeHuman` / `animHuman`、歩行者と車 `updTraffic`
 9. 釣りの状態機械 `F.st`：idle → aim → fly → wait → bite → fight
@@ -90,7 +93,7 @@
 - 走るのは時速22kmほど（6.2m/s）で、自転車（シティサイクル15km/h）より速い。バランスの見直し候補。
 
 - ヘッドレス Chromium で起動確認済み（2026-10）。実機（スマホ）での確認はまだ。
-- 6つの釣り場はすべて最寄りバス停から歩いて行ける（大黒もふさがれていない）ことを確認済み。
+- 横浜の6つの釣り場は実在の位置（等倍）。最寄りバス停から800m以内、どこも立って投げられることを確認済み（2026-10）。
 - 描画負荷：街路樹・街灯・テトラ・街並みは区画ごとの InstancedMesh に分け、画面外は描かない（`fitInstances` / `byTile`）。地面に重ねる平面は `flatMat` + `flatOrder`（深度を書かず高さ順に描く）。スマホ（`MOBILE`）は影 1024・範囲±45m、ピクセル比 1.5 まで。
 - まだ重い候補：歩行者16人×約25メッシュ（描画回数が多い）、竿の TubeGeometry を毎フレーム作り直している。
 - メニューのタブ列は幅390pxだと「✕」が右端で切れる（横スクロールで出る）。

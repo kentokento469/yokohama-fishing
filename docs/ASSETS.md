@@ -11,9 +11,11 @@ NC（非営利のみ）・ND（改変禁止）・ライセンス不明の素材�
 | 効果音・環境音 | Web Audio API で合成 | このリポジトリ | sound.js（音ファイルなし） |
 | 海岸線・陸地（横浜〜大磯） | GSHHS（ユーザー提供の加工データ） | LGPL | data/geo/src。詳細は data/geo/LICENSE_AND_SOURCES.md |
 | OSM（道路・建物など） | OpenStreetMap | ODbL 1.0（© OpenStreetMap contributors） | 未取得。取り込むと data/osm・data/tiles。表示に出典を出す |
+| 横浜の地図（陸・道路・鉄道・建物の形・注記） | 国土地理院ベクトルタイル（optimal_bvmap-v1） | 国土地理院コンテンツ利用規約（CC BY 4.0 互換） | data/world（tools/gsi で加工：ゲーム座標へ変換・簡略化・タイル結合）。建物の高さは推定。出典は設定タブと地図に表示 |
+| 位置の確認 | 国土地理院 住所検索（msearch.gsi.go.jp） | 国土地理院コンテンツ利用規約 | data/yokohama-places.js の位置の根拠（住所の代表点） |
 | 標高（湘南） | 国土地理院 標高タイル（dem_png、z14＝10mメッシュ） | 国土地理院コンテンツ利用規約（CC BY 4.0 互換） | 取得済み。元の格子は data-build/terrain（git外）、ゲーム用は data/terrain/shonan-game.js（40m間引き・ゲーム座標・標高20m以上を立体）。出典は設定タブに表示 |
 | 建物の3D（予定） | PLATEAU（国土交通省） | CC BY 4.0 | 未取得。出典表記が必要 |
-| 魚の写真 | Wikimedia Commons（画像ごとに確認） | CC0・PD・CC BY・CC BY-SA のみ | 5種採用（data/fish/img、1280px→WebP/AVIF）。残りは取得中。tools/fish/fetch_images.py。各画像の作者・ライセンス・改変は data/fish/images.js と図鑑に表示 |
+| 魚の写真 | Wikimedia Commons（画像ごとに確認） | CC0・PD・CC BY・CC BY-SA のみ | 41種採用（data/fish/img、1280px→WebP/AVIF。CC BY-SA 2.0〜4.0・CC BY 2.0〜4.0・CC0・パブリックドメイン）。tools/fish/fetch_images.py。各画像の作者・ライセンス・改変は data/fish/images.js と図鑑に表示 |
 | 釣具カタログ | ユーザー提供（架空） | このリポジトリ | data/equipment_catalog_400.json |
 | 釣り場・規制エリア（湘南） | ユーザー提供の資料 | このリポジトリ | data/shonan-spots.js（位置はおおよそ） |
 | 魚種のデータ | 一般的な資料にもとづくおおよそ＋ゲーム用の推定 | このリポジトリ | data/fish/species.json |

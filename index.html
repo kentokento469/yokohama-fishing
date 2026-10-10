@@ -330,30 +330,30 @@ addEventListener('error',e=>{try{let d=document.getElementById('bootErr');if(!d)
   d.textContent+='エラー：'+(e.message||'')+'（'+String(e.filename||'').split('/').pop()+':'+(e.lineno||'')+'）\n再読み込みしても直らないときはこの画面を送ってください\n';}catch(_){}});
 </script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
-<script src="fishing-sim.js?v=202610101200"></script>
-<script src="fish-ai.js?v=202610101200"></script>
-<script src="data/tackle-data.js?v=202610101200"></script>
-<script src="tackle.js?v=202610101200"></script>
-<script src="fight.js?v=202610101200"></script>
-<script src="sound.js?v=202610101200"></script>
-<script src="data/fish/species.js?v=202610101200"></script>
-<script src="data/fish/images.js?v=202610101200"></script>
-<script src="geo.js?v=202610101200"></script>
-<script src="world.js?v=202610101200"></script>
-<script src="data/world/yokohama-base.js?v=202610101200"></script>
-<script src="data/yokohama-places.js?v=202610101200"></script>
-<script src="data/shonan-spots.js?v=202610101200"></script>
-<script src="shonan.js?v=202610101200"></script>
-<script src="terrain.js?v=202610101200"></script>
-<script src="data/terrain/shonan-game.js?v=202610101200"></script>
-<script src="osm-convert.js?v=202610101200"></script>
-<script src="mapdata.js?v=202610101200"></script>
-<script src="data/geo/geo-data.js?v=202610101200"></script>
-<script src="tiles.js?v=202610101200"></script>
-<script src="routing.js?v=202610101200"></script>
-<script src="nav.js?v=202610101200"></script>
-<script src="vehicles.js?v=202610101200"></script>
-<script src="data/osm/index.js?v=202610101200"></script>
+<script src="fishing-sim.js?v=202610101400"></script>
+<script src="fish-ai.js?v=202610101400"></script>
+<script src="data/tackle-data.js?v=202610101400"></script>
+<script src="tackle.js?v=202610101400"></script>
+<script src="fight.js?v=202610101400"></script>
+<script src="sound.js?v=202610101400"></script>
+<script src="data/fish/species.js?v=202610101400"></script>
+<script src="data/fish/images.js?v=202610101400"></script>
+<script src="geo.js?v=202610101400"></script>
+<script src="world.js?v=202610101400"></script>
+<script src="data/world/yokohama-base.js?v=202610101400"></script>
+<script src="data/yokohama-places.js?v=202610101400"></script>
+<script src="data/shonan-spots.js?v=202610101400"></script>
+<script src="shonan.js?v=202610101400"></script>
+<script src="terrain.js?v=202610101400"></script>
+<script src="data/terrain/shonan-game.js?v=202610101400"></script>
+<script src="osm-convert.js?v=202610101400"></script>
+<script src="mapdata.js?v=202610101400"></script>
+<script src="data/geo/geo-data.js?v=202610101400"></script>
+<script src="tiles.js?v=202610101400"></script>
+<script src="routing.js?v=202610101400"></script>
+<script src="nav.js?v=202610101400"></script>
+<script src="vehicles.js?v=202610101400"></script>
+<script src="data/osm/index.js?v=202610101400"></script>
 <script>
 (()=>{
 'use strict';
@@ -2101,7 +2101,7 @@ function drawNav(cvs){const w=cvs.clientWidth||320,h=Math.round(Math.min(420,w*1
   c.setTransform(d,0,0,d,0,0);c.fillStyle='#2a7aa3';c.fillRect(0,0,w,h);c.setTransform(d*z,0,0,d*z,d*(w/2-NAVV.cx*z),d*(h/2-NAVV.cy*z));drawMap2D(c,false,{x0:NAVV.cx-w/2/z,y0:NAVV.cy-h/2/z,x1:NAVV.cx+w/2/z,y1:NAVV.cy+h/2/z,z});
   drawMapBody(c,z,{gshhs:NAVV.gshhs});
   c.setTransform(d,0,0,d,0,0);c.font=`700 10px ${FONT}`;c.textAlign='right';c.textBaseline='bottom';c.fillStyle='rgba(19,38,59,.85)';
-  c.fillText(NET.osm.some(o=>o.D.meta&&o.D.meta.fictional)?'架空のテスト用データ（実在の地図ではない）':NET.osm.length?'© OpenStreetMap contributors':'道路はおおよそ（実在の道路データではない）',w-6,h-4);
+  c.fillText(NET.osm.some(o=>o.D.meta&&o.D.meta.fictional)?'架空のテスト用データ（実在の地図ではない）':NET.osm.length?'© OpenStreetMap contributors':inWorld(NAVV.cx,NAVV.cy)?'国土地理院ベクトルタイルを加工':'道路はおおよそ（実在の道路データではない）',w-6,h-4);
   // 縮尺（実際の距離）
   const sb=GEO.scaleBar({z},110,GEO.regionAt(NAVV.cx,NAVV.cy).sc);c.fillStyle='rgba(19,38,59,.85)';c.fillRect(8,h-12,sb.px,3);c.textAlign='left';c.fillText(sb.label,8,h-15);if(NAVV.gshhs){c.fillStyle='#7a3fb0';c.fillText('紫の点線：GSHHS/GSHHG の海岸線（実在・粗い概形）',8,14);}}
 function bindNav(cvs){const redraw=()=>drawNav(cvs);
@@ -2138,7 +2138,7 @@ function drawWorld(){if($('wmap').hidden)return;const w=innerWidth,h=innerHeight
   c.setTransform(d,0,0,d,0,0);const sb=GEO.scaleBar(v,120,GEO.regionAt(v.cx,v.cy).sc);const by=h-(14+(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sab'))||0));
   c.fillStyle='rgba(246,242,232,.9)';c.fillRect(8,by-30,Math.max(sb.px,60)+16,28);c.fillStyle='#13263b';c.fillRect(16,by-10,sb.px,3);c.font=`700 11px ${FONT}`;c.textAlign='left';c.textBaseline='alphabetic';c.fillText(sb.label+'（実際の距離）',16,by-14);
   // 出典・注意は縮尺の上の行に（重ならないように）
-  const at=(NET.osm.length?'© OpenStreetMap contributors・':'道路はおおよそ・駐車場は推定・')+(WM.lyr.gshhs?'紫の点線：GSHHS/GSHHG（実在・粗い）':'');c.font=`700 10px ${FONT}`;const tw=c.measureText(at).width;
+  const at=(NET.osm.length?'© OpenStreetMap contributors・':'')+(inWorld(v.cx,v.cy)?'国土地理院ベクトルタイルを加工・駐車場は推定・':'道路はおおよそ・駐車場は推定・')+(WM.lyr.gshhs?'紫の点線：GSHHS/GSHHG（実在・粗い）':'');c.font=`700 10px ${FONT}`;const tw=c.measureText(at).width;
   c.fillStyle='rgba(19,38,59,.7)';c.fillRect(8,by-50,tw+12,16);c.fillStyle='#fff';c.textAlign='left';c.fillText(at,14,by-38);}
 function wmPick(px,py){const[x,y]=GEO.screenToWorld(WM.v,px,py);const r=16/WM.v.z;let best=null,bd=r;for(const sp of SPOTS){const d=Math.hypot(sp.x-x,sp.y-y);if(d<bd){bd=d;best=sp;}}return best;}
 function wmShow(sp){WM.sel=sp;const box=$('wmInfo');if(!sp){box.hidden=true;drawWorld();return;}const g=sp.sh;const st=spotState(sp);const d=Math.hypot(sp.x-S.x,sp.y-S.y);
@@ -2172,7 +2172,7 @@ function renderSettings(sb){let h='<h3 class="hd">画質</h3><div class="gfx">';
   for(const[k,g]of Object.entries(GFX_LV))h+=`<button data-gfx="${k}" class="${GFX===k?'on':''}"><b>${g.n}${GFX===k?'（使用中）':''}</b><span>${g.d}</span></button>`;
   h+=`</div><h3 class="hd">表示</h3><div class="gfx"><button id="fpsT" class="${FPS_ON?'on':''}"><b>FPS（1秒あたりの描画回数）を表示：${FPS_ON?'オン':'オフ'}</b><span>動作の重さの確認用。30以上が目安</span></button></div>
     <h3 class="hd">そのほか</h3><div class="gfx"><a class="gfxA" href="legacy/2026-10-pre-visual/" target="_blank" rel="noopener"><button><b>改善前のバージョンを開く</b><span>グラフィック・UI改善の前の状態（比較用。セーブは共通）</span></button></a></div>
-    <h3 class="hd">出典</h3><p class="sub" style="font-size:12px;line-height:1.6">湘南の丘の高さ：「国土地理院 標高タイル」を加工して作成（標高20mより上だけ立体。木の配置はおおよそ）。海岸線：GSHHS/GSHHG。地図データがある場合は © OpenStreetMap contributors。魚の写真は図鑑の各写真に出典を表示。素材の一覧は docs/ASSETS.md。</p>`;
+    <h3 class="hd">出典</h3><p class="sub" style="font-size:12px;line-height:1.6">横浜の地図（陸・道路・鉄道・建物の形・地名）：「国土地理院ベクトルタイル」を加工して作成（建物の高さは種類と大きさからの推定）。湘南の丘の高さ：「国土地理院 標高タイル」を加工して作成（標高20mより上だけ立体。木の配置はおおよそ）。海岸線：GSHHS/GSHHG。地図データがある場合は © OpenStreetMap contributors。魚の写真は図鑑の各写真に出典を表示。素材の一覧は docs/ASSETS.md。</p>`;
   sb.innerHTML=h;
   sb.querySelectorAll('[data-gfx]').forEach(b=>b.onclick=()=>{GFX=b.dataset.gfx;try{localStorage.setItem(GFX_KEY,GFX);}catch(e){}applyGfx();renderTab();toast(`画質：${gfx().n}`);});
   $('fpsT').onclick=()=>{FPS_ON=!FPS_ON;try{localStorage.setItem('hama-tsuri-fps',FPS_ON?'1':'0');}catch(e){}renderTab();};}
