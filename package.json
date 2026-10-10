@@ -1,0 +1,13 @@
+{
+  "name": "yokohama-fishing",
+  "private": true,
+  "description": "横浜みなと釣り旅（ビルド不要。GitHub Pages でそのまま動く）。npm はテストのためだけに使う",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "smoke": "node tools/smoke/smoke.mjs",
+    "check": "node --test tests/*.test.js && node tools/smoke/smoke.mjs"
+  },
+  "devDependencies": {
+    "three": "0.149.0"
+  }
+}

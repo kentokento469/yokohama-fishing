@@ -4,3 +4,4 @@ data-build/
 data/tiles/*.pmtiles
 !data/tiles/test/*.pmtiles
 __pycache__/
+node_modules/

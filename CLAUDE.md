@@ -2,6 +2,10 @@
 
 このリポジトリは、横浜の実在の釣り場と名所を3Dで歩いてめぐるスマホ向け釣りゲーム。claude.ai のチャットで1ファイル（`index.html`）として作り、Claude Code に移した。
 
+## 最初に読む
+- docs/MASTER_PROGRESS.md（関東全域3D化 Phase 0〜11 の進捗と次の作業）、docs/ARCHITECTURE.md（構造の自動一覧）。
+- テスト：`npm test`（単体）、`npm run smoke`（ヘッドレス Chromium。初回は `npm install`）。
+
 ## 返答・作業のルール
 
 - ユーザーとのやり取りは日本語。結論→理由→具体策の順で、前置きは短く。
