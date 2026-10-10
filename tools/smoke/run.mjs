@@ -4,7 +4,7 @@ import path from 'path';const ROOT=path.resolve(path.dirname(new URL(import.meta
 const html0 = fs.readFileSync(process.argv[2] || ''+ROOT+'/index.html','utf8');
 const three = fs.readFileSync(path.join(ROOT,'node_modules/three/build/three.min.js'),'utf8');
 // expose debug handles
-const html = html0.replace(/\}\)\(\);\s*<\/script>\s*<\/html>\s*$/, `window.__D={SPOTS,STATIONS,renderer,scene,camera,get S(){return S},set S(v){S=v},F,start,update,render,updChunks,walk,chunks,cgrid,K,setJoy:(x,y)=>{jx=x;jy=y;},setYaw:v=>{yaw=v},setPitch:v=>{pitch=v},get yaw(){return yaw},get nearSpot(){return nearSpot},mainDown,mainUp,rodAction,setDrag,aimTarget,spotAt,travel,nearestStation,routesFrom,openMenu,closeSheet,snapCam,get NET(){return NET},get RIDE(){return RIDE},mount,dismount,buyVeh,setDest,plans,renderTab,setTab:(t,m)=>{tab=t;if(m)mapView=m;},vehAct,surfaceAt,carOk,nearParked,hiratsukaStart,colAt,candidates,showResult,renderDex,FISH,SPEC,waterDir,setDex:(f,s)=>{dexF=f;dexSel=s;},SPOTSALL:()=>SPOTS,get NAVR(){return NAVR},save,load,restoreRide,openWorld,closeWorld,WMv:()=>WM.v};\n})();</script></html>`);
+const html = html0.replace(/\}\)\(\);\s*<\/script>\s*<\/html>\s*$/, `window.__D={SPOTS,STATIONS,get farScene(){return typeof farScene!=="undefined"?farScene:null},renderer,scene,camera,get S(){return S},set S(v){S=v},F,start,update,render,updChunks,walk,chunks,cgrid,K,setJoy:(x,y)=>{jx=x;jy=y;},setYaw:v=>{yaw=v},setPitch:v=>{pitch=v},get yaw(){return yaw},get nearSpot(){return nearSpot},mainDown,mainUp,rodAction,setDrag,aimTarget,spotAt,travel,nearestStation,routesFrom,openMenu,closeSheet,snapCam,get NET(){return NET},get RIDE(){return RIDE},mount,dismount,buyVeh,setDest,plans,renderTab,setTab:(t,m)=>{tab=t;if(m)mapView=m;},vehAct,surfaceAt,carOk,nearParked,hiratsukaStart,colAt,candidates,showResult,renderDex,FISH,SPEC,waterDir,setDex:(f,s)=>{dexF=f;dexSel=s;},SPOTSALL:()=>SPOTS,get NAVR(){return NAVR},save,load,restoreRide,openWorld,closeWorld,WMv:()=>WM.v};\n})();</script></html>`);
 if (html===html0) throw new Error('inject failed');
 const W = +(process.env.W||390), H=+(process.env.H||844);
 const browser = await chromium.launch({ args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist'] });
@@ -19,6 +19,13 @@ await page.route(/game\.local\/.+\.js(\?.*)?$/, r=>{const u=new URL(r.request().
 await page.route(/game\.local\/.+\.bin(\?.*)?$/, r=>{const u=new URL(r.request().url());const p=''+ROOT+''+u.pathname;if(!fs.existsSync(p))return r.fulfill({status:404,body:''});r.fulfill({body:fs.readFileSync(p),contentType:'application/octet-stream'});});
 await page.route(/game\.local\/.+\.(webp|avif|png|jpg)(\?.*)?$/, r=>{const u=new URL(r.request().url());const p=''+ROOT+''+u.pathname;if(!fs.existsSync(p))return r.fulfill({status:404,body:''});const e=p.split('.').pop();r.fulfill({body:fs.readFileSync(p),contentType:'image/'+(e==='jpg'?'jpeg':e)});});
 await page.route('**/fonts.googleapis.com/**', r=>r.abort());
+// 国土地理院のタイル：data-build/gsi-cache にためる（無ければ curl で取得。プロキシ経由）
+import {execFileSync} from 'child_process';
+await page.route(/cyberjapandata\.gsi\.go\.jp\/xyz\//, r=>{const u=new URL(r.request().url());const f=path.join(ROOT,'data-build','gsi-cache',u.pathname);
+  if(!fs.existsSync(f)&&!fs.existsSync(f+'.404')){fs.mkdirSync(path.dirname(f),{recursive:true});let code='000';try{code=execFileSync('curl',['-s','-o',f,'-w','%{http_code}',u.href],{encoding:'utf8',timeout:30000});}catch(e){}
+    if(code!=='200'){try{fs.unlinkSync(f);}catch(e){}if(code==='404')fs.writeFileSync(f+'.404','');}}
+  if(fs.existsSync(f))return r.fulfill({body:fs.readFileSync(f),contentType:u.pathname.endsWith('.png')?'image/png':'application/x-protobuf',headers:{'access-control-allow-origin':'*'}});
+  return r.fulfill({status:404,body:''});});
 await page.route('http://game.local/', r=>r.fulfill({body:html, contentType:'text/html'}));
 await page.goto('http://game.local/'+(process.env.HASH||''));
 await page.waitForTimeout(1500);
