@@ -10,7 +10,7 @@ const CASES=[
   ['s53','古いセーブの移行（mapv 3）',[/"mapv":3/,/"walk":true/]],
   ['lookup','見上げ（約30°・ランドマークタワー）',[/"elev":(2[5-9]|3[0-5])/]],
   ['lookup_low','軽量画質でも空が描かれる',[/"top":\[(\d{2,3}),(\d{2,3}),(1[3-9]\d|2\d\d)/]],
-  ['kanto','関東（横須賀・箱根）を散策：地形・陸・チャンク',[/kanto_yokosuka {"rg":"kanto","land":true,"gy":([4-9]|[1-3]\d)\./,/kanto_hakone {"rg":"kanto","land":true,"gy":(8\d|9\d|1[0-3]\d)\./,/0pending/]],
+  ['kanto','関東（横須賀・箱根）を散策：地形・陸・チャンク',[/kanto_yokosuka {"rg":"kanto","land":true,"gy":([4-9]|[1-3]\d)\./,/kanto_hakone {"rg":"kanto","land":true,"gy":(8\d|9\d|1[0-3]\d)\./,/0pending/,/kanto_bridge \{"walk":true,"water":true,"dy":0(\.[0-4]\d*)?[,}]/]],
   ['s60','横浜の6釣り場で投げられる',[/\["kanazawa",[^\]]*"kanazawa","kanazawa"\]/,/\["honmoku",[^\]]*"honmoku","honmoku"\]/]]];
 const only=process.argv.slice(2);let fail=0;
 for(const[id,name,want]of CASES){if(only.length&&!only.includes(id))continue;let out='';

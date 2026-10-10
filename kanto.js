@@ -48,7 +48,7 @@ function create(opt){const G=opt.gsi,GEO=opt.geo,base=opt.ground!=null?opt.groun
     const flat=(pts,E,close)=>{const T=tf(E),a=[];for(const p of pts){const g=T(p);a.push(g[0],g[1]);}if(close&&a.length>=4&&a[0]===a[a.length-2]&&a[1]===a[a.length-1])a.length-=2;return a;};
     const L=t.BldA;if(L)for(const ft of L.features){if(ft.type!==3)continue;for(const poly of ft.geom){const r=clipPoly(poly[0],L.extent);if(r.length<3)continue;const p=flat(r,L.extent,true);if(p.length<6)continue;f.blds.push(Object.assign({p,code:ft.props.vt_code|0},bbox(p)));}}
     const R=t.RdCL;if(R)for(const ft of R.features){if(ft.type!==2)continue;const pr=ft.props,w=Math.max(2,Math.min(40,(pr.vt_width||300)/100)),mw=pr.vt_motorway===1,lv=pr.vt_lvorder|0;
-      for(const l of ft.geom)for(const c of clipLine(l,R.extent)){const a=flat(c,R.extent);f.roads.push(Object.assign({a,w,code:pr.vt_code|0,mw,lv,car:!mw&&w>=3},bbox(a)));}}
+      for(const l of ft.geom)for(const c of clipLine(l,R.extent)){const a=flat(c,R.extent);const code=pr.vt_code|0;f.roads.push(Object.assign({a,w,code,mw,lv,car:!mw&&w>=3,bridge:code%10===3,tunnel:code%10===4},bbox(a)));}}
     const RL=t.RailCL;if(RL)for(const ft of RL.features){if(ft.type!==2)continue;const pr=ft.props,st=RS[pr.vt_railstate]!=null?RS[pr.vt_railstate]:0;
       for(const l of ft.geom)for(const c of clipLine(l,RL.extent)){const a=flat(c,RL.extent);f.rails.push(Object.assign({a,state:st,lv:pr.vt_lvorder|0,station:pr.vt_sngldbl==='駅部分',above:st===0||st===1},bbox(a)));}}
     const W=t.WA;if(W)for(const ft of W.features){if(ft.type!==3)continue;for(const poly of ft.geom){const r=clipPoly(poly[0],W.extent);if(r.length<3)continue;const p=flat(r,W.extent,true);

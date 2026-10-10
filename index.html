@@ -386,7 +386,7 @@ function pip(p,x,y){let c=false;for(let i=0,j=p.length-1;i<p.length;j=i++){const
 function isLand(x,y){return inWorld(x,y)?WORLD.isLand(x,y):inKanto(x,y)?KANTO.isLand(x,y):SH.isLand(x,y);}
 // 横浜の水の上を渡る道（運河の橋・八景島への橋など）は歩ける。高さは岸とほぼ同じ
 const WBRIDGE={k:'bridge',top:2.4};
-function rectAt(x,y){for(const r of RECTS)if(x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h)return r;if(inWorld(x,y)&&WORLD.bridgeAt(x,y))return WBRIDGE;return null;}
+function rectAt(x,y){for(const r of RECTS)if(x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h)return r;if(inWorld(x,y)&&WORLD.bridgeAt(x,y))return WBRIDGE;if(inKanto(x,y)){const h=kBridgeAt(x,y);if(h!=null)return{k:'bridge',top:h+.16};}return null;}
 function isWater(x,y){return !isLand(x,y)&&!rectAt(x,y);}
 function segDist(px,py,ax,ay,bx,by){const dx=bx-ax,dy=by-ay,l=dx*dx+dy*dy;let t=l?((px-ax)*dx+(py-ay)*dy)/l:0;t=clamp(t,0,1);return Math.hypot(px-(ax+dx*t),py-(ay+dy*t));}
 function lineDist(pts,x,y){let d=1e9;for(let i=0;i<pts.length-1;i++)d=Math.min(d,segDist(x,y,pts[i][0],pts[i][1],pts[i+1][0],pts[i+1][1]));return d;}
@@ -667,7 +667,7 @@ function inPolyPad(p,x,z,pad){let c=false;const n=p.length/2;for(let i=0,j=n-1;i
 function colAt(x,z,pad){const a=cgrid.get(Math.floor(x/CG)+','+Math.floor(z/CG));if(!a)return null;for(const o of a)if(x>o.x0-pad&&x<o.x1+pad&&z>o.z0-pad&&z<o.z1+pad&&(!o.poly||inPolyPad(o.poly,x,z,pad)))return o;return null;}
 // チャンクを消すときに、その建物の当たり判定も外す
 function removeCols(list){for(const o of list)for(let gx=Math.floor(o.x0/CG);gx<=Math.floor(o.x1/CG);gx++)for(let gz=Math.floor(o.z0/CG);gz<=Math.floor(o.z1/CG);gz++){const a=cgrid.get(gx+','+gz);if(a){const i=a.indexOf(o);if(i>=0)a.splice(i,1);}}}
-function walk(x,y){let ok=false;if(SH.inShonan(x,y))ok=SH.isLand(x,y)||!!rectAt(x,y);else if(inWorld(x,y))ok=WORLD.isLand(x,y)||!!rectAt(x,y);else if(inKanto(x,y))ok=KANTO.isLand(x,y);
+function walk(x,y){let ok=false;if(SH.inShonan(x,y))ok=SH.isLand(x,y)||!!rectAt(x,y);else if(inWorld(x,y))ok=WORLD.isLand(x,y)||!!rectAt(x,y);else if(inKanto(x,y))ok=KANTO.isLand(x,y)||!!rectAt(x,y);
   return ok&&!colAt(x,y,.35);}
 // 湘南の丘（国土地理院の標高。標高20mより上だけを立体にする。海沿いの平地・横浜は平らのまま）
 const TERR=window.HamaTerrain&&window.HamaTerrainData&&HamaTerrainData.shonan?HamaTerrain.gameGrid(HamaTerrainData.shonan):null;
@@ -1226,27 +1226,70 @@ function buildWorldChunk(i,j,grp,L,doCol){const X0=i*CH,Y0=j*CH,X1=X0+CH,Y1=Y0+C
   if(units.length){const im=new T.InstancedMesh(bGeo,unitMat,units.length);units.forEach((u,k)=>{dummy.position.set(u[0],u[2],u[1]);dummy.rotation.set(0,u[6],0);dummy.scale.set(u[3],u[4],u[5]);dummy.updateMatrix();im.setMatrixAt(k,dummy.matrix);im.setColorAt(k,col.setHex(u[7]===1?0xc9c6bf:u[7]===2?0x8f9aa0:0xa9adb0));});shadowy(fitInstances(im));grp.add(im);}}
 /* 関東の近景チャンク（kanto.js）：10m 格子の地面（実際の標高）、地形に沿わせた道路・鉄道、地面の高さに合わせた建物（外壁シェーダー）、山の木。
    タイルが読めていなければ読み込んでから作り直す */
-const KANTO_GROUND_MAT=lam(0xffffff,{vertexColors:true});
-function drapeRibbon(list,lift){const pos=[],uv=[];const gy=(x,z)=>{const g=KANTO.groundY(x,z);return(g==null?GROUND:Math.max(g,.2))+lift;};
-  for(const[a,w]of list)for(let i=0;i<a.length-2;i+=2){const ax=a[i],az=a[i+1],bx=a[i+2],bz=a[i+3];const dx=bx-ax,dz=bz-az,l=Math.hypot(dx,dz)||1;const nx=-dz/l*w/2,nz=dx/l*w/2;const m=Math.max(1,Math.ceil(l/4));
-    for(let k=0;k<m;k++){const t0=k/m,t1=(k+1)/m,x0=ax+dx*t0,z0=az+dz*t0,x1=ax+dx*t1,z1=az+dz*t1;const p=[x0+nx,z0+nz],q=[x1+nx,z1+nz],r=[x1-nx,z1-nz],s=[x0-nx,z0-nz];
-      for(const v of[p,q,r,p,r,s])pos.push(v[0],gy(v[0],v[1]),v[1]);}}
+const KANTO_GROUND_MAT=lam(0xffffff,{vertexColors:true}),KDECK_MAT=lam(0xbfc1bc,{side:T.DoubleSide}),KWATER_MAT=new T.MeshPhongMaterial({color:0x3f7f95,specular:0x9fb8c8,shininess:80,normalMap:seaNorm,normalScale:new T.Vector2(.35,.35)}),KPIL_GEO=new T.CylinderGeometry(1,1.1,1,8).translate(0,.5,0);
+// 関東の橋：水の上を渡る道路の区間（歩ける・高さ）。50m のマス目ごとに [ax,az,bx,bz,半幅,ya,yb]
+var KBR=new Map();
+function kBridgeAdd(s){const x0=Math.floor(Math.min(s[0],s[2])/50),x1=Math.floor(Math.max(s[0],s[2])/50),z0=Math.floor(Math.min(s[1],s[3])/50),z1=Math.floor(Math.max(s[1],s[3])/50);
+  for(let x=x0;x<=x1;x++)for(let z=z0;z<=z1;z++){const k=x+','+z;let a=KBR.get(k);if(!a){a=[];KBR.set(k,a);}if(a.length<400)a.push(s);}}
+function kBridgeAt(x,y){if(!KBR)return null;const a=KBR.get(Math.floor(x/50)+','+Math.floor(y/50));if(!a)return null;let best=null,bd=1e9;for(const s of a){const dx=s[2]-s[0],dz=s[3]-s[1],l=dx*dx+dz*dz;const t=l?clamp(((x-s[0])*dx+(y-s[1])*dz)/l,0,1):0;
+    const d=Math.hypot(x-s[0]-dx*t,y-s[1]-dz*t);if(d<s[4]&&d<bd){bd=d;best=lerp(s[5],s[6],t);}}return best;}
+// 線を4m 以下に細かくし、各点の高さを決める。地上は地面＋lift（幅の両端でも地面に合わせる）。
+// 水の上（川・湖・海）は両岸の高さを結んだ橋。elev>0 は高架（地面＋elev、両端は地面へ下りる）
+function kProfile(a,lift,elev,noRamp){const P=[];for(let i=0;i<a.length-2;i+=2){const ax=a[i],az=a[i+1],bx=a[i+2],bz=a[i+3],l=Math.hypot(bx-ax,bz-az),m=Math.max(1,Math.ceil(l/4));for(let k=0;k<m;k++)P.push([ax+(bx-ax)*k/m,az+(bz-az)*k/m]);}
+  P.push([a[a.length-2],a[a.length-1]]);const n=P.length,G=new Array(n),W=new Array(n);
+  for(let k=0;k<n;k++){const g=KANTO.groundY(P[k][0],P[k][1]);G[k]=g==null?GROUND:g;const nd=KANTO.node(Math.round(P[k][0]/10),Math.round(P[k][1]/10));W[k]=G[k]<.4||!!(nd&&nd.water);}
+  const Y=new Array(n),B=new Array(n).fill(false);
+  for(let k=0;k<n;){if(!W[k]){Y[k]=null;k++;continue;}let e=k;while(e<n&&W[e])e++;const ya=k>0?G[k-1]:e<n?G[e]:GROUND,yb=e<n?G[e]:ya;
+    for(let q=k;q<e;q++){const t=(q-k+1)/(e-k+1);Y[q]=lerp(ya,yb,t)+Math.min(2,(e-k)*.15)*Math.sin(t*Math.PI)+.5;B[q]=true;}k=e;}// 橋は中ほどが少し高い
+  if(elev<0){let land=-1e9;for(let k=0;k<n;k++)if(!W[k])land=Math.max(land,G[k]);if(land<-1e8)land=GROUND+2;const ya=W[0]?land:G[0],yb=W[n-1]?land:G[n-1];for(let k=1;k<n-1;k++){const y=Math.max(lerp(ya,yb,k/(n-1)),G[k]+.3);if(B[k]||y-G[k]>.6){Y[k]=y;}}}
+  if(elev>0)for(let k=0;k<n;k++){const ramp=noRamp?1:Math.min(1,Math.min(k,n-1-k)/8);Y[k]=Math.max(Y[k]==null?G[k]:Y[k],G[k])+elev*ramp;B[k]=B[k]||ramp>0;}
+  return{P,Y,B};}
+function drapeRibbon(list,lift,elev,out,noRamp){const pos=[],uv=[];const gy=(x,z)=>{const g=KANTO.groundY(x,z);return(g==null?GROUND:Math.max(g,.2))+lift;};
+  for(const[a,w]of list){const{P,Y,B}=kProfile(a,lift,elev||0,noRamp);for(let k=0;k<P.length-1;k++){const[x0,z0]=P[k],[x1,z1]=P[k+1],dx=x1-x0,dz=z1-z0,l=Math.hypot(dx,dz)||1,nx=-dz/l*w/2,nz=dx/l*w/2;
+      const y0=Y[k],y1=Y[k+1],h=(x,z,yy)=>yy==null?gy(x,z):yy+lift;
+      const p=[x0+nx,h(x0+nx,z0+nz,y0),z0+nz],q=[x1+nx,h(x1+nx,z1+nz,y1),z1+nz],r=[x1-nx,h(x1-nx,z1-nz,y1),z1-nz],s=[x0-nx,h(x0-nx,z0-nz,y0),z0-nz];
+      for(const v of[p,q,r,p,r,s])pos.push(v[0],v[1],v[2]);
+      if(out&&(B[k]||B[k+1]))out.push([x0,z0,x1,z1,w/2,y0==null?G0(x0,z0):y0,y1==null?G0(x1,z1):y1]);}}
   for(let i=0;i<pos.length;i+=3)uv.push(pos[i]/8,pos[i+2]/8);const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.computeVertexNormals();return g;}
+function G0(x,z){const g=KANTO.groundY(x,z);return g==null?GROUND:g;}
 function buildKantoChunk(i,j,grp,doCol){const X0=i*CH,Y0=j*CH,X1=X0+CH,Y1=Y0+CH;const own=m=>{m.userData.own=true;grp.add(m);return m;};
   if(!KANTO.ready(X0,Y0,X1,Y1)){grp.userData.pending=true;KANTO.load(X0,Y0,X1,Y1).then(()=>{const k=i+','+j,g=chunks.get(k);if(g&&g.userData.pending){disposeChunk(g);chunks.delete(k);buildChunk(i,j);}});return;}
   // 地面：10m 格子（kanto.js と同じ三角形の分け方）。色は高さ・傾き・水で（植生・土地利用のデータではない目安）
   const S0=KANTO.STEP,n=CH/S0+1,i0=X0/S0,j0=Y0/S0,pos=[],colr=[],idx=[],nd=[];let land=0;
-  for(let b=0;b<n;b++)for(let a=0;a<n;a++){const v=KANTO.node(i0+a,j0+b)||{y:-4,sea:true,water:true,h:null};nd.push(v);pos.push(X0+a*S0,v.y,Y0+b*S0);if(!v.sea)land++;}
+  for(let b=0;b<n;b++)for(let a=0;a<n;a++){const v=KANTO.node(i0+a,j0+b)||{y:-4,sea:true,water:true,h:null};nd.push(v);if(!v.sea)land++;}
+  // 川・湖の水位：まわり（±20m）の岸のいちばん低い所より0.8m下（標高データは水面の上で高めに出ることがあるため）。川底はさらに1.5m下
+  const lvl=new Array(n*n).fill(null);for(let b=0;b<n;b++)for(let a=0;a<n;a++){const v=nd[b*n+a];if(!v.water||v.sea)continue;let m=1e9;
+    for(let db=-2;db<=2;db++)for(let da=-2;da<=2;da++){const q=KANTO.node(i0+a+da,j0+b+db);if(q&&!q.water)m=Math.min(m,q.y);}lvl[b*n+a]=(m<1e8?Math.min(m,v.y+1.2):v.y+1.2)-.8;}
+  for(let b=0;b<n;b++)for(let a=0;a<n;a++){const v=nd[b*n+a],l=lvl[b*n+a];pos.push(X0+a*S0,l==null?v.y:Math.min(v.y,l-1.5),Y0+b*S0);}
   for(let b=0;b<n;b++)for(let a=0;a<n;a++){const v=nd[b*n+a],hx=nd[b*n+Math.min(n-1,a+1)].y-nd[b*n+Math.max(0,a-1)].y,hz=nd[Math.min(n-1,b+1)*n+a].y-nd[Math.max(0,b-1)*n+a].y,sl=Math.hypot(hx,hz)/(2*S0);
     const r=hash(i0+a,j0+b)*.06;let c;if(v.sea)c=[.62,.58,.48];else if(v.water)c=[.32,.42,.44];else if(sl<.07&&v.h<60)c=[.58+r,.58+r,.53+r];else if(sl>.35||v.h>40)c=[.3+r,.4+r,.24+r];else c=[.47+r,.53+r,.38+r];colr.push(...c);}
   for(let b=0;b<n-1;b++)for(let a=0;a<n-1;a++){const A=b*n+a,B=A+1,C=A+n+1,D=A+n;idx.push(A,C,B,A,D,C);}
   if(land){const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('color',new T.Float32BufferAttribute(colr,3));g.setIndex(idx);g.computeVertexNormals();own(new T.Mesh(g,KANTO_GROUND_MAT)).receiveShadow=true;}
   else return;// 海だけ
+  // 川・湖の水面：水の格子点を含むマスに、水位の高さの面を張る（海は海面があるので張らない）
+  {const wp=[];for(let b=0;b<n-1;b++)for(let a=0;a<n-1;a++){const q=[nd[b*n+a],nd[b*n+a+1],nd[(b+1)*n+a+1],nd[(b+1)*n+a]];const ls=[lvl[b*n+a],lvl[b*n+a+1],lvl[(b+1)*n+a+1],lvl[(b+1)*n+a]].filter(v=>v!=null);if(!ls.length)continue;
+      const y=ls.reduce((t,v)=>t+v,0)/ls.length;if(y<.3)continue;const x0=X0+a*S0,z0=Y0+b*S0,x1=x0+S0,z1=z0+S0;wp.push(x0,y,z0,x1,y,z1,x1,y,z0,x0,y,z0,x0,y,z1,x1,y,z1);}
+    if(wp.length){const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(wp,3));const uv=[];for(let k=0;k<wp.length;k+=3)uv.push(wp[k]/40,wp[k+2]/40);g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.computeVertexNormals();own(new T.Mesh(g,KWATER_MAT)).receiveShadow=true;}}
   const F=KANTO.featuresIn(X0,Y0,X1,Y1);
   // 道路（地上は地形に沿わせる。高架・トンネルは今は描かない）
-  const car=[],foot=[];for(const r of F.roads){if(r.code===2704||r.mw||r.lv>0)continue;for(const seg of clipLine(r.a,X0,Y0,X1,Y1))(r.car?car:foot).push([seg,r.w]);}
-  if(foot.length)own(flatOrder(new T.Mesh(drapeRibbon(foot,.12),paveMat),GROUND+.05)).receiveShadow=true;
-  if(car.length)own(flatOrder(new T.Mesh(drapeRibbon(car,.16),asphMat),GROUND+.08)).receiveShadow=true;
+  const car=[],foot=[],elev=[],brg=[];for(const r of F.roads){if(r.tunnel)continue;if(r.bridge&&!(r.mw&&r.lv>0)){brg.push([r.a,r.w,r.car||r.mw]);continue;}for(const seg of clipLine(r.a,X0,Y0,X1,Y1)){if(r.lv>0)elev.push([seg,r.w,r.lv,r.mw]);else (r.car||r.mw?car:foot).push([seg,r.w]);}}
+  const brs=[];
+  // 橋（地上の高さの橋）：線全体で両端の高さを結ぶので、切らずに線の中点がこのチャンクにあるものだけ
+  {const L=brg.filter(([a])=>{const mx=(a[0]+a[a.length-2])/2,mz=(a[1]+a[a.length-1])/2;return mx>=X0&&mx<X1&&mz>=Y0&&mz<Y1;});
+    if(L.length){const out=[];own(flatOrder(new T.Mesh(drapeRibbon(L.map(([a,w])=>[a,w]),.16,-1,out),asphMat),GROUND+.09)).receiveShadow=true;brs.push(...out);}}
+  if(foot.length)own(flatOrder(new T.Mesh(drapeRibbon(foot,.12,0,brs),paveMat),GROUND+.05)).receiveShadow=true;
+  if(car.length)own(flatOrder(new T.Mesh(drapeRibbon(car,.16,0,brs),asphMat),GROUND+.08)).receiveShadow=true;
+  for(const s of brs)kBridgeAdd(s);
+  // 高架（首都高・バイパスなど）：床版は地面＋7m（重なりの順で＋3m）、両端は地面へ下りる。柱は約30mおき
+  const gird=brs.slice(),pil=[];
+  for(const lv of[1,2,3])for(const mw of[false,true]){const L=elev.filter(e=>Math.min(3,e[2])===lv&&!!e[3]===mw).map(e=>[e[0],e[1]]);if(!L.length)continue;const ev=4+lv*3;
+    const out=[];own(new T.Mesh(drapeRibbon(L,.1,ev,out,mw),KDECK_MAT)).castShadow=true;for(const s of out){gird.push(s);}
+    for(const[seg]of L){const{P,Y}=kProfile(seg,0,ev,mw);for(let k=4;k<P.length-4;k+=8){const g=G0(P[k][0],P[k][1]);if(g>.4&&Y[k]-g>3)pil.push([P[k][0],P[k][1],g,Y[k]-g]);}}}
+  // 橋桁（床版の下の厚み）
+  if(gird.length){const im=new T.InstancedMesh(bGeo,KDECK_MAT,gird.length);gird.forEach(([ax,az,bx,bz,hw,ya,yb],k)=>{dummy.position.set((ax+bx)/2,(ya+yb)/2-.9,(az+bz)/2);dummy.rotation.set(0,-Math.atan2(bz-az,bx-ax),Math.atan2(yb-ya,Math.hypot(bx-ax,bz-az)));dummy.scale.set(Math.hypot(bx-ax,bz-az)+.2,.9,hw*2);dummy.updateMatrix();im.setMatrixAt(k,dummy.matrix);});shadowy(fitInstances(im));grp.add(im);}
+  // 欄干（橋の水の上の区間の両側。高さ1.1m）
+  if(brs.length){const im=new T.InstancedMesh(bGeo,KDECK_MAT,brs.length*2);let k=0;for(const[ax,az,bx,bz,hw,ya,yb]of brs){const l=Math.hypot(bx-ax,bz-az)||1,nx=-(bz-az)/l,nz=(bx-ax)/l;for(const sd of[-1,1]){dummy.position.set((ax+bx)/2+nx*(hw-.15)*sd,(ya+yb)/2+.16,(az+bz)/2+nz*(hw-.15)*sd);dummy.rotation.set(0,-Math.atan2(bz-az,bx-ax),Math.atan2(yb-ya,l));dummy.scale.set(l+.1,1.1,.25);dummy.updateMatrix();im.setMatrixAt(k++,dummy.matrix);}}shadowy(fitInstances(im));grp.add(im);}
+  if(pil.length){const pm=new T.InstancedMesh(KPIL_GEO,KDECK_MAT,pil.length);pil.forEach(([x,z,g,h],k)=>{dummy.position.set(x,g-.5,z);dummy.rotation.set(0,0,0);dummy.scale.set(1,h,1);dummy.updateMatrix();pm.setMatrixAt(k,dummy.matrix);});shadowy(fitInstances(pm));grp.add(pm);}
   // 鉄道（地上：砂利とレール）
   {const gr=[];for(const r of F.rails){if(r.state!==0)continue;for(const seg of clipLine(r.a,X0,Y0,X1,Y1))gr.push([seg,r.station?14:6]);}
     if(gr.length){own(flatOrder(new T.Mesh(drapeRibbon(gr,.14),flatMat(0x8d8478)),GROUND+.06));const rails=[];for(const[seg]of gr)for(const o of[-.75,.75])rails.push([offLine(seg,o),.15]);own(flatOrder(new T.Mesh(drapeRibbon(rails,.22),flatMat(0x4a4a4a)),GROUND+.12));}}
