@@ -19,3 +19,4 @@ test('地物：建物・道路がゲーム座標で範囲の近く',async()=>{co
 test('地名：近くの町名（施設名は除く）',async()=>{const k=mk();const[x,y]=GEO.toGame(35.437,139.651);await k.load(x-50,y-50,x+50,y+50);const n=k.nameNear(x,y);assert.ok(n&&!/学校|大学/.test(n),'n='+n);});
 test('標高だけの読み込みと補間（横浜の丘用）',async()=>{const k=mk();const[x,y]=GEO.toGame(35.437,139.651);assert.strictEqual(k.demInterp(x,y,h=>h),null);await k.demLoad(x-20,y-20,x+20,y+20);assert.ok(k.demReady(x-20,y-20,x+20,y+20));
   const h=k.demInterp(x,y,h=>h==null?0:h);assert.ok(h>10&&h<80,'h='+h);});
+test('駅：注記から（山手の近くは石川町駅など。無ければ空）',async()=>{const k=mk();const[x,y]=GEO.toGame(35.437,139.651);await k.load(x-100,y-100,x+100,y+100);const st=k.stationsNear(x,y,3000);assert.ok(Array.isArray(st));for(const s of st)assert.ok(/駅$/.test(s.n)&&s.d<=3000);});
