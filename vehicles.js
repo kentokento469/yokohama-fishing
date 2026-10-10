@@ -1,11 +1,11 @@
 /* 横浜みなと釣り旅 — 自転車と自動車（描画に依存しない。Node でもブラウザでも動く）
    ・車種のデータ（価格・速さ・加速・旋回・耐久・積載・地形への強さ・坂・体力・電池・燃費・タンク）は下の BIKES / CARS で変えられる。
    ・価格・性能・積載量はゲーム用の仮設定。実在の製品・法定速度・実車の最大積載量とは関係ない。車名は架空。
-   ・ゲームの地図は距離を約1/3に縮めているので、燃料・電池・体力・耐久の減りは「実際の距離（ゲームの距離×SC）」で計算する。
+   ・燃料・電池・体力・耐久の減りは「実際の距離（ゲームの距離×SC）」で計算する。2026-10 から横浜も湘南も等倍（SC=1）。
    セーブ：S.veh = {owned:[{uid,id,fuel,batt,dur}], using:uid|null, parked:{uid:{x,y,lotId}}, stamina, dest} */
 (function(root){
 'use strict';
-const SC=3,clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const SC=1,clamp=(v,a,b)=>v<a?a:v>b?b:v;
 
 /* 地形（路面）：paved 舗装路 / gravel 砂利・未舗装 / sand 砂浜 / grass 芝・公園 / rock 岩場（乗ったままは進めない） / steps 階段（同じく不可） */
 const BIKES=[

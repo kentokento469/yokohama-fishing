@@ -71,6 +71,44 @@ RT = {'JR': 0, 'JR以外': 1, '地下鉄': 2}
 RS = {'通常部': 0, '橋・高架': 1, 'トンネル': 2, '地下': 3, '雪覆い': 4, '運休中': 5}
 
 
+def snap_ends(lines, tol):
+    """道の端が別の道の途中に接している所（T字路・タイルの境目）をつなぐ：端を一番近い道の上へ動かし、その道に点を足す（経路探索で道がつながるように）"""
+    from shapely.strtree import STRtree
+    from shapely.geometry import Point
+    geoms = [l for _, l in lines]
+    tree = STRtree(geoms)
+    coords = [list(l.coords) for l in geoms]
+    inserts = defaultdict(list)
+    for i, l in enumerate(geoms):
+        for end in (0, -1):
+            p = Point(coords[i][end])
+            best = None
+            for j in tree.query(p.buffer(tol)):
+                if j == i:
+                    continue
+                d = geoms[j].distance(p)
+                if d < tol and (best is None or d < best[0]):
+                    best = (d, j)
+            if best:
+                g = geoms[best[1]]
+                t = g.project(p)
+                q = g.interpolate(t)
+                coords[i][end] = (q.x, q.y)
+                if 1e-3 < t < g.length - 1e-3:
+                    inserts[best[1]].append(t)
+    out = []
+    for i, (k, l) in enumerate(lines):
+        c = coords[i]
+        if inserts.get(i):
+            # 線に沿った距離の順に点を足す
+            g = LineString(c)
+            pts = [(g.project(Point(xy)), xy) for xy in c] + [(t, tuple(g.interpolate(t).coords[0])) for t in inserts[i]]
+            pts.sort(key=lambda v: v[0])
+            c = [xy for _, xy in pts]
+        out.append((k, LineString(c)))
+    return out
+
+
 def main():
     name = sys.argv[1]
     lat0, lon0, lat1, lon1 = [float(v) for v in (ROOT / 'data-build' / 'gsi' / f'{name}.bbox').read_text().split(',')]
@@ -154,6 +192,7 @@ def main():
                     out.append((k, l))
         return out
     road_l = merge(roads, 0.6)
+    road_l = snap_ends(road_l, 2.5)
     rail_l = merge(rails, 0.8)
     base = {
         'name': name, 'bbox': [round(gx0, 1), round(gy0, 1), round(gx1, 1), round(gy1, 1)], 'unit': 0.1,

@@ -64,6 +64,23 @@ function create(D,opt){opt=opt||{};const unit=D.unit||.1;const W={name:D.name,me
   W.bridges=[];for(const r of W.roads){if(r.mw||r.lv>1)continue;const a=r.a;for(let s=0;s<a.length-2;s+=2){const mx=(a[s]+a[s+2])/2,my=(a[s+1]+a[s+3])/2;if(!W.isLand(mx,my)&&W.inBox(mx,my))W.bridges.push([a[s],a[s+1],a[s+2],a[s+3],Math.max(4,r.w)]);}}
   const bIdx=new Map();for(const b of W.bridges)reg(bIdx,{x0:Math.min(b[0],b[2])-b[4],x1:Math.max(b[0],b[2])+b[4],y0:Math.min(b[1],b[3])-b[4],y1:Math.max(b[1],b[3])+b[4],b});
   W.bridgeAt=(x,y)=>{const a=bIdx.get(Math.floor(x/RCELL)+','+Math.floor(y/RCELL));if(!a)return null;for(const o of a){const b=o.b;if(segD(x,y,b[0],b[1],b[2],b[3])<=b[4]/2)return b;}return null;};
+  // 経路探索用の道路（osm-convert.js の buildGraph にそのまま渡せる形）。範囲を指定すると、その中を通る道だけ。
+  // 交差点は同じ点（0.6m以内）でつなぐ。道の端が別の道の途中に接している所（T字路・タイルの境目）は tools/gsi/build_world.py でつないである（snap=true でここでもつなぐ）
+  W.graphRoads=(x0,y0,x1,y1,snap)=>{const rs=(x0==null?W.roads:W.roadsIn(x0,y0,x1,y1)).filter(r=>r.code!==2704);
+    const lines=rs.map(r=>{const pts=[];for(let k=0;k<r.a.length;k+=2)pts.push([r.a[k],r.a[k+1]]);return{r,pts};});
+    // 線分の索引（10m）
+    const G=10,sidx=new Map();const sk=(i,j)=>i*200003+j;
+    if(snap)lines.forEach((l,li)=>{for(let k=0;k<l.pts.length-1;k++){const[ax,ay]=l.pts[k],[bx,by]=l.pts[k+1];for(let i=Math.floor(Math.min(ax,bx)/G);i<=Math.floor(Math.max(ax,bx)/G);i++)for(let j=Math.floor(Math.min(ay,by)/G);j<=Math.floor(Math.max(ay,by)/G);j++){const key=sk(i,j);let a=sidx.get(key);if(!a){a=[];sidx.set(key,a);}a.push([li,k]);}}});
+    const ins=new Map();// li -> [[k,t,x,y]]（データ作成時に済ませてあるので、ふだんは省く）
+    if(snap)for(let li=0;li<lines.length;li++){const l=lines[li];for(const end of[0,l.pts.length-1]){const[px,py]=l.pts[end];let best=null,bd=2.5;
+      for(let i=Math.floor((px-2.5)/G);i<=Math.floor((px+2.5)/G);i++)for(let j=Math.floor((py-2.5)/G);j<=Math.floor((py+2.5)/G);j++){const a=sidx.get(sk(i,j));if(!a)continue;
+        for(const[lj,k]of a){if(lj===li)continue;const[ax,ay]=lines[lj].pts[k],[bx,by]=lines[lj].pts[k+1];const dx=bx-ax,dy=by-ay,L=dx*dx+dy*dy;let t=L?((px-ax)*dx+(py-ay)*dy)/L:0;t=t<0?0:t>1?1:t;const qx=ax+dx*t,qy=ay+dy*t,d=Math.hypot(px-qx,py-qy);if(d<bd){bd=d;best=[lj,k,t,qx,qy];}}}
+      if(best){const[lj,k,t,qx,qy]=best;l.pts[end]=[qx,qy];if(t>1e-3&&t<1-1e-3){let a=ins.get(lj);if(!a){a=[];ins.set(lj,a);}a.push([k,t,qx,qy]);}}}}
+    for(const[lj,a]of ins){const l=lines[lj];a.sort((p,q)=>p[0]-q[0]||p[1]-q[1]);const out=[];let ai=0;for(let k=0;k<l.pts.length;k++){out.push(l.pts[k]);while(ai<a.length&&a[ai][0]===k){out.push([a[ai][2],a[ai][3]]);ai++;}}l.pts=out;}
+    // 点の番号（0.6m以内は同じ点）
+    const grid=new Map();let nid=0;const nodeId=(x,y)=>{const gx=Math.round(x)+60000,gy=Math.round(y)+60000;for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){const a=grid.get((gx+dx)*200003+gy+dy);if(a)for(const n of a)if(Math.abs(n.x-x)<.6&&Math.abs(n.y-y)<.6)return n.id;}
+      const n={x,y,id:nid++};const k=gx*200003+gy;let a=grid.get(k);if(!a){a=[];grid.set(k,a);}a.push(n);return n.id;};
+    return lines.map(({r,pts})=>({pts,nodes:pts.map(p=>nodeId(p[0],p[1])),w:r.w,kind:r.kind,car:r.car&&!r.mw&&r.lv===0||r.mw,bike:!r.mw,foot:!r.mw,name:r.ctgName,real:'gsi'}));};
   /* ===== 名前・構造物 ===== */
   W.names=D.names.map(n=>({text:n[0],code:n[1],x:n[2],y:n[3]}));
   W.findName=(re,code)=>W.names.filter(n=>(code==null||n.code===code)&&(typeof re==='string'?n.text===re:re.test(n.text)));

@@ -2,15 +2,16 @@
    ・ゲーム座標：単位メートル。x が東、y が南（3D では y → z）。高さは実寸。
    ・湘南：緯度経度（EPSG:4326）から、固定の原点（北緯35.345°・東経139.56° → ゲーム座標 (2400, 8300)）を基準に、
      正距円筒図法（この緯度での1度あたりの長さで換算）で変換する。等倍（sc=1、実際のメートル）。関東の実在地図も同じ変換。相互変換できる。
-   ・横浜：手描きの地図（元の座標×3、距離は約1/3）で、緯度経度との対応（ジオリファレンス）はまだない。
+   ・横浜：2026-10 から湘南と同じ変換（等倍）。国土地理院ベクトルタイルから作った実在の地図（world.js）。以前は手描きで距離約1/3だった。
    ・地図の表示（拡大・移動）は view = {cx, cy, z（1mあたりの画面ピクセル）, w, h, rot} で表し、どの画面も同じ関数で変換する。 */
 (function(root){
 'use strict';
-const SC=3;// 横浜（手描き）の縮め方。湘南は等倍
+const SC=1;// 縮め方。2026-10 から横浜も湘南も等倍（以前の横浜は手描きで約1/3）
 // 湘南の原点と1度あたりのメートル（北緯35.3°付近。WGS84 楕円体での値に近い）
 const SHONAN={id:'shonan',name:'湘南（鎌倉〜大磯）',lat0:35.345,lon0:139.56,x0:2400,y0:8300,mLon:90826,mLat:110950,sc:1,
   bounds:{x0:-22800,x1:3300,y0:8300,y1:15500},georef:true};
-const YOKOHAMA={id:'yokohama',name:'横浜',sc:SC,bounds:{x0:0,x1:4800,y0:0,y1:7800},georef:false};
+// 横浜：国土地理院ベクトルタイル（data/world/yokohama-base.js）の範囲。湘南と同じ変換（原点・向き・縮尺）
+const YOKOHAMA={id:'yokohama',name:'横浜',sc:1,bounds:{x0:6000,x1:16200,y0:-11400,y1:10700},georef:true};
 const REGIONS={shonan:SHONAN,yokohama:YOKOHAMA};
 
 function toGame(lat,lon,R){R=R||SHONAN;return[R.x0+(lon-R.lon0)*R.mLon/R.sc,R.y0+(R.lat0-lat)*R.mLat/R.sc];}
