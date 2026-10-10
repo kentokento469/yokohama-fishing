@@ -7,5 +7,6 @@ export default async (page, SP) => {
   await shot('f_mm_night',9020,-3700,2.6,-.35,20*60);
   await shot('f_yamate',10500,-1880,1.2,.35,10*60);
   await shot('f_kannai',9260,-2800,0.3,-.05,15*60);
+  await shot('f_street',9170,-2960,0.8,.25,11*60);
   console.log(await page.evaluate(()=>document.getElementById('bootErr')?.textContent||'no error'));
 };
