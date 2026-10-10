@@ -29,6 +29,7 @@
 - `shonan.js` — 湘南の地理（緯度経度→ゲーム座標、駅・名所。手描きの海岸線・川・防波堤・国道134号・JR・江ノ電は、実在の地図が無い時の代わり）と、釣りできるかの判定 `canFish`（未確認・自然保護は不可、利用時間、夏の遊泳区域、高波の磯、荒天閉鎖、禁止された釣り方）、規制エリア `restrictedAt`（`window.HamaShonan`）。
 - `data/fish/species.json` — 魚種のマスター（126種：既存36＋新規90。魚類118・頭足類7・甲殻類1。海・河口で釣れる104、淡水22）。学名・生息（釣り場の種類ごとの多さ）・水深・底質・季節・時間帯・潮・適水温・釣り方・サイズ・重さ係数・速さ・警戒心・引き・ファイトの型・レア度・価格・見た目。元は `tools/fish/species_rows.txt`（新規）と `existing_extra.txt`（既存の追加情報）、`node tools/fish/build_species.mjs` で `species.json`・`species.js` を作る（直接編集しない）。既存の値（体長・釣り方・旬など）は index.html の FISH から。
 - `data/fish/images.js` — 魚の写真の一覧（出典・ライセンス・改変内容つき）。`tools/fish/fetch_images.py`（Wikimedia Commons を検索→目で確認して approve→WebP・AVIF・サムネイルに変換）。41種（2026-10。釣れる104種のうち。残りは候補が料理・標本・浮世絵などで不採用か、候補なし）。続きは `fetch_images.py download --k 1`（次の候補）→ 目で確認 → approved_src → `build --from-dir`。写真の無い魚は仮の図（「実物の写真ではありません」と表示）。
+- `market.js` — 魚の持ち帰りと買取（`window.HamaMarket`）：持ち物 `S.catch`（クーラー／バケツ）・鮮度・相場・買取所7か所（ゲーム上の設定）・売る。index.html のメニュー「魚」タブ、買取所の近くの「魚を売る」。
 - `fish-ai.js` — 魚のAI。`fight.js` — フッキングとファイト。`sound.js` — 効果音と環境音。
 - `geo.js` — 共通の座標システム（`window.HamaGeo`）。緯度経度⇔ゲーム座標（湘南の原点固定）、地図表示の view（拡大・移動・回転）、縮尺バー。3D・ミニマップ・地図画面・今後の全画面マップで共有。
 - `mapdata.js` — 地図データのレイヤー管理（`window.HamaMapData`）。海岸線・陸地・道路・建物・河川・砂浜・駐車場・駐輪場・構造物・釣り場・現在地。地物の出どころ（実在 gshhs/osm、ゲーム用 game_approx/game_est）を区別し、ないものは空。GeoJSON の読み込みと検査。

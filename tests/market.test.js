@@ -1,0 +1,18 @@
+const test=require('node:test'),assert=require('node:assert');
+const M=require('../market.js');
+const info={kg:1200,L:[12,32],inSeason:true};
+const fish=(over)=>Object.assign({id:'aji',kg:.3,L:25,t:600},over||{});
+test('鮮度：氷ありは長持ち、48時間で傷む',()=>{const it=fish();assert.ok(M.freshness(it,600+6*60,true)>M.freshness(it,600+6*60,false));assert.strictEqual(M.freshness(it,600+49*60,true),0);assert.ok(M.freshness(it,600,false)===1);});
+test('値段：重さ・鮮度・店の種類で変わる',()=>{const ctx={absMin:660,day:3,iced:true};const P=M.PLACES;const mk=P.find(p=>p.kind==='market'),sh=P.find(p=>p.kind==='shop');
+  const a=M.priceOf(fish(),info,Object.assign({place:mk},ctx)).yen,b=M.priceOf(fish(),info,Object.assign({place:sh},ctx)).yen;assert.ok(a>b,'市場の方が高い');
+  const heavy=M.priceOf(fish({kg:.6}),info,Object.assign({place:mk},ctx)).yen;assert.ok(heavy>a);
+  const stale=M.priceOf(fish(),info,{absMin:600+20*60,day:3,iced:false,place:mk}).yen;assert.ok(stale<a);
+  assert.ok(M.priceOf(fish(),info,{absMin:600+50*60,day:3,iced:true,place:mk}).spoiled);});
+test('相場：日によって変わり、範囲内',()=>{const v=new Set();for(let d=0;d<30;d++){const f=M.dayFactor('aji',d,false);assert.ok(f>=.8*1.08-1e-9&&f<=1.25*1.08+1e-9);v.add(f.toFixed(3));}assert.ok(v.size>20);});
+test('持ち物：バケツは5kg まで、クーラーは容量まで',()=>{const S={veh:{cooler:null},money:0};assert.ok(M.add(S,fish({kg:3}),{}));assert.ok(!M.add(S,fish({kg:3}),{}));S.veh.cooler='cooler_l';assert.ok(M.add(S,fish({kg:3}),{cooler_l:30}));assert.strictEqual(S.catch.length,2);});
+test('売る：全部売ると持ち物が空になりお金が増える。傷んだ魚は処分',()=>{const S={veh:{cooler:'cooler_s'},money:100,catch:[fish(),fish({t:-5000})]};const pl=M.PLACES[0];
+  const r=M.sell(S,pl,{absMin:700,day:1,iced:true},()=>info);assert.strictEqual(r.sold,1);assert.strictEqual(r.spoiled,1);assert.ok(S.money>100);assert.strictEqual(S.catch.length,0);});
+test('営業時間',()=>{const mk=M.PLACES.find(p=>p.kind==='market');assert.ok(M.isOpen(mk,6*60));assert.ok(!M.isOpen(mk,13*60));});
+test('古いセーブ：クーラーの重さは売れない持ち帰り分として残る',()=>{const S={veh:{fishKg:2.5}};M.migrate(S);assert.strictEqual(S.catch.length,1);assert.ok(S.catch[0].legacy);
+  const r=M.sell(S,M.PLACES[0],{absMin:100,day:1,iced:true},()=>info);assert.strictEqual(r.sold,0);assert.strictEqual(S.catch.length,1);});
+test('買取所はゲーム座標に変換できる',()=>{const G=require('../geo.js');const P=M.placesIn((a,b)=>G.toGame(a,b));assert.strictEqual(P.length,M.PLACES.length);assert.ok(P.every(p=>isFinite(p.x)&&isFinite(p.y)));});

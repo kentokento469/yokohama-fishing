@@ -13,6 +13,7 @@
 - geo.js
 - world.js
 - data/world/yokohama-base.js
+- data/world/shonan-base.js
 - data/yokohama-places.js
 - data/shonan-spots.js
 - shonan.js
@@ -23,6 +24,7 @@
 - data/geo/geo-data.js
 - tiles.js
 - gsi.js
+- market.js
 - kanto.js
 - routing.js
 - nav.js
@@ -40,6 +42,7 @@
 | gsi.js | 8KB | HamaTiles | 国土地理院タイルのストリーミング読み込み（window.HamaGSI）。関東全域を同じ仕組みで扱う共通の土台。 |
 | kanto.js | 11KB | HamaGSI | 関東全域の近景データ（window.HamaKanto）。横浜・湘南の事前変換データの外側を、国土地理院タイルから直接つくる共通エンジン。 |
 | mapdata.js | 8KB | HamaGeo | 横浜みなと釣り旅 — 地図データの管理（3Dフィールドと2Dの地図画面が同じデータを見る） |
+| market.js | 4KB | HamaMarket | 魚の持ち帰りと買取（window.HamaMarket）。地域共通。three.js・DOM に依存しない（Node のテストで動く）。 |
 | nav.js | 8KB | HamaOSMConvert | 横浜みなと釣り旅 — 道路網の組み立て（OSM がないときの代わり）・道のマス目・推定駐車場・行き方の計画。描画に依存しない。 |
 | osm-convert.js | 11KB | HamaOSMConvert | 横浜みなと釣り旅 — OpenStreetMap のデータをゲームの地図レイヤーと道路ネットワークに変換する（描画に依存しない。Node でもブラウザでも動く） |
 | routing.js | 4KB | HamaRouting | 横浜みなと釣り旅 — 道路ネットワークの経路探索（A*）。描画に依存しない。Node でもブラウザでも動く。 |
@@ -49,52 +52,55 @@
 | terrain.js | 4KB | HamaTerrain | 標高（国土地理院の標高タイル dem_png / dem5a_png）の読み込みと、緯度経度での高さの取り出し（window.HamaTerrain）。 |
 | tiles.js | 9KB | HamaTiles | 横浜みなと釣り旅 — 関東の実在地図タイル（PMTiles v3 / MVT）の読み込み。外部ライブラリなし。Node でもブラウザでも動く。 |
 | vehicles.js | 8KB | HamaVehicles | 横浜みなと釣り旅 — 自転車と自動車（描画に依存しない。Node でもブラウザでも動く） |
-| world.js | 12KB | HamaWorld | 横浜みなと釣り旅 — 実在の地図（等倍）の読み込みと問い合わせ（window.HamaWorld）。three.js・DOM に依存しない（Node の require でも動く） |
+| world.js | 15KB | HamaWorld | 横浜みなと釣り旅 — 実在の地図（等倍）の読み込みと問い合わせ（window.HamaWorld）。three.js・DOM に依存しない（Node の require でも動く） |
 
-## index.html の節（320KB）
+## index.html の節（337KB）
 - L179 デザイン v2（2026-10）：HUD は半透明のガラス、メニューは紙。厚い影をやめ、細い線と柔らかい影に統一
-- L397 魚（東京湾・横浜で釣れる35種）
-- L440 魚種のマスター（data/fish/species.json → species.js）
-- L498 湘南エリア（鎌倉〜大磯）：shonan.js・data/shonan-spots.js から取り込む。横浜マップの南（y=8300〜）に置き
-- L507 状態
-- L529 時間・潮・季節
-- L556 入力
-- L585 3D基盤
-- L681 テクスチャ（窓・壁は世界座標で貼るので、建物の大きさに関係なく窓の大きさが一定）
-- L726 海と陸
-- L882 道沿いのもの：電柱と電線、街灯、街路樹、バス停、自販機
-- L920 防波堤（国土地理院の防波堤の線）：コンクリートの堤（幅4m・海面から3m）と外側のテトラポッド。湘南の漁港には小さな漁船（数・位置はおおよそ
-- L929 名所・ランドマーク（実寸に近い大きさ。位置は data/yokohama-places.js と国土地理院の建物の形から）
-- L997 湘南の名所（簡単な形。実寸に近い高さ）
-- L1028 街並みのチャンク生成（近くだけ作り、遠くは消す）
-- L1384 人（関節つきの人型。身長およそ1.73m）
-- L1460 竿・糸・ウキ
-- L1484 目印
-- L1497 釣りロジック（距離はメートル）
-- L1576 環境（段階6）：天気・水温・濁り・潮流は fishing-sim.js で計算し、ここでは今日・今の値をまとめる
-- L1686 結果・名所
-- L1691 魚図鑑：全魚種（data/fish/species.json）。釣った魚と未釣獲を区別し、写真（あれば）・特徴・生息・釣獲記録を出す
-- L1725 釣果の表示：写真（data/fish/images.js にある魚種）または仮の図、名前・学名・体長・重さ・場所・日時・仕掛け・自己ベスト。
-- L1755 UI
-- L1817 シート
-- L1888 釣具店：竿・エサ／ルアー／メタルジグ／持ち物
-- L1975 2D地図
-- L2038 魚の絵
-- L2086 カメラ（建物にめり込まないよう距離を詰める）
-- L2103 竿・糸（しなり）と釣りのポーズ
-- L2176 ナブラ・鳥山・波紋
-- L2191 時間帯の見た目
-- L2215 乗り物・道路網・行き方（vehicles.js / nav.js / routing.js / osm-convert.js）
-- L2419 全画面ワールドマップ（Mキー・右上の「地図」・ミニマップをタップ）
-- L2470 設定：画質・FPS表示・旧バージョン
-- L2492 関東の実在地図（OpenStreetMap のタイル。tools/kanto で作る）
-- L2693 メインループ
-- L2755 開始
+- L404 魚（東京湾・横浜で釣れる35種）
+- L447 魚種のマスター（data/fish/species.json → species.js）
+- L505 湘南エリア（鎌倉〜大磯）：shonan.js・data/shonan-spots.js から取り込む。横浜マップの南（y=8300〜）に置き
+- L510 防波堤・砂浜（実在の地図の上。地域共通）
+- L538 魚の買取所（market.js。地域共通。位置は実在の市場・漁港の住所の近くの車道の端。ゲーム上の設定）
+- L546 状態
+- L570 時間・潮・季節
+- L597 入力
+- L626 3D基盤
+- L715 足元の高さ・段差・ジャンプ（地域共通）
+- L735 テクスチャ（窓・壁は世界座標で貼るので、建物の大きさに関係なく窓の大きさが一定）
+- L780 海と陸
+- L936 道沿いのもの：電柱と電線、街灯、街路樹、バス停、自販機
+- L974 防波堤（国土地理院の防波堤の線）：コンクリートの堤（幅4m・海面から3m）と外側のテトラポッド。湘南の漁港には小さな漁船（数・位置はおおよそ
+- L983 名所・ランドマーク（実寸に近い大きさ。位置は data/yokohama-places.js と国土地理院の建物の形から）
+- L1047 湘南の名所（簡単な形。実寸に近い高さ）
+- L1108 街並みのチャンク生成（近くだけ作り、遠くは消す）
+- L1473 人（関節つきの人型。身長およそ1.73m）
+- L1549 竿・糸・ウキ
+- L1573 目印
+- L1586 釣りロジック（距離はメートル）
+- L1665 環境（段階6）：天気・水温・濁り・潮流は fishing-sim.js で計算し、ここでは今日・今の値をまとめる
+- L1775 結果・名所
+- L1780 魚図鑑：全魚種（data/fish/species.json）。釣った魚と未釣獲を区別し、写真（あれば）・特徴・生息・釣獲記録を出す
+- L1814 釣果の表示：写真（data/fish/images.js にある魚種）または仮の図、名前・学名・体長・重さ・場所・日時・仕掛け・自己ベスト。
+- L1848 UI
+- L1912 シート
+- L1984 釣具店：竿・エサ／ルアー／メタルジグ／持ち物
+- L2071 2D地図
+- L2136 魚の絵
+- L2184 カメラ（建物にめり込まないよう距離を詰める）
+- L2201 竿・糸（しなり）と釣りのポーズ
+- L2274 ナブラ・鳥山・波紋
+- L2289 時間帯の見た目
+- L2313 乗り物・道路網・行き方（vehicles.js / nav.js / routing.js / osm-convert.js）
+- L2517 全画面ワールドマップ（Mキー・右上の「地図」・ミニマップをタップ）
+- L2568 設定：画質・FPS表示・旧バージョン
+- L2590 関東の実在地図（OpenStreetMap のタイル。tools/kanto で作る）
+- L2810 メインループ
+- L2872 開始
 
 ## データ
 - data/: equipment_catalog_400.json, fish, geo, kanto, osm, shonan-spots.js, tackle-data.js, terrain, tiles, world, yokohama-places.js
 - data/fish/: images.js, img, species.js, species.json
-- data/world/: yokohama-base.js, yokohama-bld
+- data/world/: shonan-base.js, shonan-bld, yokohama-base.js, yokohama-bld
 - data/terrain/: shonan-game.js
 - data/geo/: LICENSE_AND_SOURCES.md, VALIDATION.md, coverage_map.png, geo-data.js, src
 - data/osm/: README.md, areas.json, index.js

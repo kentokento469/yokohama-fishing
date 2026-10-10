@@ -11,6 +11,7 @@ const CASES=[
   ['lookup','見上げ（約30°・ランドマークタワー）',[/"elev":(2[5-9]|3[0-5])/]],
   ['lookup_low','軽量画質でも空が描かれる',[/"top":\[(\d{2,3}),(\d{2,3}),(1[3-9]\d|2\d\d)/]],
   ['parity','横浜と湘南で同じ操作（歩く・釣り場・アタリ・購入・NPC・駅・地図・セーブ）',[/parity_yokohama_honmoku \{"walk":true[^\n]*"near":"honmoku"[^\n]*"bite":[1-9][^\n]*"travel":true,"npc":[1-9][^\n]*"saved":true/,/parity_shonan_shinko_south \{"walk":true[^\n]*"buy":true[^\n]*"near":"shinko_south"[^\n]*"bite":[1-9][^\n]*"travel":true,"npc":[1-9][^\n]*"mini":true,"wm":true,"saved":true/,/parity_shonan_katase_west \{"walk":true[^\n]*"surface":"sand"[^\n]*"bite":[1-9][^\n]*"travel":true,"npc":[1-9][^\n]*"saved":true/]],
+  ['common','地域共通：ジャンプ・段差・持ち帰り→買取所で売る（横浜・湘南）',[/common_yokohama \{"jump":0\.[7-9]\d*,"landed":true,"kept":1,"near":true,"sellBtn":true,"sold":true,"gain":[1-9]/,/common_shonan \{"jump":0\.[7-9]\d*,"landed":true,"kept":1,"near":true,"sellBtn":true,"sold":true,"gain":[1-9]/,/common_step \{"tooHigh":true,"stepOk":true\}/]],
   ['kanto','関東（横須賀・箱根）を散策：地形・陸・チャンク',[/kanto_yokosuka {"rg":"kanto","land":true,"gy":([4-9]|[1-3]\d)\./,/kanto_hakone {"rg":"kanto","land":true,"gy":(8\d|9\d|1[0-3]\d)\./,/0pending/,/kanto_nostation \{"rg":"[a-z]+","paid":0\}/,/kanto_yokosuka [^\n]*"st":"[^"]*駅","std":\d{1,2}[,}]/,/kanto_hakone [^\n]*"st":"箱根湯本駅"/,/kanto_bridge \{"walk":true,"water":true,"dy":0(\.[0-4]\d*)?[,}]/]],
   ['s60','横浜の6釣り場で投げられる',[/\["kanazawa",[^\]]*"kanazawa","kanazawa"\]/,/\["honmoku",[^\]]*"honmoku","honmoku"\]/]]];
 const only=process.argv.slice(2);let fail=0;

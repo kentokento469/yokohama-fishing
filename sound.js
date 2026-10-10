@@ -55,7 +55,9 @@ const FX={
   miss:o=>tone({f0:400,f1:250,dur:.2,vol:.08,wave:'triangle'}),
   step:o=>burst({type:'lowpass',f0:o&&o.run?520:380,dur:.05,vol:o&&o.run?.06:.035}),
   gull:o=>{const f=1250+Math.random()*350;tone({f0:f,f1:f*.62,dur:.28,vol:.05,wave:'triangle'});tone({f0:f*1.04,f1:f*.66,dur:.24,vol:.04,wave:'triangle',delay:.33});},
-  tap:o=>tone({f0:900,dur:.03,vol:.04})};
+  tap:o=>tone({f0:900,dur:.03,vol:.04}),
+  // 竿のきしみ（テンションの危険域）
+  creak:o=>{tone({f0:180,f1:140,dur:.22,vol:.07,wave:'sawtooth'});burst({type:'bandpass',f0:900,f1:600,dur:.2,q:6,vol:.06});}};
 function play(name,opt){if(!SND.ctx||!SND.on)return;const f=FX[name];if(f)try{f(opt||{});}catch(e){}}
 
 /* 環境音の大きさ。o: {sea, city, rain}（0〜1） */
