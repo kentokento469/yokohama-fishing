@@ -60,14 +60,15 @@ function create(opt){const G=opt.gsi,GEO=opt.geo,base=opt.ground!=null?opt.groun
       const holes=poly.slice(1).map(h=>flat(clipPoly(h,W.extent),W.extent,true)).filter(h=>h.length>=6);f.water.push(Object.assign({p,holes},bbox(p)));}}
     // 注記：町・字（800〜849）と市区町村など（100〜299）の名前だけ（学校・施設名は除く）
     // 駅：注記コード 422（「〇〇駅」）の位置（注記の置き場所なので駅舎から数十m ずれることがある）
-    const A0=t.Anno;if(A0)for(const ft of A0.features){if((ft.props.vt_code|0)!==422||!ft.props.vt_text||ft.type!==1)continue;const q=ft.geom[0]&&ft.geom[0][0];if(!q||q[0]<0||q[0]>A0.extent||q[1]<0||q[1]>A0.extent)continue;const g=tf(A0.extent)(q);f.stations.push({n:ft.props.vt_text,x:g[0],y:g[1]});}
+    const A0=t.Anno;if(A0)for(const ft of A0.features){if((ft.props.vt_code|0)!==422||!ft.props.vt_text||(ft.type!==1&&ft.type!==2))continue;const L0=ft.geom[0];const q=L0&&L0[L0.length>>1];/* 点か、文字を並べる線の中ほど */if(!q||q[0]<0||q[0]>A0.extent||q[1]<0||q[1]>A0.extent)continue;const g=tf(A0.extent)(q);f.stations.push({n:ft.props.vt_text,x:g[0],y:g[1]});}
     const A=t.Anno;if(A)for(const ft of A.features){const c=ft.props.vt_code|0,tx=ft.props.vt_text;if(ft.type!==1||!tx||!((c>=100&&c<300)||(c>=800&&c<850)))continue;const q=ft.geom[0]&&ft.geom[0][0];if(!q||q[0]<0||q[0]>A.extent||q[1]<0||q[1]>A.extent)continue;
       const g=tf(A.extent)(q);f.names.push({t:tx,code:c,x:g[0],y:g[1]});}
     conv.set(t,f);return f;}
   // 範囲に掛かるタイルの地物（建物は中心が範囲内のものだけ。道路・鉄道・水域は掛かるもの全部）
-  function featuresIn(X0,Y0,X1,Y1){const out={blds:[],roads:[],rails:[],water:[]};const seen=new Set();
+  function featuresIn(X0,Y0,X1,Y1){const out={blds:[],roads:[],rails:[],water:[],stations:[]};const seen=new Set();
     for(const[kind,z,x,y]of tilesFor(X0,Y0,X1,Y1)){if(kind!=='vec')continue;const k='vec/'+z+'/'+x+'/'+y;if(seen.has(k))continue;seen.add(k);const f=features(G.mem.get(k));if(!f)continue;
       for(const b of f.blds){const cx=(b.x0+b.x1)/2,cy=(b.y0+b.y1)/2;if(cx>=X0&&cx<X1&&cy>=Y0&&cy<Y1)out.blds.push(b);}
+      for(const q of f.stations)if(q.x>=X0&&q.x<X1&&q.y>=Y0&&q.y<Y1)out.stations.push(q);
       for(const n of['roads','rails','water'])for(const o of f[n])if(o.x1>=X0&&o.x0<=X1&&o.y1>=Y0&&o.y0<=Y1)out[n].push(o);}
     return out;}
   function inWater(x,y){const f=features(vecTile(x,y));if(!f)return false;for(const w of f.water){if(x<w.x0||x>w.x1||y<w.y0||y>w.y1)continue;if(pip(w.p,x,y)&&!w.holes.some(h=>pip(h,x,y)))return true;}return false;}
@@ -88,9 +89,13 @@ function create(opt){const G=opt.gsi,GEO=opt.geo,base=opt.ground!=null?opt.groun
   function nameNear(x,y,r){r=r||1500;let best=null,bd=r;for(const[kind,z,tx,ty]of tilesFor(x-r,y-r,x+r,y+r)){if(kind!=='vec')continue;const f=features(G.mem.get('vec/'+z+'/'+tx+'/'+ty));if(!f)continue;
       for(const n of f.names){const d=Math.hypot(n.x-x,n.y-y)*(n.code<300?.6:1);if(d<bd){bd=d;best=n.t;}}}return best;}
   // 近くの駅（読み込み済みのタイルから。同じ名前は一番近いものだけ）。近い順
-  function stationsNear(x,y,r){const by=new Map();for(const[kind,z,tx,ty]of tilesFor(x-r,y-r,x+r,y+r)){if(kind!=='vec')continue;const f=features(G.mem.get('vec/'+z+'/'+tx+'/'+ty));if(!f)continue;
-      for(const s of f.stations){const d=Math.hypot(s.x-x,s.y-y);if(d>r)continue;const o=by.get(s.n);if(!o||d<o.d)by.set(s.n,{n:s.n,x:s.x,y:s.y,d});}}
-    return[...by.values()].sort((a,b)=>a.d-b.d);}
+  // 駅の位置は、注記から600m 以内の線路の「駅部分」（ホーム）のいちばん近い点に寄せる（注記は駅舎から離れて置かれることがある）
+  function snapStation(s,segs){let best=null,bd=600;for(const a of segs)for(let k=0;k<a.length-2;k+=2){const ax=a[k],ay=a[k+1],dx=a[k+2]-ax,dy=a[k+3]-ay,l=dx*dx+dy*dy;const t=l?Math.max(0,Math.min(1,((s.x-ax)*dx+(s.y-ay)*dy)/l)):0;const px=ax+dx*t,py=ay+dy*t,d=Math.hypot(px-s.x,py-s.y);if(d<bd){bd=d;best=[px,py];}}return best;}
+  function stationsNear(x,y,r){const by=new Map(),segs=[];for(const[kind,z,tx,ty]of tilesFor(x-r-600,y-r-600,x+r+600,y+r+600)){if(kind!=='vec')continue;const f=features(G.mem.get('vec/'+z+'/'+tx+'/'+ty));if(!f)continue;
+      for(const q of f.rails)if(q.station)segs.push(q.a);
+      for(const s of f.stations){const o=by.get(s.n);const d0=Math.hypot(s.x-x,s.y-y);if(!o||d0<o.d0)by.set(s.n,{n:s.n,x:s.x,y:s.y,d0});}}
+    const out=[];for(const s of by.values()){const p=snapStation(s,segs);const sx=p?p[0]:s.x,sy=p?p[1]:s.y,d=Math.hypot(sx-x,sy-y);if(d<=r)out.push({n:s.n,x:sx,y:sy,d});}
+    return out.sort((a,b)=>a.d-b.d);}
   return{STEP,nameNear,stationsNear,demReady,demLoad,demNode,demInterp,tilesFor,ready,load,demAt,node,groundY,isLand,inWater,featuresIn,features};}
 const API={create,clipPoly,clipLine,STEP};
 if(typeof module!=='undefined'&&module.exports)module.exports=API;else root.HamaKanto=API;

@@ -1243,6 +1243,10 @@ function buildWorldChunk(i,j,grp,L,doCol){const X0=i*CH,Y0=j*CH,X1=X0+CH,Y1=Y0+C
   if(units.length){const im=new T.InstancedMesh(bGeo,unitMat,units.length);units.forEach((u,k)=>{dummy.position.set(u[0],u[2],u[1]);dummy.rotation.set(0,u[6],0);dummy.scale.set(u[3],u[4],u[5]);dummy.updateMatrix();im.setMatrixAt(k,dummy.matrix);im.setColorAt(k,col.setHex(u[7]===1?0xc9c6bf:u[7]===2?0x8f9aa0:0xa9adb0));});shadowy(fitInstances(im));grp.add(im);}}
 /* 関東の近景チャンク（kanto.js）：10m 格子の地面（実際の標高）、地形に沿わせた道路・鉄道、地面の高さに合わせた建物（外壁シェーダー）、山の木。
    タイルが読めていなければ読み込んでから作り直す */
+// 駅名標：名前ごとに板の絵を1回だけ作る
+const KSIGN_POLE=new T.CylinderGeometry(.08,.08,3.6,8).translate(0,1.8,0),KSIGN_POLE_MAT=lam(0x8a9198),KSIGN_BOARD=new T.BoxGeometry(2.6,.7,.08),KSIGN_MATS=new Map();
+function stationNameMat(n){let m=KSIGN_MATS.get(n);if(m)return m;const tx=canvasTex(256,64,(c,w,h)=>{c.fillStyle='#1d4f9c';c.fillRect(0,0,w,h);c.fillStyle='#fff';c.font=`700 ${n.length>6?26:34}px ${FONT}`;c.textAlign='center';c.textBaseline='middle';c.fillText(n,w/2,h/2+2);});
+  m=lam(0xffffff,{map:tx,emissive:0x222222});KSIGN_MATS.set(n,m);return m;}
 const KANTO_GROUND_MAT=lam(0xffffff,{vertexColors:true}),KDECK_MAT=lam(0xbfc1bc,{side:T.DoubleSide}),KWATER_MAT=new T.MeshPhongMaterial({color:0x3f7f95,specular:0x9fb8c8,shininess:80,normalMap:seaNorm,normalScale:new T.Vector2(.35,.35)}),KPIL_GEO=new T.CylinderGeometry(1,1.1,1,8).translate(0,.5,0);
 // 関東の橋：水の上を渡る道路の区間（歩ける・高さ）。50m のマス目ごとに [ax,az,bx,bz,半幅,ya,yb]
 var KBR=new Map();
@@ -1318,6 +1322,9 @@ function buildKantoChunk(i,j,grp,doCol){const X0=i*CH,Y0=j*CH,X1=X0+CH,Y1=Y0+CH;
     g.setAttribute('color',new T.Float32BufferAttribute(B.col,3));g.setAttribute('aFacade',new T.Float32BufferAttribute(B.fac,4));g.setAttribute('aBldg',new T.Float32BufferAttribute(B.bld,4));
     const m=own(new T.Mesh(g,FACADE_MAT));m.castShadow=true;m.receiveShadow=true;}
   if(units.length){const im=new T.InstancedMesh(bGeo,unitMat,units.length);units.forEach((u,k)=>{dummy.position.set(u[0],u[2],u[1]);dummy.rotation.set(0,u[6],0);dummy.scale.set(u[3],u[4],u[5]);dummy.updateMatrix();im.setMatrixAt(k,dummy.matrix);im.setColorAt(k,col.setHex(u[7]===1?0xc9c6bf:u[7]===2?0x8f9aa0:0xa9adb0));});shadowy(fitInstances(im));grp.add(im);}
+  // 駅名標（国土地理院の駅の注記の位置。柱と青い板と駅名）
+  for(const q of KANTO.stationsNear(X0+CH/2,Y0+CH/2,CH*.72).filter(q=>q.x>=X0&&q.x<X1&&q.y>=Y0&&q.y<Y1)){const g0=KANTO.groundY(q.x,q.y);if(g0==null)continue;const gy=Math.max(g0,.3),sg=new T.Group();sg.position.set(q.x,gy,q.y);
+    const pole=new T.Mesh(KSIGN_POLE,KSIGN_POLE_MAT);sg.add(pole);const bd=new T.Mesh(KSIGN_BOARD,stationNameMat(q.n));bd.position.y=3.1;sg.add(bd);shadowy(pole);grp.add(sg);}
   // 木：急な斜面・標高40m超の格子点のまわり（道路・建物は避ける）
   const tr=[],st=gfx().trees||13;for(let b=0;b<n-1;b++)for(let a=0;a<n-1;a++){const v=nd[b*n+a];if(v.water||v.sea)continue;const c=colr.slice(3*(b*n+a),3*(b*n+a)+3);if(c[1]>.46)continue;
     for(let q=0;q<Math.max(1,Math.round(100/(st*st)*1.4));q++){const x=X0+(a+hash(i0+a+q*7,j0+b))*S0,z=Y0+(b+hash(j0+b+q*5,i0+a))*S0;if(colAt(x,z,1.5))continue;const g=KANTO.groundY(x,z);if(g==null||g<.5)continue;tr.push([x,z,g,.9+hash(Math.round(x),Math.round(z))*.6]);}}
@@ -1832,11 +1839,15 @@ function renderTab(){
   if(tab==='veh'){renderVeh(sb);return;}
   if(tab==='set'){renderSettings(sb);return;}
   if(tab==='map'&&mapView==='spots'){renderSpotList(sb);
-  }else if(tab==='map'&&regionAt(S.x,S.y)==='kanto'){// 関東の散策中：横浜・湘南へ戻る（運賃・時間はゲームの目安）
+  }else if(tab==='map'&&regionAt(S.x,S.y)==='kanto'){// 関東の散策中：駅から横浜・湘南へ戻る。駅が遠ければ最寄りの駅までバス（運賃・時間はゲームの目安）
+    const cur=atStationNow(),at=!!cur&&cur.d<ST_NEAR;
     const rows=[['yokohama','横浜駅'],['shonan','平塚']].map(([rg,nm])=>{const st=STATIONS.find(q=>q.region===rg&&q.n.includes(nm))||STATIONS.find(q=>q.region===rg);const f=kantoFare(st.x,st.y);
-      return `<button class="item" data-kback="${STATIONS.indexOf(st)}"><div class="tx"><b>${st.n}へ戻る</b><span>電車・バスを乗り継いで約${f.min}分（目安）</span></div><div class="pr">¥${f.yen}</div></button>`;}).join('');
-    sb.innerHTML=`<p class="sub">関東を散策中（国土地理院の地形・建物・道路）。ここには釣り場がありません。釣りは横浜・湘南の釣り場で。</p><div class="list">${rows}</div>`;
-    sb.querySelectorAll('[data-kback]').forEach(b=>b.onclick=()=>{const st=STATIONS[+b.dataset.kback],f=kantoFare(st.x,st.y);if(S.money<f.yen){toast('お金が足りません');return;}S.money-=f.yen;advance(f.min);S.x=st.x;S.y=st.y;N=null;closeSheet();updMoney();updChunks(true);snapCam();toast(`${st.n}に到着（${fmtTime(S.min)}）`);save();});
+      return `<button class="item${at?'':' dim'}" data-kback="${STATIONS.indexOf(st)}" ${at?'':'disabled'}><div class="tx"><b>${st.n}へ戻る</b><span>電車を乗り継いで約${f.min}分（目安）</span></div><div class="pr">¥${f.yen}</div></button>`;}).join('');
+    const bus=cur&&!at?`<button class="item" id="kBus"><div class="tx"><b>「${esc(cur.n)}」までバス</b><span>約${Math.round(cur.d)}m・乗車約${busMin(cur.d)}分＋待ち時間（目安）</span></div><div class="pr">¥220</div></button>`:'';
+    sb.innerHTML=`<p class="sub">関東を散策中（国土地理院の地形・建物・道路）。ここには釣り場がありません。${at?`「${esc(cur.n)}」にいます。`:cur?`電車に乗るには駅まで。一番近いのは「${esc(cur.n)}」（約${Math.round(cur.d)}m）。`:'近くに駅が見つかりません（読み込んだ範囲）。'}遠くの駅へはワールドマップ（M）で行き先を選んでください。</p><div class="list">${bus}${rows}</div>`;
+    sb.querySelectorAll('[data-kback]').forEach(b=>b.onclick=()=>{const st=STATIONS[+b.dataset.kback],f=kantoFare(st.x,st.y),w=3+Math.floor(rnd()*10);if(S.money<f.yen){toast('お金が足りません');return;}S.money-=f.yen;advance(w+f.min);S.x=st.x;S.y=st.y;N=null;closeSheet();updMoney();updChunks(true);snapCam();toast(`${w}分待って電車に乗り、${st.n}に到着（${fmtTime(S.min)}）`);save();});
+    if($('kBus'))$('kBus').onclick=async()=>{if(RIDE){toast('乗り物を停めてから');return;}if(S.money<220){toast('お金が足りません');return;}const w=2+Math.floor(rnd()*12),p=await kantoPlace(cur.x,cur.y);if(!p){toast('駅の近くに降りられる所がない');return;}
+      S.money-=220;advance(w+busMin(cur.d));S.x=p[0];S.y=p[1];N=null;closeSheet();updMoney();updChunks(true);snapCam();toast(`${w}分待ってバスに乗り、「${cur.n}」に到着（${fmtTime(S.min)}）`);save();};
   }else if(tab==='map'){const[cur,cd]=nearestStation();const atStop=cd<40;
     h=`<div class="seg"><button data-mv="go" class="on">行き先</button><button data-mv="spots">釣り場一覧</button><button data-mv="nav">地図・ルート</button></div><canvas id="mapCv"></canvas><p class="sub">${atStop?`「${cur.n}」にいます。行き先を選んでください。待ち時間は便によって変わります。${cur.n==='横浜駅'?'湘南（鎌倉〜大磯）へはJRで行けます。':''}`:`電車やバスに乗るには、まず駅・バス停まで歩いてください。一番近いのは「${cur.n}」（約${Math.round(cd)}m）。`}</p><div class="list">`;
     for(const{s,i}of routesFrom(cur)){const f=fare(s);const sp=SPOTS.find(p=>Math.hypot(p.x-s.x,p.y-s.y)<(s.region==='shonan'?250:500));if(busWait[i]==null)busWait[i]=2+Math.floor(rnd()*(f.mode==='バス'?14:10));
@@ -2007,6 +2018,7 @@ function kantoMini(){const now=performance.now();
     c.fillStyle='#7fb3cf';for(const w of F.water){path(w.p,true);c.fill();}
     c.strokeStyle='#ffffff';c.lineCap='round';for(const r of F.roads){if(r.code===2704)continue;c.lineWidth=Math.max(1,r.w*P);path(r.a);c.stroke();}
     c.fillStyle='#c9c2b4';for(const b of F.blds){path(b.p,true);c.fill();}
+    for(const q of KANTO.stationsNear(x0+KM_SIZE/2,y0+KM_SIZE/2,KM_SIZE*.72)){c.fillStyle='#2f6fb0';c.fillRect((q.x-x0)*P-4,(q.y-y0)*P-4,8,8);c.strokeStyle='#fff';c.lineWidth=1.5;c.strokeRect((q.x-x0)*P-4,(q.y-y0)*P-4,8,8);}
     KM.cv=cv;KM.x0=x0;KM.y0=y0;}
   return KM.cv?{cv:KM.cv,x0:KM.x0,y0:KM.y0}:null;}
 function drawMini(){const c=miniC,W=208,R=W/2,z=2.6;c.save();c.clearRect(0,0,W,W);c.beginPath();c.arc(R,R,R,0,7);c.clip();c.fillStyle='#2a7aa3';c.fillRect(0,0,W,W);
@@ -2547,17 +2559,28 @@ function kantoTap(px,py){const[x,y]=GEO.screenToWorld(WM.v,px,py);const[lat,lon]
   const play=SH.inShonan(x,y)&&isLand(x,y);const nearSp=sp&&sp[1]<20/WM.v.z;const kw=!nearSp&&!!KANTO&&!SH.inShonan(x,y)&&!inWorld(x,y)&&lat>34.85&&lat<37.2&&lon>138.4&&lon<141;const kf=kw?kantoFare(x,y):null;
   box.innerHTML=`<b>${nearSp?esc(sp[0].n):rs[0]?esc(rs[0].name):'この地点'}</b><span>北緯 ${lat.toFixed(4)}°・東経 ${lon.toFixed(4)}°${rs.length?'・'+rs.slice(0,2).map(r=>esc(r.name)).join(' / ')+'（範囲はおおよそ）':''}</span>
     <span>${nearSp||play?'ゲームで行ける場所（湘南）':kw?'散策で行ける（国土地理院の地形・建物・道路。釣り場はない）':'この地域はまだ遊べません'}</span>
-    <div class="row2">${nearSp||play?`<button class="btnA" id="kGo">ここへ行く</button>`:kw?`<button class="btnA" id="kWalk">散策に行く（約${kf.min}分・¥${kf.yen}）</button>`:''}<button class="btnB" id="wmClose">閉じる</button></div>`;box.hidden=false;
+    <div class="row2">${nearSp||play?`<button class="btnA" id="kGo">ここへ行く</button>`:kw?`<button class="btnA" id="kWalk">電車で散策に行く（約${kf.min}分・¥${kf.yen}）</button>`:''}<button class="btnB" id="wmClose">閉じる</button></div>`;box.hidden=false;
   if($('kGo'))$('kGo').onclick=()=>{const tx=nearSp?sp[0].x:x,ty=nearSp?sp[0].y:y;if(regionAt(S.x,S.y)!=='shonan'){toast('湘南へは電車で（移動→行き先）');return;}setDest({x:tx,y:ty,name:nearSp?sp[0].n:'選んだ地点',spot:nearSp?sp[0].id:undefined});const p=NAVR;toast(p&&!p.fail?`ルートを表示：約${fmtDur(p.time)}`:'ルートが見つからない');box.hidden=true;drawWorld();};
   if($('kWalk'))$('kWalk').onclick=()=>{box.hidden=true;kantoGo(x,y);};
   $('wmClose').onclick=()=>{box.hidden=true;};}
 // 関東の散策：運賃と時間はゲームの目安（直線距離から。実際の運賃・時刻ではない）
 function kantoFare(x,y){const d=Math.hypot(x-S.x,y-S.y)/1000;return{yen:Math.round((200+d*22)/10)*10,min:Math.round(15+d/35*60)};}
 // 横浜・湘南の外の陸へ（タイルを読んでから、近くの歩ける所に降ろす）
-async function kantoGo(x,y){if(RIDE){toast('乗り物を停めてから');return;}const f=kantoFare(x,y);if(S.money<f.yen){toast('お金が足りません');return;}toast('地形を読み込み中…');
-  await KANTO.load(x-260,y-260,x+260,y+260);const ox=S.x,oy=S.y;S.x=x;S.y=y;ensureCollision();// 建物の当たり判定を作ってから、建物の外の歩ける所を探す
-  let best=null;for(let r=0;r<=250&&!best;r+=5)for(let a=0;a<6.28&&!best;a+=r?Math.min(1,4/r):7){const px=x+Math.cos(a)*r,py=y+Math.sin(a)*r;if(inKanto(px,py)&&walk(px,py)&&!colAt(px,py,1.5))best=[px,py];}
-  if(!best){S.x=ox;S.y=oy;toast('近くに歩ける陸がない');return;}S.money-=f.yen;advance(f.min);S.x=best[0];S.y=best[1];N=null;if(!$("wmap").hidden)closeWorld();updMoney();updChunks(true);snapCam();toast(`${f.min}分かけて到着（${fmtTime(S.min)}）。散策のみ・釣り場はない`);save();}
+// 今いる所の一番近い駅（横浜・湘南はゲームの駅・バス停、関東は国土地理院の駅の注記）と距離
+const ST_NEAR=60;
+function atStationNow(){if(inKanto(S.x,S.y)){const s=KANTO.stationsNear(S.x,S.y,1500)[0];return s?{n:s.n,d:s.d,x:s.x,y:s.y}:null;}const[s,d]=nearestStation();return s?{n:s.n,d,x:s.x,y:s.y}:null;}
+const busMin=d=>Math.max(3,Math.round(d/250));// バスは平均 時速15km ほど
+// (x,y) の近くで歩ける所（建物の外）。タイルを読み、当たり判定を作ってから探す
+async function kantoPlace(x,y){await KANTO.load(x-260,y-260,x+260,y+260);const ox=S.x,oy=S.y;S.x=x;S.y=y;ensureCollision();let best=null;
+  for(let r=0;r<=250&&!best;r+=5)for(let a=0;a<6.28&&!best;a+=r?Math.min(1,4/r):7){const px=x+Math.cos(a)*r,py=y+Math.sin(a)*r;if(inKanto(px,py)&&walk(px,py)&&!colAt(px,py,1.5))best=[px,py];}
+  S.x=ox;S.y=oy;return best;}
+// 横浜・湘南の外の関東へ：駅から電車で、行き先にいちばん近い駅（800m 以内。無ければその地点の近く）へ
+async function kantoGo(x,y){if(RIDE){toast('乗り物を停めてから');return;}const cur=atStationNow();
+  if(!cur||cur.d>=ST_NEAR){toast(cur?`電車に乗るには、まず駅まで歩いてください（「${cur.n}」約${Math.round(cur.d)}m）`:'まず駅まで行ってください');return;}
+  const f=kantoFare(x,y);if(S.money<f.yen){toast('お金が足りません');return;}toast('地形を読み込み中…');
+  await KANTO.load(x-800,y-800,x+800,y+800);const st=KANTO.stationsNear(x,y,800)[0];const tx=st?st.x:x,ty=st?st.y:y;
+  const best=await kantoPlace(tx,ty);if(!best){toast('近くに歩ける陸がない');return;}const w=3+Math.floor(rnd()*10);
+  S.money-=f.yen;advance(w+f.min);S.x=best[0];S.y=best[1];N=null;if(!$("wmap").hidden)closeWorld();updMoney();updChunks(true);snapCam();toast(`${w}分待って電車に乗り、${st?st.n:'行き先の近く'}に到着（${fmtTime(S.min)}）。散策のみ・釣り場はない`);save();}
 $('wmQ').oninput=()=>{const q=$('wmQ').value.trim();const R=q?KT.regions.filter(r=>(r.name||'').includes(q)||(r.name_en||'').toLowerCase().includes(q.toLowerCase())).slice(0,8):[];
   $('wmQR').innerHTML=R.map((r,i)=>`<button data-ri="${i}">${esc(r.name)}<small>（${r.level===4?'都県':r.level===7?'市・区':'町・区'}）</small></button>`).join('')||(q&&KT.status!=='ok'?'<button disabled>地域索引がありません（タイル未作成）</button>':'');
   $('wmQR').querySelectorAll('[data-ri]').forEach(b=>b.onclick=()=>{const r=R[+b.dataset.ri];const p0=GEO.toGame(r.bbox[3],r.bbox[0]),p1=GEO.toGame(r.bbox[1],r.bbox[2]);const v=GEO.fit({x0:p0[0],x1:p1[0],y0:p0[1],y1:p1[1]},innerWidth,innerHeight,40);Object.assign(WM.v,{cx:v.cx,cy:v.cy,z:v.z});$('wmQR').innerHTML='';drawWorld();});};
