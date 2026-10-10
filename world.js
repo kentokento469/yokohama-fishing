@@ -4,7 +4,7 @@
    ・coastDist / nearestCoast：いちばん近い水際（陸と水の境目）。
    ・roadsIn(x0,y0,x1,y1)：その範囲を通る道路。roadAt(x,y)：道路の上か（車が通れるか・道の種類・幅）。区画ごとに必要なときだけ作る。
    ・names：地名・駅名・施設名。bridges：水の上を渡る道路（歩ける橋）。
-   ・建物：loadCell(i,j) で 440m 四方ごとに読み込む（ブラウザは fetch、Node はファイル）。 */
+   ・建物：loadCell(i,j) で 440m 四方ごとに読み込む（ブラウザは fetch、Node はファイル）。h は PLATEAU の実測の高さ（m、0＝不明）。 */
 (function(root){
 'use strict';
 const CELL=100;// 陸の判定の格子（m）
@@ -90,9 +90,9 @@ function create(D,opt){opt=opt||{};const unit=D.unit||.1;const W={name:D.name,me
   const BT=440,bcache=new Map(),pending=new Map();const base=opt.base||('data/world/'+D.name+'-bld/');
   W.BT=BT;W.cellOf=(x,y)=>[Math.floor(x/BT),Math.floor(y/BT)];
   function parse(buf,i,j){const dv=new DataView(buf instanceof ArrayBuffer?buf:buf.buffer,buf.byteOffset||0,buf.byteLength);const out=[];let o=0;const ox=i*BT,oy=j*BT;
-    while(o+4<=dv.byteLength){const c=dv.getUint16(o,true),n=dv.getUint16(o+2,true);o+=4;const p=new Float32Array(2*n);let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+    while(o+8<=dv.byteLength){const c=dv.getUint16(o,true),n=dv.getUint16(o+2,true),hm=dv.getUint16(o+4,true)/10;o+=8;const p=new Float32Array(2*n);let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
       for(let k=0;k<n;k++){const x=ox+dv.getInt16(o,true)/10,y=oy+dv.getInt16(o+2,true)/10;o+=4;p[2*k]=x;p[2*k+1]=y;if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
-      out.push({code:c,p,x0,y0,x1,y1});}return out;}
+      out.push({code:c,p,x0,y0,x1,y1,h:hm||0});}return out;}
   W.cell=(i,j)=>bcache.get(i+','+j)||null;
   W.loadCell=(i,j)=>{const k=i+','+j;if(bcache.has(k))return Promise.resolve(bcache.get(k));if(pending.has(k))return pending.get(k);
     let pr;if(opt.readFile){pr=Promise.resolve().then(()=>{let b=null;try{b=opt.readFile(base+i+'_'+j+'.bin');}catch(e){}const v=b?parse(b,i,j):[];bcache.set(k,v);return v;});}

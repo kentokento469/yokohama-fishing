@@ -1005,6 +1005,82 @@ function bldStyle(code,area,hsh){// [高さ m, 材質]
   if(code===3102){const big=area>1500;return[big?12+hsh*14:9+hsh*Math.min(27,6+Math.sqrt(area)*.6),big?'wh':hsh<.25?'glass':'apt'];}
   if(code===3111||code===3112)return[4+hsh*2,'wh'];
   return area>600?[8+hsh*4,'wh']:area>160?[7+hsh*3,'apt']:[5.6+hsh*1.6,'house'];}
+/* ===== 外壁（Procedural Tokyo の方式を参考に再実装。docs/PROCEDURAL_TOKYO_NOTES.md）：窓・枠・1階の店先と看板・夜の部屋の明かりをシェーダーで描く。
+   頂点：aFacade=(u＝壁に沿った区画番号, v＝床からの高さm, 階高, 建物の乱数)、aBldg=(壁の高さ, 種類, 区画幅, 屋根なら1)。
+   種類 0 住宅・1 集合住宅・2 店舗併用・3 商業・4 公共・5 ガラス張り・6 倉庫/工場 ===== */
+const BAY=[3.4,3.3,3.2,3.0,3.4,1.5,6];
+const FAC_COL=[[[.93,.9,.84],[.86,.82,.74],[.78,.8,.8],[.9,.86,.8]],[[.84,.82,.78],[.76,.74,.7],[.88,.85,.8],[.7,.66,.62]],[[.8,.76,.7],[.72,.7,.68],[.86,.8,.72],[.66,.62,.58]],
+  [[.78,.78,.76],[.7,.72,.74],[.84,.82,.78],[.62,.64,.66]],[[.86,.84,.8],[.8,.8,.78],[.74,.72,.68],[.88,.86,.82]],[[.42,.5,.56],[.36,.44,.5],[.5,.56,.6],[.32,.38,.44]],[[.82,.84,.84],[.7,.76,.8],[.86,.82,.74],[.6,.66,.7]]];
+function bldCat(code,area,h,sd){if(code===3111||code===3112)return 6;if(h>45||code===3103)return 5;if(code===3101)return area>600?6:area>160?1:0;
+  if(area>1800&&h<22)return 6;if(area>700&&h<30)return sd<.5?3:4;return h>24&&sd<.25?5:sd<.55?1:2;}
+const FACADE_U={uNight:{value:0},uTime:{value:0}};
+const FACADE_MAT=(()=>{const m=new T.MeshLambertMaterial({vertexColors:true});
+  m.onBeforeCompile=sh=>{sh.uniforms.uNight=FACADE_U.uNight;sh.uniforms.uTime=FACADE_U.uTime;
+    sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nattribute vec4 aFacade;attribute vec4 aBldg;varying vec4 vFacade;varying vec4 vBldg;varying vec3 vWP;')
+      .replace('#include <begin_vertex>','#include <begin_vertex>\nvFacade=aFacade;vBldg=aBldg;vWP=(modelMatrix*vec4(position,1.)).xyz;');
+    sh.fragmentShader=sh.fragmentShader.replace('#include <common>',`#include <common>
+uniform float uNight;uniform float uTime;varying vec4 vFacade;varying vec4 vBldg;varying vec3 vWP;float gWin;vec3 gEm;
+float h12(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
+float bx(float x,float a,float b,float w){return smoothstep(a-w,a+w,x)-smoothstep(b-w,b+w,x);}`)
+    .replace('#include <color_fragment>',`#include <color_fragment>
+gWin=0.;gEm=vec3(0.);
+float u=vFacade.x,v=vFacade.y,fh=max(vFacade.z,1.),sd=vFacade.w,cat=vBldg.y;float fy=v/fh,row=floor(fy),col=floor(u);float fx=fract(u),fr=fract(fy);
+float dist=length(vWP-cameraPosition);float wx=clamp(fwidth(u),1e-4,.06),wy=clamp(fwidth(fy),1e-4,.06),far=smoothstep(60.,240.,dist);// 微分は分岐の外で（極端な値は抑える）。遠さは距離で
+if(vBldg.w<.5){
+  vec4 r=vec4(.14,.86,.3,.82);if(cat<.5)r=vec4(.26,.74,.36,.78);if(cat>4.5&&cat<5.5)r=vec4(.02,.98,.22,1.);
+  vec2 room=vec2(col+mod(sd*4096.,61.)*17.,row+mod(sd*4096.,53.)*13.);float rr=h12(room);
+  bool shop=row<.5&&cat>1.5&&cat<3.5;if(shop)r=vec4(.04,.96,.05,.78);
+  float valid=step(v,vBldg.x-.6)*step(.4,v);if(cat>5.5)valid*=step(.9,h12(room+3.));if((cat<1.5)&&rr<.2&&!shop)valid=0.;
+  float inW=bx(fx,r.x,r.y,wx)*bx(fr,r.z,r.w,wy)*valid;
+  float frame=(1.-far)*(1.-bx(fx,r.x+.05,r.y-.05,wx)*bx(fr,r.z+.06,r.w-.04,wy))*inW;
+  vec3 glass=mix(vec3(.16,.2,.24),vec3(.32,.4,.48),h12(room+7.))*(cat>4.5&&cat<5.5?1.25:1.);
+  vec3 wall=diffuseColor.rgb*(.92+.16*h12(vec2(floor(vWP.x*.7),floor(vWP.y*1.3+vWP.z*.7))));
+  wall*=mix(.82,1.,smoothstep(0.,2.5,v));// 足もとの汚れ
+  vec3 c=mix(wall,glass,inW);c=mix(c,vec3(.55,.56,.57),frame*.8);
+  if(shop){float band=bx(fr,.84,.985,wy);vec3 sc=.5+.5*cos(6.283*(h12(vec2(col,sd*97.))+vec3(0.,.33,.67)));c=mix(c,sc*.9,band);gEm+=sc*band*uNight*.9;}
+  // 夜の窓：点灯の割合（店 .75・事務所 .32・住宅 .22）×建物ごとの差
+  float base=shop?.75:(cat>2.5?.32:.22);base*=mix(.35,1.9,h12(vec2(sd*311.,1.)));if(cat>4.5&&cat<5.5&&vBldg.x>70.)base*=.35;
+  float lit=step(h12(room+11.),base)*inW*(1.-frame);
+  vec3 lc=cat>2.5?mix(vec3(1.,.97,.9),vec3(.85,.93,1.),h12(vec2(sd*17.,3.))):mix(vec3(1.,.82,.58),vec3(1.,.93,.8),h12(room+5.));
+  gEm+=lc*lit*uNight*(.55+.45*h12(room+9.));gWin=inW;
+  diffuseColor.rgb=c;}
+else{diffuseColor.rgb*=.92+.1*h12(floor(vWP.xz*.5));}`)
+    .replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\ntotalEmissiveRadiance+=gEm;');};
+  m.customProgramCacheKey=()=>'facade1';return m;})();
+function newBldAcc(){return{pos:[],nor:[],col:[],fac:[],bld:[]};}
+// 1棟：壁（地面の下1.5mから、パラペット分だけ上へ）、平らな屋根（少し低く）または小さい家の三角屋根、屋上の設備
+function buildingInto(B,b,area,h,sd,units){const p=b.p,n=p.length/2,ccw=polyArea(p)>0,cat=bldCat(b.code,area,h,sd);
+  const pal=FAC_COL[cat][(sd*4096|0)%4],tone=.92+.24*hash(Math.round(sd*1e5),7);const cr=pal[0]*tone,cg=pal[1]*tone,cb=pal[2]*tone;
+  const floors=Math.max(1,Math.round(h/3.2)),fh=clamp(h/floors,2.5,6);
+  // 三角屋根：住宅・13m未満・単純な形（最も長い辺の向きの長方形を8割近く埋める）
+  let pitched=null;if(cat===0&&h<13&&n<=8){let bl=0,ux=1,uz=0;for(let k=0;k<n;k++){const j=(k+1)%n,dx=p[2*j]-p[2*k],dz=p[2*j+1]-p[2*k+1],l=Math.hypot(dx,dz);if(l>bl){bl=l;ux=dx/l;uz=dz/l;}}
+    let a0=1e9,a1=-1e9,b0=1e9,b1=-1e9;for(let k=0;k<n;k++){const a=p[2*k]*ux+p[2*k+1]*uz,c=-p[2*k]*uz+p[2*k+1]*ux;a0=Math.min(a0,a);a1=Math.max(a1,a);b0=Math.min(b0,c);b1=Math.max(b1,c);}
+    if(area>=(a1-a0)*(b1-b0)*.78)pitched={ux,uz,a0,a1,b0,b1,rise:Math.min(2.6,(b1-b0)*.25,Math.max(.8,h-2.4))};}
+  const par=pitched?0:cat===0?.3:h>30?1.2:.75,top=h+par,y0=GROUND-1.5;let u=0;
+  const push=(x,y,z,nx,ny,nz,fu,fv,roof)=>{B.pos.push(x,y,z);B.nor.push(nx,ny,nz);B.col.push(cr,cg,cb);B.fac.push(fu,fv,fh,sd);B.bld.push(h,cat,BAY[cat],roof);};
+  for(let k=0;k<n;k++){const j=(k+1)%n;let ax=p[2*k],az=p[2*k+1],bx2=p[2*j],bz=p[2*j+1];if(!ccw){[ax,bx2]=[bx2,ax];[az,bz]=[bz,az];}const dx=bx2-ax,dz=bz-az,l=Math.hypot(dx,dz)||1;
+    const nx=dz/l,nz=-dx/l,du=Math.max(1,Math.round(l/BAY[cat])),u0=0,u1=du;const v0=y0-GROUND,v1=top;
+    push(ax,y0,az,nx,0,nz,u0,v0,0);push(bx2,y0,bz,nx,0,nz,u1,v0,0);push(bx2,GROUND+top,bz,nx,0,nz,u1,v1,0);push(ax,y0,az,nx,0,nz,u0,v0,0);push(bx2,GROUND+top,bz,nx,0,nz,u1,v1,0);push(ax,GROUND+top,az,nx,0,nz,u0,v1,0);}
+  const rc=[cr*.82,cg*.82,cb*.82];
+  if(pitched){const{ux,uz,a0,a1,b0,b1,rise}=pitched;const P=(a,c)=>[a*ux-c*uz,a*uz+c*ux];const bm=(b0+b1)/2,ov=.4,yy=GROUND+h,yr=yy+rise;
+    const roofC=[[.42,.3,.26],[.32,.36,.42],[.36,.35,.33],[.3,.38,.32]][(sd*977|0)%4];
+    // 三角形を、指定の外向き n に表が向くよう並べ替えて足す
+    const tri=(A,Bv,C,n,col,roof)=>{const cx=(Bv[1]-A[1])*(C[2]-A[2])-(Bv[2]-A[2])*(C[1]-A[1]),cy=(Bv[2]-A[2])*(C[0]-A[0])-(Bv[0]-A[0])*(C[2]-A[2]),cz=(Bv[0]-A[0])*(C[1]-A[1])-(Bv[1]-A[1])*(C[0]-A[0]);
+      const vs=cx*n[0]+cy*n[1]+cz*n[2]>=0?[A,Bv,C]:[A,C,Bv];for(const w of vs){B.pos.push(w[0],w[1],w[2]);B.nor.push(n[0],n[1],n[2]);B.col.push(col[0],col[1],col[2]);B.fac.push(0,0,fh,sd);B.bld.push(h,cat,1,roof);}};
+    const V=(a,c,y)=>{const q=P(a,c);return[q[0],y,q[1]];};const L=Math.hypot((b1-b0)/2+ov,rise)||1,hs=rise/L,vs=((b1-b0)/2+ov)/L;
+    const n1=[uz*hs,vs,-ux*hs],n2=[-uz*hs,vs,ux*hs];
+    tri(V(a0-ov,b0-ov,yy),V(a1+ov,b0-ov,yy),V(a1+ov,bm,yr),n1,roofC,1);tri(V(a0-ov,b0-ov,yy),V(a1+ov,bm,yr),V(a0-ov,bm,yr),n1,roofC,1);
+    tri(V(a0-ov,b1+ov,yy),V(a1+ov,b1+ov,yy),V(a1+ov,bm,yr),n2,roofC,1);tri(V(a0-ov,b1+ov,yy),V(a1+ov,bm,yr),V(a0-ov,bm,yr),n2,roofC,1);
+    for(const[a,nn]of[[a0,-1],[a1,1]])tri(V(a,b0,yy),V(a,b1,yy),V(a,bm,yr),[ux*nn,0,uz*nn],[cr,cg,cb],1);}
+  else{const v=[];for(let k=0;k<n;k++)v.push(new T.Vector2(p[2*k],p[2*k+1]));let tri;try{tri=T.ShapeUtils.triangulateShape(v,[]);}catch(e){tri=[];}const yr=GROUND+h;
+    for(const t of tri){const a=v[t[0]],bb=v[t[1]],c=v[t[2]];const crs=(bb.x-a.x)*(c.y-a.y)-(bb.y-a.y)*(c.x-a.x);const[q,r]=crs>0?[bb,c]:[c,bb];
+      for(const w of[a,r,q]){B.pos.push(w.x,yr,w.y);B.nor.push(0,1,0);B.col.push(...rc);B.fac.push(0,0,fh,sd);B.bld.push(h,cat,1,1);}}
+    // 屋上の設備：平らな屋根 70m² 超・高さ 7m 超
+    if(units&&area>70&&h>7){const want=Math.min(5,Math.floor(area/160)+1);let x0=1e9,z0=1e9,x1=-1e9,z1=-1e9;for(let k=0;k<n;k++){x0=Math.min(x0,p[2*k]);x1=Math.max(x1,p[2*k]);z0=Math.min(z0,p[2*k+1]);z1=Math.max(z1,p[2*k+1]);}
+      for(let t=0,got=0;t<want*6&&got<want;t++){const hx=hash(Math.round(sd*1e4)+t,11),hz=hash(Math.round(sd*1e4)+t,13);const x=x0+(x1-x0)*hx,z=z0+(z1-z0)*hz;const big=floors>=4&&got===0&&area>110;const w=big?3.2:1+hz,d=big?3.2:.6+hx*.6,hh=big?2.8:.9+hx*.8;
+        if(!inPolyPadInner(p,x,z,Math.max(w,d)/2+.7))continue;units.push([x,z,GROUND+h,w,hh,d,Math.atan2(p[3]-p[1],p[2]-p[0])]);got++;}}}}
+// 点が多角形の内側で、縁から d 以上離れているか
+function inPolyPadInner(p,x,z,d){if(!inPolyPad(p,x,z,0))return false;const n=p.length/2;for(let i=0,j=n-1;i<n;j=i++)if(segDist(x,z,p[2*i],p[2*i+1],p[2*j],p[2*j+1])<d)return false;return true;}
 function polyArea(p){let a=0;const n=p.length/2;for(let k=0;k<n;k++){const j=(k+1)%n;a+=p[2*k]*p[2*j+1]-p[2*j]*p[2*k+1];}return a/2;}
 function extrudeInto(acc,p,h){const n=p.length/2,ccw=polyArea(p)>0,y0=GROUND,y1=GROUND+h;const P=acc.pos,N=acc.nor;
   for(let k=0;k<n;k++){const j=(k+1)%n;let ax=p[2*k],az=p[2*k+1],bx=p[2*j],bz=p[2*j+1];if(!ccw){[ax,bx]=[bx,ax];[az,bz]=[bz,az];}const dx=bx-ax,dz=bz-az,l=Math.hypot(dx,dz)||1;
@@ -1049,12 +1125,14 @@ function buildWorldChunk(i,j,grp,L,doCol){const X0=i*CH,Y0=j*CH,X1=X0+CH,Y1=Y0+C
   // 建物
   const ci=Math.floor(X0/WORLD.BT),cj=Math.floor(Y0/WORLD.BT),cell=WORLD.cell(ci,cj);
   if(!cell){grp.userData.pending=true;WORLD.loadCell(ci,cj).then(()=>{const k=i+','+j,g=chunks.get(k);if(g&&g.userData.pending){disposeChunk(g);chunks.delete(k);buildChunk(i,j);}});return;}
-  const acc={glass:{pos:[],nor:[]},apt:{pos:[],nor:[]},house:{pos:[],nor:[]},wh:{pos:[],nor:[]}};
+  const B=newBldAcc(),units=[];
   for(const b of cell){const cx=(b.x0+b.x1)/2,cy=(b.y0+b.y1)/2;if(cx<X0||cx>=X1||cy<Y0||cy>=Y1)continue;if(LANDMARK_KEEP.some(([a,c,r])=>Math.hypot(a-cx,c-cy)<r))continue;
-    const area=Math.abs(polyArea(b.p));if(area<6)continue;const[h,mt]=bldStyle(b.code,area,hash(Math.round(cx*10),Math.round(cy*10)));extrudeInto(acc[mt],b.p,h);
-    if(doCol&&area>8)addColPoly(b.p,h);}
-  for(const k in acc){const a=acc[k];if(!a.pos.length)continue;const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(a.pos,3));g.setAttribute('normal',new T.Float32BufferAttribute(a.nor,3));
-    g.setAttribute('uv',new T.Float32BufferAttribute(new Float32Array(a.pos.length/3*2),2));const m=own(new T.Mesh(g,winMats[k]));m.castShadow=true;m.receiveShadow=true;}}
+    const area=Math.abs(polyArea(b.p));if(area<6)continue;const sd=hash(Math.round(cx*10),Math.round(cy*10));const st=bldStyle(b.code,area,sd);const h=b.h>1?b.h:st[0];
+    buildingInto(B,b,area,h,sd,units);if(doCol&&area>8)addColPoly(b.p,h);}
+  if(B.pos.length){const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(B.pos,3));g.setAttribute('normal',new T.Float32BufferAttribute(B.nor,3));
+    g.setAttribute('color',new T.Float32BufferAttribute(B.col,3));g.setAttribute('aFacade',new T.Float32BufferAttribute(B.fac,4));g.setAttribute('aBldg',new T.Float32BufferAttribute(B.bld,4));
+    const m=own(new T.Mesh(g,FACADE_MAT));m.castShadow=true;m.receiveShadow=true;}
+  if(units.length){const im=new T.InstancedMesh(bGeo,unitMat,units.length);units.forEach((u,k)=>{dummy.position.set(u[0],u[2],u[1]);dummy.rotation.set(0,u[6],0);dummy.scale.set(u[3],u[4],u[5]);dummy.updateMatrix();im.setMatrixAt(k,dummy.matrix);});shadowy(fitInstances(im));grp.add(im);}}
 function buildChunk(i,j){
   const key=i+','+j;const R=mulberry((i*73856093)^(j*19349663)^0x5bd1e995);const L={glass:[],apt:[],house:[],wh:[],cont:[],roof:[],unit:[],tree:[]};
   const doCol=!colDone.has(key);colDone.add(key);
@@ -1905,7 +1983,7 @@ function updSky(){const h=hourF();const tp=keyLerp(SKYTOP,h),hr=keyLerp(SKYHOR,h
   scene.fog.color.copy(skyU.hor.value);scene.background=skyU.hor.value;
   const se=keyLerp(SEA,h);seaMat.color.setRGB(se[0]/255,se[1]/255,se[2]/255);
   const sc=keyLerp(SUNC,h);const sI=keyLerp(SUN,h)*(1-cf*.75);sun.intensity=sI;sun.color.setRGB(sc[0]/255,sc[1]/255,sc[2]/255);hemi.intensity=keyLerp(HEMI,h);
-  const dk=keyLerp(DARK,h);hemi.color.setRGB(lerp(.9,.5,dk),lerp(.95,.58,dk),lerp(1,.88,dk));hemi.groundColor.setRGB(lerp(.55,.12,dk),lerp(.5,.12,dk),lerp(.42,.16,dk));
+  const dk=keyLerp(DARK,h);FACADE_U.uNight.value=dk;hemi.color.setRGB(lerp(.9,.5,dk),lerp(.95,.58,dk),lerp(1,.88,dk));hemi.groundColor.setRGB(lerp(.55,.12,dk),lerp(.5,.12,dk),lerp(.42,.16,dk));
   const sa=(h-6)/12*Math.PI;const sd=new V3(Math.cos(sa),Math.max(.08,Math.sin(sa)),-.35).normalize();skyU.sd.value.copy(sd);{const sk=sI*(1-cf)*(1-cf);skyU.sunc.value.setRGB(sc[0]/255*sk,sc[1]/255*sk*.9,sc[2]/255*sk*.75);}
   sun.position.set(S.x+sd.x*300,sd.y*300,S.y+sd.z*300);sun.target.position.set(S.x,0,S.y);sun.castShadow=sI>.05;
   scene.fog.near=lerp(220,120,dk)*(1-cf*.5)*gfx().fog;scene.fog.far=Math.min(camera.far*.95,lerp(1000,650,dk)*(1-cf*.45)*gfx().fog);

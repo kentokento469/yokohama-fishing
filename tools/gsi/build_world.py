@@ -218,30 +218,48 @@ def main():
     bd.mkdir(exist_ok=True)
     for f in bd.glob('*.bin'):
         f.unlink()
+    # PLATEAU の実測の高さ（tools/plateau/fetch_heights.py の出力があれば）：建物の形の中にある PLATEAU の建物の重心の高さ（最大）
+    hfile = ROOT / 'data-build' / 'plateau' / f'{name}-heights.json'
+    heights = {}
+    if hfile.exists():
+        from shapely.strtree import STRtree
+        from shapely.geometry import Point
+        polys = [p for _, p in blds]
+        tree = STRtree(polys)
+        pts = json.loads(hfile.read_text())
+        hit = 0
+        for lon, lat, h in pts:
+            x, y = to_game(lon, lat)
+            for i in tree.query(Point(x, y), predicate='intersects'):
+                if h > heights.get(i, 0):
+                    heights[i] = h
+                hit += 1
+        print('PLATEAU 高さ', len(pts), '件 → GSI の建物', len(heights), '棟に結合')
     cells = defaultdict(list)
-    for c, p in blds:
+    for bi, (c, p) in enumerate(blds):
         p = p.simplify(0.3)
         if p.area < 6 or p.is_empty or not isinstance(p, Polygon):
             continue
         cx, cy = p.centroid.x, p.centroid.y
         i, j = math.floor(cx / BT), math.floor(cy / BT)
-        cells[(i, j)].append((c, p))
+        cells[(i, j)].append((c, p, heights.get(bi, 0)))
     total = 0
     idx = []
     for (i, j), lst in cells.items():
         buf = bytearray()
         ox, oy = i * BT, j * BT
-        for c, p in lst:
+        for c, p, h in lst:
             pts = list(p.exterior.coords)[:-1]
             if len(pts) > 2000:
                 continue
-            buf += struct.pack('<HH', c, len(pts))
+            # 形式 v2：[種類 u16, 頂点数 u16, 実測の高さ dm u16（0＝不明→推定）, 予備 u16, x,y …]
+            buf += struct.pack('<HHHH', c, len(pts), min(65535, int(round(h * 10))), 0)
             for x, y in pts:
                 buf += struct.pack('<hh', max(-32768, min(32767, q(x - ox))), max(-32768, min(32767, q(y - oy))))
         (bd / f'{i}_{j}.bin').write_bytes(bytes(buf))
         total += len(buf)
         idx.append([i, j, len(lst)])
-    (bd / 'index.json').write_text(json.dumps({'size': BT, 'unit': 0.1, 'cells': idx}, separators=(',', ':')))
+    (bd / 'index.json').write_text(json.dumps({'v': 2, 'size': BT, 'unit': 0.1, 'height_src': 'PLATEAU 2020 measuredHeight（あれば）', 'cells': idx}, separators=(',', ':')))
     print('建物', sum(len(v) for v in cells.values()), '区画', len(cells), round(total / 1024 / 1024, 1), 'MB')
 
 
