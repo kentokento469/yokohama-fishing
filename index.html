@@ -568,9 +568,11 @@ addEventListener('keydown',e=>{if(e.target&&/^(INPUT|SELECT|TEXTAREA)$/.test(e.t
 let spaceT=0;
 addEventListener('keyup',e=>{if(e.target&&/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName))return;if(KEYMAP[e.code])K[KEYMAP[e.code]]=0;if(e.code==='Space'||e.code==='Enter'){if(spaceT&&performance.now()-spaceT<200)rodAction('twitch');spaceT=0;mainUp();}});
 addEventListener('blur',()=>{K.l=K.r=K.u=K.d=K.sh=0;mainUp();});
+// カメラ：pitch は 1.2（上から見下ろす）〜−1.40（水平から約80°見上げる）。感度は設定タブ（localStorage hama-tsuri-camsens）
+let CAM_SENS=(()=>{try{return +localStorage.getItem('hama-tsuri-camsens')||1;}catch(e){return 1;}})();
 const cv=$('cv');let did=null,dlx=0,dly=0,yaw=0,pitch=.3,yawT=null;
 cv.addEventListener('pointerdown',e=>{did=e.pointerId;dlx=e.clientX;dly=e.clientY;try{cv.setPointerCapture(did);}catch(_){}});
-cv.addEventListener('pointermove',e=>{if(e.pointerId!==did)return;yaw-=(e.clientX-dlx)*.006;pitch=clamp(pitch+(e.clientY-dly)*.004,.05,1.2);dlx=e.clientX;dly=e.clientY;yawT=null;});
+cv.addEventListener('pointermove',e=>{if(e.pointerId!==did)return;yaw-=(e.clientX-dlx)*.006*CAM_SENS;pitch=clamp(pitch+(e.clientY-dly)*.004*CAM_SENS,-1.40,1.2);dlx=e.clientX;dly=e.clientY;yawT=null;});
 const dEnd=e=>{if(e.pointerId===did)did=null;};cv.addEventListener('pointerup',dEnd);cv.addEventListener('pointercancel',dEnd);
 
 /* ===== 3D基盤 ===== */
@@ -619,7 +621,7 @@ function byTile(items,xi=0,yi=1){const m=new Map();for(const it of items){const 
 /* 空 */
 const skyU={top:{value:new T.Color()},hor:{value:new T.Color()},sunc:{value:new T.Color()},sd:{value:new V3(0,1,0)}};
 const sky=new T.Mesh(new T.SphereGeometry(1200,24,12),new T.ShaderMaterial({uniforms:skyU,side:T.BackSide,depthWrite:false,depthTest:false,fog:false,
-  vertexShader:'varying vec3 vW;void main(){vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz-cameraPosition;gl_Position=projectionMatrix*viewMatrix*w;}',
+  vertexShader:'varying vec3 vW;void main(){vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz-cameraPosition;gl_Position=projectionMatrix*viewMatrix*w;gl_Position.z=gl_Position.w*.99999;}',
   fragmentShader:'uniform vec3 top,hor,sunc,sd;varying vec3 vW;void main(){vec3 d=normalize(vW);float h=max(d.y,0.);vec3 c=mix(hor,top,pow(h,.5));float s=max(dot(d,sd),0.);c+=sunc*(pow(s,900.)*4.+pow(s,10.)*.22);if(d.y<0.)c=hor;gl_FragColor=vec4(c,1.);}'}));
 sky.renderOrder=-10;sky.frustumCulled=false;scene.add(sky);
 
@@ -1789,10 +1791,14 @@ function snapCam(){P.position.set(S.x,groundY(S.x,S.y),S.y);camTarget.set(S.x,gr
 function placeCam(k){const fishing=F.st!=='idle';const want=fishing?9:RIDE&&RIDE.sp.kind==='car'?9.5:6.2;const pt=fishing?.26:pitch;
   let tx=S.x,tz=S.y;if(fishing){const tg=F.st==='aim'?aimTarget():[F.tx,F.ty];const kk=Math.min(.25,12/Math.max(1,Math.hypot(tg[0]-S.x,tg[1]-S.y)));tx=lerp(S.x,tg[0],kk);tz=lerp(S.y,tg[1],kk);}
   camGoal.set(tx,groundY(S.x,S.y)+(fishing?1.8:1.5),tz);camTarget.lerp(camGoal,k);
-  let D=want;const dx=Math.sin(yaw)*Math.cos(pt),dy=Math.sin(pt),dz=Math.cos(yaw)*Math.cos(pt);
+  // 見上げる（pt<0.05）ときはカメラを頭の高さの少し上・後ろに置いたまま、視線だけ上へ向ける
+  const pc=Math.max(pt,.05),up=Math.min(1.40,Math.max(0,.05-pt));
+  let D=want;const dx=Math.sin(yaw)*Math.cos(pc),dy=Math.sin(pc),dz=Math.cos(yaw)*Math.cos(pc);
   for(let s=.6;s<=want;s+=.4){const x=camTarget.x+dx*s,y=camTarget.y+dy*s,z=camTarget.z+dz*s;const o=colAt(x,z,.4);if(o&&y<GROUND+o.h+.5){D=Math.max(1.2,s-.5);break;}}
   camD=D<camD?D:lerp(camD,D,Math.min(1,k));
-  camera.position.set(camTarget.x+dx*camD,Math.max(camTarget.y+dy*camD,.6),camTarget.z+dz*camD);camera.lookAt(camTarget);}
+  const cx=camTarget.x+dx*camD,cz=camTarget.z+dz*camD;camera.position.set(cx,Math.max(camTarget.y+dy*camD,groundY(cx,cz)+.5,.6),cz);
+  if(up>0){const hd=Math.hypot(camera.position.x-camTarget.x,camera.position.z-camTarget.z)||1;_look.set(camTarget.x,camTarget.y+Math.tan(up)*hd,camTarget.z);camera.lookAt(_look);}else camera.lookAt(camTarget);}
+const _look=new V3();
 
 /* ===== 竿・糸（しなり）と釣りのポーズ ===== */
 const _h=new V3(),_t0=new V3(),_tp=new V3(),_c=new V3(),_g=new V3(),_v=new V3(),_b=new V3();
@@ -2171,10 +2177,13 @@ function applyGfx(){const g=gfx();resize();renderer.shadowMap.enabled=!!g.shadow
 function renderSettings(sb){let h='<h3 class="hd">画質</h3><div class="gfx">';
   for(const[k,g]of Object.entries(GFX_LV))h+=`<button data-gfx="${k}" class="${GFX===k?'on':''}"><b>${g.n}${GFX===k?'（使用中）':''}</b><span>${g.d}</span></button>`;
   h+=`</div><h3 class="hd">表示</h3><div class="gfx"><button id="fpsT" class="${FPS_ON?'on':''}"><b>FPS（1秒あたりの描画回数）を表示：${FPS_ON?'オン':'オフ'}</b><span>動作の重さの確認用。30以上が目安</span></button></div>
+    <h3 class="hd">カメラの回転の速さ</h3><div class="seg">${[[.6,'遅い'],[1,'ふつう'],[1.5,'速い']].map(([v,n])=>`<button data-sens="${v}" class="${Math.abs(CAM_SENS-v)<.01?'on':''}">${n}</button>`).join('')}</div>
+    <p class="sub" style="font-size:12px">画面をドラッグで向きを変える。上へドラッグで見上げる（水平から約80°まで）。</p>
     <h3 class="hd">そのほか</h3><div class="gfx"><a class="gfxA" href="legacy/2026-10-pre-visual/" target="_blank" rel="noopener"><button><b>改善前のバージョンを開く</b><span>グラフィック・UI改善の前の状態（比較用。セーブは共通）</span></button></a></div>
     <h3 class="hd">出典</h3><p class="sub" style="font-size:12px;line-height:1.6">横浜の地図（陸・道路・鉄道・建物の形・地名）：「国土地理院ベクトルタイル」を加工して作成（建物の高さは種類と大きさからの推定）。湘南の丘の高さ：「国土地理院 標高タイル」を加工して作成（標高20mより上だけ立体。木の配置はおおよそ）。海岸線：GSHHS/GSHHG。地図データがある場合は © OpenStreetMap contributors。魚の写真は図鑑の各写真に出典を表示。素材の一覧は docs/ASSETS.md。</p>`;
   sb.innerHTML=h;
   sb.querySelectorAll('[data-gfx]').forEach(b=>b.onclick=()=>{GFX=b.dataset.gfx;try{localStorage.setItem(GFX_KEY,GFX);}catch(e){}applyGfx();renderTab();toast(`画質：${gfx().n}`);});
+  sb.querySelectorAll('[data-sens]').forEach(b=>b.onclick=()=>{CAM_SENS=+b.dataset.sens;try{localStorage.setItem('hama-tsuri-camsens',String(CAM_SENS));}catch(e){}renderTab();});
   $('fpsT').onclick=()=>{FPS_ON=!FPS_ON;try{localStorage.setItem('hama-tsuri-fps',FPS_ON?'1':'0');}catch(e){}renderTab();};}
 function updFps(dt){fpsS.t+=dt;fpsS.n++;if(fpsS.t>=1){fpsS.v=fpsS.n/fpsS.t;fpsS.t=0;fpsS.n=0;
     let el=$('fpsM');if(FPS_ON){if(!el){el=document.createElement('div');el.id='fpsM';document.body.appendChild(el);}el.textContent=`${Math.round(fpsS.v)} fps・${gfx().n}`;}else if(el)el.remove();

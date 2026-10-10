@@ -8,6 +8,8 @@ const CASES=[
   ['s31','横浜（本牧）：ルアーでアタリ',[/bite:/]],
   ['s33','湘南：地図の釣り場情報',[/closed true/]],
   ['s53','古いセーブの移行（mapv 3）',[/"mapv":3/,/"walk":true/]],
+  ['lookup','見上げ（約30°・ランドマークタワー）',[/"elev":(2[5-9]|3[0-5])/]],
+  ['lookup_low','軽量画質でも空が描かれる',[/"top":\[(\d{2,3}),(\d{2,3}),(1[3-9]\d|2\d\d)/]],
   ['s60','横浜の6釣り場で投げられる',[/\["kanazawa",[^\]]*"kanazawa","kanazawa"\]/,/\["honmoku",[^\]]*"honmoku","honmoku"\]/]]];
 const only=process.argv.slice(2);let fail=0;
 for(const[id,name,want]of CASES){if(only.length&&!only.includes(id))continue;let out='';
