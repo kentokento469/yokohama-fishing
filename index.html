@@ -350,7 +350,7 @@ addEventListener('error',e=>{try{let d=document.getElementById('bootErr');if(!d)
 <script src="mapdata.js?v=202610101400"></script>
 <script src="data/geo/geo-data.js?v=202610101400"></script>
 <script src="tiles.js?v=202610101400"></script>
-<script src="gsi.js?v=202610101400"></script>
+<script src="gsi.js?v=202610111000"></script>
 <script src="kanto.js?v=202610101600"></script>
 <script src="routing.js?v=202610101400"></script>
 <script src="nav.js?v=202610101400"></script>
@@ -376,7 +376,8 @@ const WORLD=window.HamaWorld&&window.HamaWorldData&&HamaWorldData.yokohama?HamaW
 const WB=WORLD?{x0:WORLD.bbox[0],y0:WORLD.bbox[1],x1:WORLD.bbox[2],y1:WORLD.bbox[3]}:{x0:0,y0:0,x1:0,y1:0};
 const inWorld=(x,y)=>!!WORLD&&WORLD.inBox(x,y);
 // 関東（横浜・湘南の外）：国土地理院タイルから直接（kanto.js）。地面の高さ・陸・建物・道路
-const GSIS=window.HamaGSI?HamaGSI.create({}):null;
+// タイルの取得・解読は別スレッド（gsi-worker.js）。URL 末尾 #noworker で使わない（動かないときは自動でこのスレッドに戻る）
+const GSIS=window.HamaGSI?HamaGSI.create({worker:location.hash.includes('noworker')?null:'gsi-worker.js?v=202610111000'}):null;
 const KANTO=GSIS&&window.HamaKanto?HamaKanto.create({gsi:GSIS,geo:window.HamaGeo,ground:2}):null;
 const inKanto=(x,y)=>!!KANTO&&!SH.inShonan(x,y)&&!inWorld(x,y);
 const RECTS=[];// 歩ける桟橋・橋（湘南の防波堤・橋。横浜の桟橋は陸の形に含まれる）

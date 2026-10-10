@@ -29,12 +29,22 @@ function create(opt){opt=opt||{};const fetchFn=opt.fetch||(typeof fetch!=='undef
     const bmp=await createImageBitmap(new Blob([u8],{type:'image/png'}));const w=bmp.width,h=bmp.height;const cv=typeof OffscreenCanvas!=='undefined'?new OffscreenCanvas(w,h):Object.assign(document.createElement('canvas'),{width:w,height:h});
     const cx=cv.getContext('2d',{willReadFrequently:true});cx.drawImage(bmp,0,0);return{w,h,data:cx.getImageData(0,0,w,h).data};}
   async function gunzipMaybe(u8){if(u8.length>2&&u8[0]===0x1f&&u8[1]===0x8b){if(opt.gunzip)return opt.gunzip(u8);const ds=new DecompressionStream('gzip');return new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(ds)).arrayBuffer());}return u8;}
+  // 別スレッド（opt.worker＝gsi-worker.js の URL）。動かない・失敗したタイルはこのスレッドで読み直す
+  let W=null,wid=0;const wq=new Map();
+  if(opt.worker&&typeof Worker!=='undefined'){try{W=new Worker(opt.worker);W.onmessage=e=>{const r=wq.get(e.data.id);if(r){wq.delete(e.data.id);r(e.data);}};
+      W.onerror=()=>{W=null;for(const r of wq.values())r({fail:true});wq.clear();};}catch(e){W=null;}}
+  const viaWorker=(kind,z,x,y)=>new Promise(res=>{const id=++wid;wq.set(id,res);W.postMessage({id,kind,z,x,y});setTimeout(()=>{if(wq.has(id)){wq.delete(id);res({fail:true});}},20000);});
+  stats.worker=()=>!!W;
   // 1枚のタイル（種類 kind、z/x/y）。標高は {w,h,h:Float32Array}、ベクトルは decodeMVT の結果
   function tile(kind,z,x,y){const s=SRC[kind];const key=kind+'/'+z+'/'+x+'/'+y;if(mem.has(key)){const v=mem.get(key);mem.delete(key);mem.set(key,v);return Promise.resolve(v);}
     if(missing.has(key))return Promise.resolve(null);if(pending.has(key))return pending.get(key);
     const url=base+s.path+'/'+z+'/'+x+'/'+y+(s.png?'.png':'.pbf');
+    if(W){const p=viaWorker(kind,z,x,y).then(r=>{if(r.t){stats.req++;failed.delete(key);lruSet(key,r.t);return r.t;}if(r.miss){stats.miss404++;missing.add(key);return null;}
+        pending.delete(key);return local(url,key,s,z,x,y);}).finally(()=>{if(pending.get(key)===p)pending.delete(key);});pending.set(key,p);return p;}
+    return local(url,key,s,z,x,y);}
+  function local(url,key,s,z,x,y){
     const p=raw(url).then(async u8=>{if(!u8){missing.add(key);return null;}let v;
-      if(s.png){const im=await decodePng(u8);v={w:im.w,h:im.h,z,x,y,kind,hgt:demFromRGBA(im.data,im.w*im.h)};}
+      if(s.png){const im=await decodePng(u8);v={w:im.w,h:im.h,z,x,y,kind:key.split('/')[0],hgt:demFromRGBA(im.data,im.w*im.h)};}
       else{const T=opt.tiles||root.HamaTiles||(typeof require==='function'?require('./tiles.js'):null);v=T.decodeMVT(await gunzipMaybe(u8));v.z=z;v.x=x;v.y=y;}
       failed.delete(key);lruSet(key,v);return v;}).catch(e=>{stats.err++;failed.add(key);return null;}).finally(()=>pending.delete(key));
     pending.set(key,p);return p;}
