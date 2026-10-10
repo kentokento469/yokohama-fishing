@@ -6,7 +6,7 @@
 | Phase | 内容 | 状態 |
 |---|---|---|
 | 0 | 現状分析・保全・作業管理 | DONE |
-| 1 | 関東全域の実地理データ取得 | TODO |
+| 1 | 関東全域の実地理データ取得 | ACTIVE |
 | 2 | 関東全域の本格3D地形化 | TODO |
 | 3 | 街並み・自然・海面の高品質化 | TODO |
 | 4 | NPCと街の生活感 | TODO |
@@ -38,6 +38,13 @@
 
 ## 既存機能（壊さないもの）
 釣り（テンション・キャスト・巻き・合わせ・ファイト）、時間・季節・潮、釣り禁止区域、徒歩・バス（待ち時間）、電車、自転車・車、釣具店（400件）、図鑑（126種）、スタンプ、セーブ hama-tsuri-v2（移行 mapv 2/3）。
+
+## Phase 1 の途中経過
+- gsi.js（HamaGSI）：国土地理院の標高（5m→10m）・ベクトルタイルをブラウザで直接読む土台（同時数制限・LRU・Cache Storage・404記録）。tests/gsi.test.js（実物タイル4枚の fixtures）。
+- 取得状況：tools/kanto/probe_coverage.py → data/kanto/coverage.json・docs/DATA_COVERAGE.md（関東7都県の陸：5m標高94〜100%、ベクトル100%。伊豆諸島も記録）。
+- PLATEAU：G空間情報センターの公開バケット（gsic-opendata S3、Range 可）から CityGML を部分取得。tools/plateau/fetch_heights.py yokohama → data-build/plateau/yokohama-heights.json（実測の高さつき 320,331棟、496ファイル）。未：GSI の建物への結合（build_world.py）。
+- OSM：Geofabrik/Overpass は接続不可。GitHub Actions 経路は未作成。
+- 追加指示（Procedural Tokyo 方式の3D改修 Phase A〜J）を受けて、Phase A（上方向の描画不具合）を最優先で着手。
 
 ## 次にやること
 Phase 1：関東全域のデータ取得基盤（国土地理院タイルのストリーミング読み込み＋キャッシュ、取得範囲の記録、OSM 用 GitHub Actions、PLATEAU の経路調査）。

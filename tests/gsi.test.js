@@ -1,0 +1,11 @@
+const test=require('node:test'),assert=require('node:assert'),fs=require('fs'),path=require('path');
+const G=require('../gsi.js');
+const FX=path.join(__dirname,'fixtures/gsi');
+const fakeFetch=async url=>{const p=path.join(FX,url.replace(G.BASE,''));if(!fs.existsSync(p))return{ok:false,status:404};const b=fs.readFileSync(p);return{ok:true,status:200,arrayBuffer:async()=>b.buffer.slice(b.byteOffset,b.byteOffset+b.length)};};
+const mk=()=>G.create({fetch:fakeFetch,decodePng:G.nodeDecodePng,gunzip:u=>require('zlib').gunzipSync(u),persist:false});
+test('標高：横浜・山手の丘は高く、5mメッシュを優先',async()=>{const g=mk();const t=await g.demTileAt(35.437,139.651);assert.ok(t&&t.kind==='dem5a'&&t.w===256);
+  const h=g.sample(t,35.437,139.651);assert.ok(h>10&&h<80,'h='+h);const c=g.cachedDem(35.437,139.651);assert.strictEqual(c.res,5);});
+test('標高：無いタイルは 10m にさがる・404 は覚える',async()=>{const g=mk();const t=await g.tile('dem5a',15,1,1);assert.strictEqual(t,null);assert.ok(g.missing.has('dem5a/15/1/1'));
+  const t10=await g.tile('dem10',14,14547,6465);assert.ok(t10&&t10.hgt.length===65536);});
+test('ベクトル：建物・道路の層がある',async()=>{const g=mk();const v=await g.tile('vec',16,58190,25861);assert.ok(v&&v.BldA&&v.BldA.features.length>10);assert.ok(v.RdCL);});
+test('同じタイルは一度だけ読む',async()=>{const g=mk();await Promise.all([g.tile('vec',16,58190,25861),g.tile('vec',16,58190,25861)]);assert.strictEqual(g.stats.req,1);});
