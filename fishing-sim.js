@@ -15,6 +15,8 @@
 const RIGS={
   sabiki:{n:'サビキ',kind:'float',tana:3,tau:.6},
   isome:{n:'青イソメ（天秤・オモリ15号）',kind:'sink',weight:56,sinkRate:1.6,tau:.35},
+  // 泳がせ：オモリ10号＋生きた小魚。ゆっくり沈み、底の少し上を泳ぐ（ゲーム用の目安）
+  live:{n:'泳がせ（生き餌）',kind:'sink',weight:38,sinkRate:1.2,tau:.4},
   lure:{n:'メタルジグ',kind:'sink',type:'metaljig',weight:30,size:9,buoyancy:'sinking',sinkRate:1.5,tau:.4,
     maxDiveDepth:null,retrieveSpeedRange:[.3,2.5],actionType:'jig',dragCoefficient:.6,color:'silver',
     lift:.3,loadSink:.4,jerkUp:6,jerkPull:.9,twitchUp:2,twitchPull:.3},

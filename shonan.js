@@ -117,7 +117,7 @@ function fishWeights(sp){const w={};for(const nm of sp.targetSpecies)for(const i
 
 /* ===== 釣り方 ↔ 仕掛け（ゲームの bait 分類） ===== */
 const METHOD_BAIT={'投げ釣り':['isome'],'ちょい投げ':['isome'],'ルアー':['lure','worm'],'ウキ釣り':['isome'],'サビキ':['sabiki'],'胴突き':['isome'],'脈釣り':['isome'],'エギング':['egi']};
-const PROHIBIT_BAIT={'ルアー':['lure','worm','egi'],'コマセ':['sabiki'],'投げ釣り':[],'掛針':[]};
+const PROHIBIT_BAIT={'ルアー':['lure','worm','egi'],'コマセ':['sabiki'],'投げ釣り':[],'掛針':[],'泳がせ':['live']};
 // その釣り場で、その仕掛けの適性（資料の釣り方に入っていれば1、入っていなければ0.5。禁止なら0）
 function methodFit(sp,bait){if(prohibitedBy(sp,bait))return 0;for(const m of sp.fishingMethods)if((METHOD_BAIT[m]||[]).includes(bait))return 1;return .5;}
 function prohibitedBy(sp,bait){for(const m of sp.prohibitedMethods||[])if((PROHIBIT_BAIT[m]||[]).includes(bait))return m;return null;}

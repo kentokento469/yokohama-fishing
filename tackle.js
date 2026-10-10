@@ -48,19 +48,21 @@ function migrateGear(S,T){if(S.rodId&&S.reelId)return S;S.tk=S.tk||{};const st=s
   const give=t=>{if(t&&!S.tk[t.id])S.tk[t.id]=1;};give(st.rod);give(st.reel);
   const k=Math.max(0,Math.min(3,S.rod|0));const[rs,ls,lv]=OLD_ROD_MAP[k];const rod=firstOf(T,'rod',rs,lv)||st.rod,reel=firstOf(T,'reel',ls)||st.reel;
   give(rod);give(reel);S.rodId=rod.id;S.reelId=reel.id;return S;}
-function equip(S,item){if(item.cat==='rod')S.rodId=item.id;else if(item.cat==='reel')S.reelId=item.id;else S.eq=item.id;}
-function isEquipped(S,item){return item.cat==='rod'?S.rodId===item.id:item.cat==='reel'?S.reelId===item.id:S.eq===item.id;}
+// 糸・リーダー・針（line.js の商品）は S.lineId / S.leaderId / S.hookId
+const SLOT={rod:'rodId',reel:'reelId',line:'lineId',leader:'leaderId',hook:'hookId'};
+function equip(S,item){S[SLOT[item.cat]||'eq']=item.id;}
+function isEquipped(S,item){return S[SLOT[item.cat]||'eq']===item.id;}
 
 /* プレイヤーのレベル：図鑑に登録した魚2種ごとに1上がる（カタログの購入レベル unlockedAtLevel に使う） */
 function level(dexCount){return 1+Math.floor((dexCount|0)/2);}
 
 function owned(S,id){return(S.tk&&S.tk[id])|0;}
 /* 購入。qty 個まとめて買える。足りなければ理由を返し、何も変えない */
-function buy(S,item,qty,lv){const gear=item.cat==='rod'||item.cat==='reel';qty=gear?1:Math.max(1,qty|0);const cost=item.priceYen*qty;
+function buy(S,item,qty,lv){const gear=item.cat==='rod'||item.cat==='reel'||item.cat==='line';qty=gear?1:Math.max(1,qty|0);const cost=item.priceYen*qty;
   if(gear&&owned(S,item.id))return{ok:false,reason:'もう持っています'};
   if(lv<item.unlockedAtLevel)return{ok:false,reason:`Lv${item.unlockedAtLevel}から買えます`};
   if(S.money<cost)return{ok:false,reason:'お金が足りません'};
-  S.money-=cost;S.tk=S.tk||{};S.tk[item.id]=owned(S,item.id)+qty;return{ok:true,cost};}
+  S.money-=cost;S.tk=S.tk||{};S.tk[item.id]=owned(S,item.id)+qty*(item.pack||1);return{ok:true,cost};}
 /* 根掛かり・糸切れで失う */
 function lose(S,id,n){if(!S.tk||!S.tk[id])return 0;const k=Math.min(S.tk[id],Math.max(1,n|0));S.tk[id]-=k;if(!S.tk[id])delete S.tk[id];return k;}
 

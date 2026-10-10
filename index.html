@@ -207,7 +207,10 @@ button:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
 #mainTxt small{font-weight:600;font-size:10px;white-space:nowrap;letter-spacing:-.02em}
 /* 釣り中の情報は画面の上側（指と重ならない） */
 #fight,#lureP{top:calc(238px + env(safe-area-inset-top,0px));bottom:auto;border-radius:16px}
-#fight{width:min(86vw,420px);padding:10px 14px 12px}
+#fight{width:min(86vw,400px);padding:7px 12px 9px;top:calc(234px + env(safe-area-inset-top,0px));bottom:auto;background:rgba(12,24,38,.5);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+#fight .gear{font-size:11px;opacity:.75}
+#fight.danger{box-shadow:0 0 0 2px #e04a3b,0 0 22px rgba(224,74,59,.55)}
+body.fishing #joy{opacity:.28}body.fishing #acts .pill{opacity:.55}
 .bar{height:10px;border-radius:6px;background:rgba(255,255,255,.14)}
 #tens{border-radius:6px;background:linear-gradient(90deg,#49c1c4,#7fe0d4)}#tens[data-hi="1"]{background:linear-gradient(90deg,#ff8a5c,#ff4a3b)}
 #distb{border-radius:6px;background:linear-gradient(90deg,#ffd77a,#ffb347)}
@@ -337,7 +340,7 @@ addEventListener('error',e=>{try{let d=document.getElementById('bootErr');if(!d)
 <script src="data/tackle-data.js?v=202610101400"></script>
 <script src="tackle.js?v=202610101400"></script>
 <script src="fight.js?v=202610101400"></script>
-<script src="sound.js?v=202610101400"></script>
+<script src="sound.js?v=202610111600"></script>
 <script src="data/fish/species.js?v=202610101400"></script>
 <script src="data/fish/images.js?v=202610101400"></script>
 <script src="geo.js?v=202610101400"></script>
@@ -1547,8 +1550,21 @@ function updTraffic(dt,t){
     p.s+=p.v*p.dir*dt;p.ph+=dt*p.v*3.3;const[x,y,ux,uy]=roadAt(p.s);const nx=-uy,ny=ux;p.P.g.position.set(x+nx*p.off*p.side,groundY(x+nx*p.off*p.side,y+ny*p.off*p.side),y+ny*p.off*p.side);p.P.g.rotation.y=Math.atan2(ux*p.dir,uy*p.dir);animHuman(p.P,p.ph,.75,t);}}
 
 /* ===== 竿・糸・ウキ ===== */
-const rodMat=new T.MeshPhongMaterial({color:0x1e2a33,specular:0x667788,shininess:60});const rodMesh=new T.Mesh(new T.BufferGeometry(),rodMat);rodMesh.frustumCulled=false;rodMesh.castShadow=true;scene.add(rodMesh);
-const reel=new T.Mesh(new T.CylinderGeometry(.035,.035,.05,12).rotateZ(Math.PI/2),lam(0xb8bcc0));scene.add(reel);
+/* 竿：先細りの節（14本）・グリップ・リールシート・ガイド（6個）。毎フレーム形を作り直さず、曲線に沿って節を置き直す。長さは装備した竿（lengthM）
+   リール：スピニング（本体・スプール・ベール・ハンドル）／ベイト（丸い本体・ハンドル）。巻くとハンドルが回り、ドラグで糸が出るとスプールが逆に回る */
+const rodMat=new T.MeshPhongMaterial({color:0x1e2a33,specular:0x667788,shininess:60}),gripMat=lam(0x6b4a2e),guideMat=new T.MeshPhongMaterial({color:0xc8ccd0,specular:0xffffff,shininess:90});
+const rodMesh=new T.Group();rodMesh.frustumCulled=false;scene.add(rodMesh);const ROD_N=14,ROD_SEG=[],ROD_GUIDES=[];
+for(let i=0;i<ROD_N;i++){const k0=i/ROD_N,k1=(i+1)/ROD_N,r0=lerp(.013,.0028,k0),r1=lerp(.013,.0028,k1);const m=new T.Mesh(new T.CylinderGeometry(r1,r0,1,8).translate(0,.5,0),k1<=.2?gripMat:rodMat);m.castShadow=true;m.frustumCulled=false;rodMesh.add(m);ROD_SEG.push(m);}
+for(const k of[.36,.5,.62,.73,.83,.92]){const g=new T.Mesh(new T.TorusGeometry(lerp(.012,.004,k),.0016,5,12),guideMat);g.frustumCulled=false;rodMesh.add(g);ROD_GUIDES.push([k,g]);}
+const reel=new T.Group();{const met=new T.MeshPhongMaterial({color:0x3a4048,specular:0xaab0b8,shininess:70}),sil=new T.MeshPhongMaterial({color:0xc8ccd2,specular:0xffffff,shininess:90});
+  const body=new T.Mesh(new T.BoxGeometry(.035,.05,.045),met);body.position.set(0,-.045,0);reel.add(body);const stem=new T.Mesh(new T.BoxGeometry(.012,.04,.012),met);stem.position.set(0,-.018,0);reel.add(stem);
+  const spool=new T.Group();const sp=new T.Mesh(new T.CylinderGeometry(.024,.024,.03,16).rotateX(Math.PI/2),sil);spool.add(sp);const lip=new T.Mesh(new T.CylinderGeometry(.028,.028,.004,16).rotateX(Math.PI/2),sil);lip.position.z=.016;spool.add(lip);spool.position.set(0,-.045,.04);reel.add(spool);
+  const bail=new T.Mesh(new T.TorusGeometry(.03,.0018,5,16,Math.PI),sil);bail.position.set(0,-.045,.05);reel.add(bail);
+  const handle=new T.Group();const arm=new T.Mesh(new T.BoxGeometry(.006,.05,.006).translate(0,.025,0),met);handle.add(arm);const knob=new T.Mesh(new T.CylinderGeometry(.008,.008,.018,10).rotateZ(Math.PI/2),lam(0x1d1d1d));knob.position.set(.012,.05,0);handle.add(knob);
+  handle.position.set(.024,-.045,0);reel.add(handle);reel.userData={spool,handle,bail,body};reel.traverse(o=>{if(o.isMesh){o.castShadow=true;o.frustumCulled=false;}});scene.add(reel);}
+let reelAng=0,spoolAng=0;
+const _rq=new T.Quaternion(),_ry=new V3(0,1,0),_rp=new V3(),_rp2=new V3(),_rd=new V3();
+function bez(t,o){const u=1-t;return o.set(u*u*_b.x+2*u*t*_c.x+t*t*_tp.x,u*u*_b.y+2*u*t*_c.y+t*t*_tp.y,u*u*_b.z+2*u*t*_c.z+t*t*_tp.z);}
 const lineGeo=new T.BufferGeometry();lineGeo.setAttribute('position',new T.Float32BufferAttribute(new Float32Array(32*3),3));
 const lineObj=new T.Line(lineGeo,new T.LineBasicMaterial({color:0xf4f0e0,transparent:true,opacity:.85}));lineObj.frustumCulled=false;scene.add(lineObj);
 const bobber=new T.Group();{const t=new T.Mesh(new T.SphereGeometry(.06,12,8,0,6.283,0,Math.PI/2),new T.MeshBasicMaterial({color:0xff4a2a}));const b=new T.Mesh(new T.SphereGeometry(.06,12,8,0,6.283,Math.PI/2,Math.PI/2),lam(0xf6f2e8));const a=new T.Mesh(new T.CylinderGeometry(.008,.008,.25,4).translate(0,.12,0),new T.MeshBasicMaterial({color:0xff4a2a}));bobber.add(t,b,a);}
@@ -1881,6 +1897,7 @@ function updUI(){
   let vb='';if(F.st==='idle'){if(RIDE)vb=RIDE.sp.kind==='car'?(NV.lotAt(NET.lots,S.x,S.y)?'ここに駐車する':'降りる（駐車場で）'):'自転車を降りる';else{const o=nearParked(4);if(o)vb=`乗る：${VH.specOf(o).name}`;}}
   if($('vehBtn')._t!==vb){$('vehBtn')._t=vb;$('vehBtn').hidden=!vb;$('vehBtn').textContent=vb;}
   {const mk=F.st==='idle'&&!RIDE&&nearMarket(25);const sb2=mk?`魚を売る（${(S.catch||[]).filter(c=>!c.legacy).length}匹）`:'';if($('sellBtn')._t!==sb2){$('sellBtn')._t=sb2;$('sellBtn').hidden=!sb2;$('sellBtn').textContent=sb2;}}
+  {const fi=F.st!=='idle';if(document.body._fi!==fi){document.body._fi=fi;document.body.classList.toggle('fishing',fi);}}// 釣り中は使わない操作（スティック・ボタン）を薄く
   {const jb=F.st==='idle'&&!RIDE&&!nearSpot;if($('jumpBtn')._t!==jb){$('jumpBtn')._t=jb;$('jumpBtn').hidden=!jb;}}
   const key=st+txt+bl+showBait+showView+(nearSight?nearSight.id:'');
   if(key!==uiKey){uiKey=key;mainBtn.hidden=!st;mainBtn.dataset.s=st;$('mainTxt').innerHTML=txt;$('baitBtn').hidden=!showBait;$('baitBtn').textContent=bl;$('viewBtn').hidden=!showView;if(showView)$('viewBtn').textContent=`${nearSight.n}を見る`;}
@@ -1898,7 +1915,7 @@ function updUI(){
   }else if(nearSpot){const sp=nearSpot;Tt=sp.n;Sb=(sp.hours?(spotOpen(sp)?`営業中 ${sp.hours[0]}:00〜${sp.hours[1]}:00`:`営業時間外（${sp.hours[0]}:00〜${sp.hours[1]}:00）`):'岸壁の公園')+(sp.tetra?'・岸際にテトラ帯':'')+(N&&N.spot===sp?'・沖にナブラ！':'')+(()=>{const E=envNow(sp);return`・${turbLabel(E.turb)}・潮 ${curLabel(E.cur)}`;})();warn=!spotOpen(sp);}
   if(!Tt&&F.st==='idle'){const rz=SH.restrictedAt(S.x,S.y);if(rz){Tt=rz.name;Sb=rz.status+'（ゲームでは釣りできない）';warn=true;}}
   const ik=Tt+Sb+warn;if(info._k!==ik){info._k=ik;info.hidden=!Tt;$('infoT').textContent=Tt;$('infoS').textContent=Sb;info.classList.toggle('warn',warn);}
-  if(F.st==='fight'){const lim=F.lineKg,r=F.ten/lim,sl=F.fg&&F.fg.slipping;$('tens').style.width=clamp(r/1.15*100,0,100)+'%';$('tens').dataset.hi=r>.85?'1':'0';
+  if(F.st==='fight'){const lim=F.lineKg,r=F.ten/lim,sl=F.fg&&F.fg.slipping;$('tens').style.width=clamp(r/1.15*100,0,100)+'%';$('tens').dataset.hi=r>.85?'1':'0';{const dg=r>.95;const fe=$('fight');if(fe._dg!==dg){fe._dg=dg;fe.classList.toggle('danger',dg);if(dg){buzz(40);SND.play('creak');}}}
     $('fbR').textContent=`${F.ten.toFixed(1)} / ${lim.toFixed(1)}kg`+(sl?'・ドラグが出ている':'');$('fbD').textContent=`あと ${Math.max(0,Math.ceil(F.dist))}m`;$('distb').style.width=clamp((1-F.dist/F.d0)*100,0,100)+'%';}}
 let lastClock='';
 function updClock(){const t=fmtTime(S.min);if(t===lastClock)return;lastClock=t;$('clk').textContent=t;
@@ -2237,7 +2254,7 @@ function updRod(t){
   if(!show)return;
   P.updateMatrixWorld(true);ME.handR.getWorldPosition(_h);
   const a=F.st!=='idle'?F.ang:nearSpot?idleDir:Math.atan2(Math.cos(P.rotation.y),Math.sin(P.rotation.y));const dx=Math.cos(a),dz=Math.sin(a);
-  const L=SIM.isLureBait(S.bait)?2.9:3.6;let el=62*Math.PI/180,bend=0;
+  const ro=rodOf(),L=ro&&ro.lengthM?clamp(ro.lengthM,1.5,4.6):SIM.isLureBait(S.bait)?2.9:3.6;let el=62*Math.PI/180,bend=0;
   if(!fishing){el=78*Math.PI/180;bend=.02;}
   else if(F.st==='aim'){el=(60+F.pw*65)*Math.PI/180;bend=-.15-F.pw*.25;}
   else if(F.st==='fly'){const k=F.t/.9;el=(k<.18?lerp(125,22,k/.18):lerp(22,40,(k-.18)/.82))*Math.PI/180;bend=k<.35?.8*Math.sin(k/.35*Math.PI):.12*Math.sin(k*45)*(1-k);}
@@ -2257,11 +2274,18 @@ function updRod(t){
   _g.set(ex,ey,ez);_v.subVectors(_g,_t0).normalize();
   _tp.copy(_t0);if(bend>0){_tp.addScaledVector(_v,L*.4*bend);_tp.y-=L*.15*bend;}else{_tp.x-=dx*L*-bend*.35;_tp.z-=dz*L*-bend*.35;_tp.y-=L*-bend*.1;}
   _c.subVectors(_t0,_b).multiplyScalar(.55).add(_b);
-  rodMesh.geometry.dispose();rodMesh.geometry=new T.TubeGeometry(new T.QuadraticBezierCurve3(_b.clone(),_c.clone(),_tp.clone()),16,.016,6,false);
-  reel.position.set(_h.x+(-dz)*.06,_h.y-.08,_h.z+dx*.06);reel.rotation.y=-a;
+  for(let i=0;i<ROD_N;i++){bez(i/ROD_N,_rp);bez((i+1)/ROD_N,_rp2);_rd.subVectors(_rp2,_rp);const l=_rd.length()||1e-4;const m=ROD_SEG[i];m.position.copy(_rp);m.quaternion.setFromUnitVectors(_ry,_rd.multiplyScalar(1/l));m.scale.set(1,l,1);}
+  for(const[k,g]of ROD_GUIDES){bez(k,_rp);bez(Math.min(1,k+.02),_rp2);_rd.subVectors(_rp2,_rp).normalize();g.position.copy(_rp).addScaledVector(_ry,-.012);g.quaternion.setFromUnitVectors(new V3(0,0,1),_rd);}
+  // リール：グリップの少し先（竿の2割）の下。巻く速さ＝巻き速度÷1回転の糸の長さ、ドラグが出ると逆回転
+  bez(.2,_rp);bez(.24,_rp2);_rd.subVectors(_rp2,_rp).normalize();reel.position.copy(_rp);reel.quaternion.setFromUnitVectors(new V3(0,0,1),_rd);
+  {const rl=TBYID.get(S.reelId),cm=(rl&&rl.retrieveCmPerTurn||70)/100,dt2=Math.min(.05,t-(updRod._t||t));updRod._t=t;const reeling=F.st==='fight'?(F.hold&&!(F.fg&&F.fg.slipping)?1.2:0):lureWait()&&F.reelHold?S.spd:0;
+    reelAng+=reeling/cm*6.283*dt2;if(F.st==='fight'&&F.fg&&F.fg.slipping)spoolAng-=dt2*14;reel.userData.handle.rotation.x=reelAng;reel.userData.spool.rotation.z=spoolAng+reelAng*.3;reel.userData.spool.position.z=.04+Math.sin(reelAng*.5)*.006;reel.userData.bail.visible=F.st!=='aim'&&F.st!=='fly';/* 投げる時はベールを起こす */}
   const tension=F.st==='fight'?clamp(F.ten/F.lineKg,0,1):F.st==='bite'?.6:F.st==='fly'?.9:lureWaitOrBite()&&(F.reelHold||F.rodKick<.5)?.75:.08;const sag=(1-tension)*Math.min(4,F.d0*.08+.3);
   const pa=lineGeo.attributes.position.array;
-  for(let i=0;i<32;i++){const k=i/31;let y=lerp(_tp.y,ey,k)-Math.sin(k*Math.PI)*sag;if(F.st!=='fly')y=Math.max(y,.02);pa[i*3]=lerp(_tp.x,ex,k);pa[i*3+1]=y;pa[i*3+2]=lerp(_tp.z,ez,k);}
+  const vib=F.st==='fight'?Math.max(0,tension-.75)*.08:0;// 張り詰めた糸の震え
+  if(F.st==='fly'){const kf=clamp(F.t/.9,0,1),H=Math.min(18,F.d0*.35);for(let i=0;i<32;i++){const k=kf*i/31;pa[i*3]=lerp(_t0.x,F.tx,k);pa[i*3+1]=lerp(_t0.y,.05,k)+Math.sin(k*Math.PI)*H;pa[i*3+2]=lerp(_t0.z,F.ty,k);}}// 投げている間：糸はルアーの飛んだ跡に沿う
+  else for(let i=0;i<32;i++){const k=i/31;let y=lerp(_tp.y,ey,k)-Math.sin(k*Math.PI)*sag+(vib?Math.sin(k*Math.PI)*Math.sin(t*70+k*9)*vib:0);if(F.st!=='fly')y=Math.max(y,.02);pa[i*3]=lerp(_tp.x,ex,k);pa[i*3+1]=y;pa[i*3+2]=lerp(_tp.z,ez,k);}
+  lineObj.material.color.setHex(F.st==='fight'&&tension>.85?0xffc9a8:0xf4f0e0);
   lineGeo.attributes.position.needsUpdate=true;
   const art=SIM.isLureBait(S.bait);
   if(F.st==='idle'||F.st==='aim'){const o=art?jig:bobber;o.visible=true;o.position.set(ex,ey,ez);}

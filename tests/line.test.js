@@ -1,0 +1,14 @@
+const test=require('node:test'),assert=require('node:assert');
+const L=require('../line.js');
+const reel={capacityPeRating:1};
+test('商品：道糸・リーダー・針がそろい、IDは重ならない',()=>{const c=L.CAT;assert.ok(c.filter(t=>t.cat==='line').length>=20);assert.ok(c.some(t=>t.cat==='leader'));assert.ok(c.some(t=>t.cat==='hook'));assert.strictEqual(new Set(c.map(t=>t.id)).size,c.length);
+  for(const t of c){assert.ok(t.priceYen>0&&t.name&&t.unlockedAtLevel>=1,t.id);}});
+test('何も買っていなければ昔と同じ強さ（PE号数×6.5kg）',()=>{const S=L.migrate({});assert.strictEqual(L.strength(S,reel,false),6.5);assert.strictEqual(L.strength(S,{capacityPeRating:.2},false),2);});
+test('PEは擦れに弱く、フロロのリーダーで補える',()=>{const S=L.migrate({tk:{}});const pe=L.strength(S,reel,true);S.tk.ld_fluoro_4=1;S.leaderId='ld_fluoro_4';const withLd=L.strength(S,reel,true);assert.ok(withLd>pe,`${withLd}>${pe}`);});
+test('見えやすさ：PEそのままより、フロロのリーダーのほうが警戒心の強い魚が食う',()=>{const S=L.migrate({tk:{}});const a=L.biteMul(S,reel,.8);S.tk.ld_fluoro_3=1;S.leaderId='ld_fluoro_3';assert.ok(L.biteMul(S,reel,.8)>a);assert.strictEqual(L.biteMul(S,reel,0),1);});
+test('細い糸ほど飛び、伸びる糸は遠くで掛かりにくい',()=>{const S=L.migrate({lineId:'ln_pe_0_6_150'}),N=L.migrate({lineId:'ln_nylon_4_150'});assert.ok(L.castMul(S,reel)>L.castMul(N,reel));assert.ok(L.hookMul(N,reel,60)<L.hookMul(S,reel,60));assert.strictEqual(L.hookMul(N,reel,10),1);});
+test('針：合う大きさで掛かりが良く、小さな針は大物で伸びる',()=>{const h=L.BYID.get('hk_sode_3'),big=L.BYID.get('hk_iseama_14');assert.ok(L.hookFit(h,14)>L.hookFit(h,50));assert.ok(L.hookFit(big,10)<L.hookFit(big,50));assert.ok(L.hookKg(h)<L.hookKg(big));assert.strictEqual(L.hookFit(null,30),1);});
+test('切れたらリーダーと針を1本ずつ失う（ルアーでは針は減らない）',()=>{const S=L.migrate({tk:{ld_fluoro_3:1,hk_chinu_3:2},leaderId:'ld_fluoro_3',hookId:'hk_chinu_3'});L.loseRig(S,'lure');assert.strictEqual(S.tk.hk_chinu_3,2);assert.strictEqual(S.leaderId,null);L.loseRig(S,'isome');assert.strictEqual(S.tk.hk_chinu_3,1);});
+test('釣具店：道糸は1つ、リーダー・針は1パック（10本）で買え、それぞれの枠に装備',()=>{const TK=require('../tackle.js');const S={money:1e5,tk:{}};const ln=L.BYID.get('ln_fluoro_3_100'),hk=L.BYID.get('hk_chinu_3');
+  assert.ok(TK.buy(S,ln,5,9).ok);assert.strictEqual(S.tk[ln.id],1);assert.ok(!TK.buy(S,ln,1,9).ok,'道糸は1つ');assert.ok(TK.buy(S,hk,1,9).ok);assert.strictEqual(S.tk[hk.id],10);
+  TK.equip(S,ln);TK.equip(S,hk);assert.strictEqual(S.lineId,ln.id);assert.strictEqual(S.hookId,hk.id);assert.ok(TK.isEquipped(S,hk));assert.ok(!S.eq);});
