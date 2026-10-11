@@ -46,3 +46,8 @@ test('フッキング：窓の中ほどが一番掛かりやすく、早すぎ�
 test('針の掛かりが浅いほどバレやすい',()=>{const a=stats(40,{q:.2,drag:2.2}),b=stats(40,{q:1,drag:2.2});assert.ok((a.hookout||0)>(b.hookout||0));});
 
 test('口の弱い魚を強引に巻くと口切れする',()=>{const r=stats(30,{id:'aji',P:.9,wkg:.2,drag:6},'careless');assert.ok((r.mouth||0)>0);});
+
+test('合わせどき：魚種ごとの範囲（ideal）で早合わせ・遅合わせを判定し、範囲の中が一番掛かる',()=>{const o=t=>FG.hookSet({t,window:1,id:'aoriika',ideal:[.35,.9]});
+  assert.strictEqual(o(.1).judge,'early');assert.strictEqual(o(.5).judge,'good');assert.strictEqual(o(1.05).judge,'late');assert.ok(o(.5).p>o(.1).p);assert.ok(o(.5).p>o(1.1).p);
+  // 同じ時間でも、早く合わせる魚（青物）と待つ魚（イカ）で結果が変わる
+  assert.ok(FG.hookSet({t:.12,window:1,id:'inada',ideal:[0,.45]}).p>FG.hookSet({t:.12,window:1,id:'aoriika',ideal:[.35,.9]}).p);});

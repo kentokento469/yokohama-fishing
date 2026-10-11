@@ -22,14 +22,16 @@ const JUMPERS=['seabass','bora','sayori','tachiuo'];
    o: {t: アタリから合わせまでの秒, window: 合わせられる時間, short: ショートバイトか, id: 魚種, fishCm, lureCm,
        slack: 糸がたるんでいたか（フリーフォール中など）, hookMul: ロッドの合わせの強さ, egi: エギ（カンナ）か}
    戻り値 {ok, q}：q は針の掛かりの深さ（0〜1）。完璧なタイミングだけを求めず、窓の中ほどなら十分に掛かる */
-function hookSet(o,rng){rng=rng||Math.random;const x=clamp(o.t/Math.max(.1,o.window),0,1.2);
-  const timing=x<.08?.55:x<=.65?1:clamp(1-(x-.65)*1.1,.3,1);
+// o.ideal：合わせどき（アタリの時間に対する割合 [早い端, 遅い端]）。魚種・仕掛け・針で変わる（index.html の hookIdeal）。省くと [0.08, 0.65]
+// 戻り値の judge：'early'（早合わせ）・'good'・'late'（遅合わせ）
+function hookSet(o,rng){rng=rng||Math.random;const x=clamp(o.t/Math.max(.1,o.window),0,1.2);const id0=o.ideal||[.08,.65],i0=id0[0],i1=id0[1];
+  const timing=x<i0?.5+.5*Math.pow(x/Math.max(.01,i0),2)*.9:x<=i1?1:clamp(1-(x-i1)*1.4,.3,1);const judge=x<i0?'early':x>i1?'late':'good';
   const mouth=o.egi?1.05:HARD_MOUTH.includes(o.id)?.82:1;
   let size=1;if(o.lureCm&&o.fishCm){if(o.lureCm<o.fishCm*.12)size=.85;else if(o.lureCm>o.fishCm*.8)size=.8;}
   const slack=o.slack?.82:1,rod=o.hookMul||1;
   const p=clamp((o.short?.32:.92)*timing*mouth*size*slack*rod,.05,.97);
   const q=clamp(timing*mouth*size*slack*rod*(o.short?.6:1),.1,1);
-  return{ok:rng()<p,q,p,timing};}
+  return{ok:rng()<p,q,p,timing,judge};}
 
 /* ===== ファイト =====
    o: {P: 魚の引きの強さ, d0: 魚までの距離, lineKg, liftKg（ロッド）, reelK（リールの巻き速さ係数）, flex（0〜100）,

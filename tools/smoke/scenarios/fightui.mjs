@@ -5,7 +5,7 @@ export default async (page, SP) => {
   await page.evaluate(()=>{const D=__D,T=window.HamaTackleData;const it=T.find(t=>t.style==='shore_standard'&&t.weightG===20)||T.find(t=>t.cat==='jig');D.S.tk[it.id]=50;D.S.eq=it.id;D.S.bait=window.HamaSim.baitClassOf(it);});
   let s;for(let k=0;k<15;k++){await page.evaluate(()=>{const D=__D;Object.assign(D.S,{x:13963.4,y:-972.4,min:7*60,day:3});D.F.st='idle';D.updChunks(false);D.snapCam();D.mainDown();});await step(14);await page.evaluate(()=>__D.mainUp());await step(19);
     for(let i=0;i<60;i++){await page.evaluate(()=>{const D=__D;if(D.F.st==='wait'&&!D.F.reelHold){D.S.spd=.8;D.mainDown();}});s=await step(10);if(s.st!=='wait')break;}
-    if(s.st==='bite'){await page.evaluate(()=>{__D.mainUp();__D.mainDown();});await step(1);await page.evaluate(()=>__D.mainUp());s=await step(2);}
+    if(s.st==='bite'){await page.evaluate(()=>__D.mainUp());await step(5);await page.evaluate(()=>__D.doHookset());s=await step(2);}
     if(s.st==='fight')break;await page.evaluate(()=>{__D.F.st='idle';__D.mainUp();});}
   await step(30);
   const r=await page.evaluate(()=>{const D=__D;D.updUI();const H=innerHeight,rc=id=>document.getElementById(id).getBoundingClientRect();const f=rc('fight'),cl=rc('clock'),tr=rc('trRow'),mb=rc('mainBtn');

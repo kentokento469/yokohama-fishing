@@ -17,7 +17,7 @@ export default async (page, SP) => {
   // ファイト：掛けるまで投げ直し、巻いている間の手の位置
   let st='';for(let k=0;k<15&&st!=='fight';k++){await page.evaluate(()=>{const D=__D;D.F.st='idle';D.mainUp();Object.assign(D.S,{x:13963.4,y:-972.4,min:7*60,day:3});D.snapCam();D.mainDown();});await step(14);await page.evaluate(()=>__D.mainUp());await step(19);
     for(let i=0;i<60;i++){await page.evaluate(()=>{const D=__D;if(D.F.st==='wait'&&!D.F.reelHold){D.S.spd=.8;D.mainDown();}});st=await step(10);if(st!=='wait')break;}
-    if(st==='bite'){await page.evaluate(()=>{__D.mainUp();__D.mainDown();});await step(1);await page.evaluate(()=>__D.mainUp());st=await step(2);}}
+    if(st==='bite'){await page.evaluate(()=>__D.mainUp());await step(5);await page.evaluate(()=>__D.doHookset());st=await step(2);}}
   let fw=0,fr=0,fn=0;if(st==='fight'){await page.evaluate(()=>__D.mainDown());for(let i=0;i<10;i++){await step(2);const m=await meas();if(m&&m.st==='fight'){fn++;fw=Math.max(fw,m.crank);fr=Math.max(fr,m.rod);}}}
   out.fight={n:fn,rodWorst:+fr.toFixed(3),crankWorst:+fw.toFixed(3)};
   await page.evaluate(()=>{__D.F.st='idle';__D.mainUp();});await step(4);

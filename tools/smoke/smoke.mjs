@@ -18,6 +18,7 @@ const CASES=[
   ['fightui','ファイトUI：上部HUD・中央を空ける・危険/緩みの表示・カメラ・マルチタッチ',[/fightui \{"st":"fight","top":true,"bottom":true,"noOverlap":true,"miniHidden":true,"danger":true,"slack":true,"cueTop":true,"btnNoText":true,"camD":[2-8]\.\d,"h1":true,"h2":true,"h3":false\}/]],
   ['fishimg','魚の写真：全画像の表示・釣果/売却画面・読めない時の代わりの図',[/fishimg \{"total":123,"ok":123,"bad":\[\],"res":true,"sell":true,"fallback":true\}/]],
   ['rig','手と釣り具：竿を握る手・ハンドルを回す手が離れない（待機・巻く・投げた後・ファイト・竿/リール違い）',[/"idle":\{"st":"idle","rod":0(\.00\d)?,"crank":0(\.00\d)?,/,/"reelWorst":0(\.0[0-2]\d*)?,"reelTurned":true/,/"fight":\{"n":[1-9]\d*,"rodWorst":0(\.0[0-2]\d*)?,"crankWorst":0(\.0[0-2]\d*)?\}/,/"baitReel":\{"st":"idle","rod":0(\.00\d)?,"crank":0(\.00\d)?,[^}]*"rodHand":"L"\}/,/"longRod":\{"st":"idle","rod":0(\.00\d)?,"crank":0(\.00\d)?/]],
+  ['hookset','合わせボタン（巻くと分離）・空合わせ・配置・釣りのカメラ・投げる→アタリ→合わせ→ファイト→取り込み',[/hookset \{"st0":"wait[^\n]*"empty":true,"layout":\{"shown":true,"above":true,"gap":\d+,"right":true\},"cam":\{[^}]*"offCenter":true,"lookForward":true[^\n]*"sweepCam":0(\.0\d*)?,"bite":\{"hot":true,"reelDoesNotHook":true,"judge":"(early|good|late)"\},"drag":true,"land":\{"st":"idle","landed":true,"camLand":true/]],
   ['s60','横浜の6釣り場で投げられる',[/\["kanazawa",[^\]]*"kanazawa","kanazawa"\]/,/\["honmoku",[^\]]*"honmoku","honmoku"\]/]]];
 const only=process.argv.slice(2);let fail=0;
 for(const[id,name,want]of CASES){if(only.length&&!only.includes(id))continue;let out='';
