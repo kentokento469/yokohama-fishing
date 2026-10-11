@@ -34,6 +34,7 @@
 - `gyotaku.js` — 魚拓（`window.HamaGyotaku`：記録 `S.gyotaku`・和紙と墨の絵）。メニュー「魚拓」。
 - `livebait.js` — 生き餌・泳がせ（`window.HamaLiveBait`：`S.live`・`S.liveGear`、元気・相性・釣り場の決まり）。
 - `line.js` — 道糸・リーダー・針（`window.HamaLine`：商品の自動生成、`S.lineId`/`S.leaderId`/`S.hookId`、強さ・伸び・擦れ・見えやすさ）。釣具店の「糸」「リーダー」「針」。
+- `rig.js` — 手と釣り具の位置関係（`window.HamaRig`）：竿とリールの寸法 `gearDims`（竿の長さで尻手、リールの種類で足の向き・ハンドル）、ハンドルの左右 `handSides`（設定 `S.handle`、自動はスピニング左・ベイト右）、竿に固定した座標 `rodFrame`、ノブの位置 `reelPoints`、腕の2本骨IK `twoBone`。index.html は竿を体の前の構えに置き、竿を握る手（リールシート）と回す手（ハンドルのノブ。投げる時は竿尻）を IK で合わせる（`rigArms`）。模型は +z を向くので x が負の側が右腕（`ME.shL`）。
 - `fish-ai.js` — 魚のAI。`fight.js` — フッキングとファイト。`sound.js` — 効果音と環境音。
 - `geo.js` — 共通の座標システム（`window.HamaGeo`）。緯度経度⇔ゲーム座標（湘南の原点固定）、地図表示の view（拡大・移動・回転）、縮尺バー。3D・ミニマップ・地図画面・今後の全画面マップで共有。
 - `mapdata.js` — 地図データのレイヤー管理（`window.HamaMapData`）。海岸線・陸地・道路・建物・河川・砂浜・駐車場・駐輪場・構造物・釣り場・現在地。地物の出どころ（実在 gshhs/osm、ゲーム用 game_approx/game_est）を区別し、ないものは空。GeoJSON の読み込みと検査。

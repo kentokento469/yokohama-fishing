@@ -15,7 +15,7 @@ export default async (page, SP) => {
     // 緩み
     D.F.hold=false;D.F.ten=.05;D.F.fg.slack=1.2;D.updUI();o.slack=document.getElementById('fight').classList.contains('s-slack')&&document.getElementById('cue').textContent.startsWith('糸が緩んでいる');
     const cu=rc('cue');o.cueTop=cu.top<H*.35;o.btnNoText=!/[ぁ-んァ-ン一-龥]/.test(document.getElementById('mainTxt').textContent);
-    // カメラ：人と竿が近くに写る（3〜8m）
+    // カメラ：人と竿が近くに写る（2〜8m）
     o.camD=+Math.hypot(D.camera.position.x-D.S.x,D.camera.position.z-D.S.y).toFixed(1);return o;});
   // マルチタッチ：押している指とは別の指を離しても巻き続ける
   const mt=await page.evaluate(()=>{const D=__D,b=document.getElementById('mainBtn');const ev=(type,id)=>b.dispatchEvent(new PointerEvent(type,{pointerId:id,bubbles:true,clientX:300,clientY:760}));

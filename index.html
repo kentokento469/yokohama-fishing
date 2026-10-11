@@ -418,6 +418,7 @@ addEventListener('error',e=>{try{let d=document.getElementById('bootErr');if(!d)
 <script src="gsi.js?v=e1cca43b"></script>
 <script src="market.js?v=5723bce8"></script>
 <script src="livebait.js?v=db431c81"></script>
+<script src="rig.js?v=aaf00e56"></script>
 <script src="line.js?v=179065e8"></script>
 <script src="fish3d.js?v=d7018d77"></script>
 <script src="gyotaku.js?v=9ed47370"></script>
@@ -1651,12 +1652,24 @@ const rodMat=new T.MeshPhongMaterial({color:0x1e2a33,specular:0x667788,shininess
 const rodMesh=new T.Group();rodMesh.frustumCulled=false;scene.add(rodMesh);const ROD_N=14,ROD_SEG=[],ROD_GUIDES=[];
 for(let i=0;i<ROD_N;i++){const k0=i/ROD_N,k1=(i+1)/ROD_N,r0=lerp(.013,.0028,k0),r1=lerp(.013,.0028,k1);const m=new T.Mesh(new T.CylinderGeometry(r1,r0,1,8).translate(0,.5,0),k1<=.2?gripMat:rodMat);m.castShadow=true;m.frustumCulled=false;rodMesh.add(m);ROD_SEG.push(m);}
 for(const k of[.36,.5,.62,.73,.83,.92]){const g=new T.Mesh(new T.TorusGeometry(lerp(.012,.004,k),.0016,5,12),guideMat);g.frustumCulled=false;rodMesh.add(g);ROD_GUIDES.push([k,g]);}
-const reel=new T.Group();{const met=new T.MeshPhongMaterial({color:0x3a4048,specular:0xaab0b8,shininess:70}),sil=new T.MeshPhongMaterial({color:0xc8ccd2,specular:0xffffff,shininess:90});
-  const body=new T.Mesh(new T.BoxGeometry(.035,.05,.045),met);body.position.set(0,-.045,0);reel.add(body);const stem=new T.Mesh(new T.BoxGeometry(.012,.04,.012),met);stem.position.set(0,-.018,0);reel.add(stem);
-  const spool=new T.Group();const sp=new T.Mesh(new T.CylinderGeometry(.024,.024,.03,16).rotateX(Math.PI/2),sil);spool.add(sp);const lip=new T.Mesh(new T.CylinderGeometry(.028,.028,.004,16).rotateX(Math.PI/2),sil);lip.position.z=.016;spool.add(lip);spool.position.set(0,-.045,.04);reel.add(spool);
-  const bail=new T.Mesh(new T.TorusGeometry(.03,.0018,5,16,Math.PI),sil);bail.position.set(0,-.045,.05);reel.add(bail);
-  const handle=new T.Group();const arm=new T.Mesh(new T.BoxGeometry(.006,.05,.006).translate(0,.025,0),met);handle.add(arm);const knob=new T.Mesh(new T.CylinderGeometry(.008,.008,.018,10).rotateZ(Math.PI/2),lam(0x1d1d1d));knob.position.set(.012,.05,0);handle.add(knob);
-  handle.position.set(.024,-.045,0);reel.add(handle);reel.userData={spool,handle,bail,body};reel.traverse(o=>{if(o.isMesh){o.castShadow=true;o.frustumCulled=false;}});scene.add(reel);}
+const reel=new T.Group();reel.frustumCulled=false;scene.add(reel);let REELKEY='';const RIG=window.HamaRig;
+const REEL_MAT={met:new T.MeshPhongMaterial({color:0x3a4048,specular:0xaab0b8,shininess:70}),sil:new T.MeshPhongMaterial({color:0xc8ccd2,specular:0xffffff,shininess:90}),knob:lam(0x1d1d1d)};
+/* リールの模型（rig.js の gearDims の寸法どおり）：スピニングは竿の下に足・本体・スプール・ベール、ベイトは竿の上に丸い本体。
+   ハンドルの軸は竿の横向き、腕の先にノブ。回す手はこのノブの位置に IK で届かせる（ハンドルの回転と手が必ず一致する） */
+function buildReel(dim,side){while(reel.children.length){const c=reel.children[0];reel.remove(c);c.traverse(o=>{if(o.geometry)o.geometry.dispose();});}
+  const s=dim.reelScale,fd=dim.footDir,M=REEL_MAT,y0=fd*dim.stem,sg=side==='L'?1:-1;const add=(m,x,y,z)=>{m.position.set(x,y,z);reel.add(m);return m;};
+  add(new T.Mesh(new T.BoxGeometry(.012*s,dim.stem,.016*s),M.met),0,y0/2,0);// 足
+  let spool,bail=null,body;
+  if(!dim.bait){body=add(new T.Mesh(new T.BoxGeometry(.036*s,.05*s,.05*s),M.met),0,y0,-.006*s);
+    spool=new T.Group();const sp=new T.Mesh(new T.CylinderGeometry(.024*s,.024*s,.032*s,16).rotateX(Math.PI/2),M.sil);spool.add(sp);const lip=new T.Mesh(new T.CylinderGeometry(.028*s,.028*s,.004*s,16).rotateX(Math.PI/2),M.sil);lip.position.z=.017*s;spool.add(lip);add(spool,0,y0,.04*s);
+    bail=add(new T.Mesh(new T.TorusGeometry(.03*s,.0018,5,16,Math.PI).rotateZ(Math.PI),M.sil),0,y0,.056*s);}
+  else{body=add(new T.Mesh(new T.CylinderGeometry(.03*s,.03*s,.058*s,18).rotateZ(Math.PI/2),M.met),0,y0,0);
+    spool=new T.Group();spool.add(new T.Mesh(new T.CylinderGeometry(.02*s,.02*s,.05*s,14).rotateZ(Math.PI/2),M.sil));add(spool,0,y0,.012*s);}
+  add(new T.Mesh(new T.CylinderGeometry(.005*s,.005*s,dim.handleSide,8).rotateZ(Math.PI/2),M.met),sg*dim.handleSide/2,y0,0);// ハンドルの軸
+  const handle=new T.Group();add(handle,sg*dim.handleSide,y0,0);
+  const arm=new T.Mesh(new T.BoxGeometry(.007*s,dim.handleArm,.007*s).translate(0,fd*dim.handleArm/2,0),M.met);handle.add(arm);
+  const knob=new T.Mesh(new T.CylinderGeometry(.009*s,.009*s,.024*s,10).rotateZ(Math.PI/2),M.knob);knob.position.set(sg*.013*s,fd*dim.handleArm,0);handle.add(knob);
+  reel.userData={spool,handle,bail,body,knob,dim,side};reel.traverse(o=>{if(o.isMesh){o.castShadow=true;o.frustumCulled=false;}});}
 let reelAng=0,spoolAng=0;
 const _rq=new T.Quaternion(),_ry=new V3(0,1,0),_rp=new V3(),_rp2=new V3(),_rd=new V3();
 function bez(t,o){const u=1-t;return o.set(u*u*_b.x+2*u*t*_c.x+t*t*_tp.x,u*u*_b.y+2*u*t*_c.y+t*t*_tp.y,u*u*_b.z+2*u*t*_c.z+t*t*_tp.z);}
@@ -2445,15 +2458,17 @@ const camTarget=new V3(),camGoal=new V3();let camDist=6,camD=6;
 function snapCam(){P.position.set(S.x,groundY(S.x,S.y),S.y);camTarget.set(S.x,groundY(S.x,S.y)+1.5,S.y);placeCam(1);}
 const CAMF={off:0,side:0};const _cr=new V3();const wrapA=x=>{x=(x+Math.PI)%(2*Math.PI);if(x<0)x+=2*Math.PI;return x-Math.PI;};
 // 待ち・アタリ・ファイトは「右肩越し」：プレイヤーの約3.5m後ろ・少し右から、手元・竿全体・竿先・糸・魚が一つの画面に入る構図（投げる時は遠くを見る）
-function placeCam(k){const fishing=F.st!=='idle',fight=F.st==='fight',land=fight&&F.dist<6,close=fight||F.st==='bite'||F.st==='wait';
-  const want=close?(land?5.4:6.4):fishing?9:RIDE&&RIDE.sp.kind==='car'?9.5:6.2;const pt=close?(land?.42:.2):fishing?.26:pitch;
-  let tx=S.x,tz=S.y;if(close&&F.ang!=null){const fw=land?1.6:2.8;tx=S.x+Math.cos(F.ang)*fw;tz=S.y+Math.sin(F.ang)*fw;}else if(fishing){const tg=F.st==='aim'?aimTarget():[F.tx,F.ty];const kk=Math.min(.25,12/Math.max(1,Math.hypot(tg[0]-S.x,tg[1]-S.y)));tx=lerp(S.x,tg[0],kk);tz=lerp(S.y,tg[1],kk);}
+function placeCam(k){const fishing=F.st!=='idle',fight=F.st==='fight',land=fight&&F.dist<6,close=fight||F.st==='bite'||F.st==='wait',side3=F.st==='wait';/* 巻いている間は斜め横から手元（両手・リール）を大きく */
+  const want=close?(side3?3.0:land?4.2:4.3):fishing?9:RIDE&&RIDE.sp.kind==='car'?9.5:6.2;const pt=close?(side3?.42:land?.55:.4):fishing?.26:pitch;/* 肩の上から見下ろす：体の前の両手とリールが見える */
+  let tx=S.x,tz=S.y;if(close&&F.ang!=null){const fw=side3?.25:land?.5:.6;tx=S.x+Math.cos(F.ang)*fw;tz=S.y+Math.sin(F.ang)*fw;}else if(fishing){const tg=F.st==='aim'?aimTarget():[F.tx,F.ty];const kk=Math.min(.25,12/Math.max(1,Math.hypot(tg[0]-S.x,tg[1]-S.y)));tx=lerp(S.x,tg[0],kk);tz=lerp(S.y,tg[1],kk);}
   // ファイト：魚の向きへ少しだけ回り（最大約15°・ゆっくり）、注視点を右へずらして竿とラインを画面の中央に
-  let yw=yaw;{const kf=Math.min(1,k*.5);let offT=0,sideT=0;if(fight){const fp=fishPos();offT=clamp(wrapA(Math.atan2(fp[1]-S.y,fp[0]-S.x)-F.ang)*.45,-.27,.27);}if(close)sideT=land?.15:.4;
+  let yw=yaw;{const kf=Math.min(1,k*.5);let offT=0,sideT=0;if(fight){const fp=fishPos();offT=clamp(wrapA(Math.atan2(fp[1]-S.y,fp[0]-S.x)-F.ang)*.45,-.27,.27);}if(close)sideT=0;/* 斜め後ろから見るので横へずらさない */
+    // 右後ろ斜め（竿を持つ手の側）から：体に隠れず、竿を握る手・リール・回す手が見える
+    if(close&&F.ang!=null){const sd2=RIG.handSides(reelOf(),S.handle);const ob=side3?1.25:.36;offT+=sd2.rodHand==='R'?-ob:ob;}
     CAMF.off+=(offT-CAMF.off)*kf;CAMF.side+=(sideT-CAMF.side)*kf;if(Math.abs(CAMF.off)>1e-4&&typeof yawFor==='function')yw=yaw+wrapA(yawFor(F.ang+CAMF.off)-yawFor(F.ang));
     if(CAMF.side>.01){tx+=Math.cos(yw)*CAMF.side;tz-=Math.sin(yw)*CAMF.side;}/* 画面の右方向 */
     const fv=fight?62:58;if(Math.abs(camera.fov-fv)>.05){camera.fov+=(fv-camera.fov)*kf;camera.updateProjectionMatrix();}}
-  camGoal.set(tx,groundY(S.x,S.y)+(close?(land?1.2:1.75):fishing?1.8:1.5),tz);camTarget.lerp(camGoal,k);
+  camGoal.set(tx,groundY(S.x,S.y)+(close?(side3?1.55:land?1.0:1.35):fishing?1.8:1.5),tz);camTarget.lerp(camGoal,k);
   // 見上げる（pt<0.05）ときはカメラを頭の高さの少し上・後ろに置いたまま、視線だけ上へ向ける
   const pc=Math.max(pt,.05),up=Math.min(1.40,Math.max(0,.05-pt));
   let D=want;const dx=Math.sin(yw)*Math.cos(pc),dy=Math.sin(pc),dz=Math.cos(yw)*Math.cos(pc);
@@ -2465,11 +2480,11 @@ const _look=new V3();
 
 /* ===== 竿・糸（しなり）と釣りのポーズ ===== */
 const _h=new V3(),_t0=new V3(),_tp=new V3(),_c=new V3(),_g=new V3(),_v=new V3(),_b=new V3();
-const RS={b:0,bv:0,e:1,ev:0,yo:0,t:0,ten:0,ex:0,ey:0,ez:0,init:false};
+const RS={b:0,bv:0,e:1,ev:0,yo:0,t:0,ten:0,ex:0,ey:0,ez:0,init:false,af:.3,au:1.13,as:.05,cb:0,pd:null,rodKey:''};
 function poseFishing(t){
   const st=F.st,show=!!nearSpot||st!=='idle';
   // 歩いている間も竿を持つ（右手で立てて持つ）
-  if(!show){ME.shR.rotation.set(-.3+ME.shR.rotation.x*.25,0,.1);ME.elR.rotation.x=-1.05;return;}
+  if(!show)return;// 竿を持つ手は updRod の IK、空いた手は歩く動き
   let rx=-.75,re=-1.0,lx=-.55,le=-1.25,lean=0;
   if(st==='aim'){rx=lerp(-.9,-2.7,F.pw);re=lerp(-1,-.6,F.pw);lx=lerp(-.6,-2.2,F.pw);le=-.9;lean=-.12*F.pw;}
   else if(st==='fly'){const k=F.t/.9;const q=k<.2?k/.2:1;rx=lerp(-2.7,-.6,q);re=lerp(-.6,-.5,q);lx=lerp(-2.2,-.5,q);lean=lerp(-.12,.15,q)*(1-k);}
@@ -2498,11 +2513,34 @@ function drawLureView(){const show=lureWaitOrBite();const pnl=$('lureP');if(pnl.
   if(FISH_DEBUG&&F.school)for(const f of F.school.fish){c.fillStyle={cruise:'#7fb6d6',notice:'#fff',approach:'#ffd27a',chase:'#ff7a5a',wary:'#9a8fb8',flee:'#555'}[f.state]||'#fff';c.beginPath();c.arc(px(f.x),py(f.z),2.6,0,7);c.fill();}
   c.fillStyle='#f1b746';c.beginPath();c.arc(px(L.dist),py(L.depth),4.5,0,7);c.fill();c.strokeStyle='#13263b';c.lineWidth=1.5;c.stroke();
   c.fillStyle='rgba(246,242,232,.85)';c.font=`700 11px ${FONT}`;c.textBaseline='top';c.textAlign='right';c.fillText(`水深 ${L.waterDepth.toFixed(1)}m`,w-6,4);}
+const _mx=new T.Matrix4(),_va=new V3(),_vb=new V3(),_vc=new V3(),_kn=new V3(),_tg=new V3(),_po=new V3(),_S=new V3(),_E=new V3(),_q1=new T.Quaternion(),_q2=new T.Quaternion(),_qc=new T.Quaternion(),_dn=new V3(0,-1,0);
+// 体の右腕・左腕（模型は +z を向いて立つので、x が負の側が右腕）
+let ARM=null;const UPPER=.29,FORE=.29;
+function armIK(arm,target,pole,roll){arm.sh.parent.getWorldQuaternion(_qc);arm.sh.getWorldPosition(_S);
+  const r=RIG.twoBone([_S.x,_S.y,_S.z],[target.x,target.y,target.z],UPPER,FORE,[pole.x,pole.y,pole.z]);
+  _E.set(r.elbow[0],r.elbow[1],r.elbow[2]);_va.subVectors(_E,_S).normalize();_q1.setFromUnitVectors(_dn,_va);arm.sh.quaternion.copy(_qc).invert().multiply(_q1);
+  _vb.set(r.hand[0]-r.elbow[0],r.hand[1]-r.elbow[1],r.hand[2]-r.elbow[2]).normalize();_q2.setFromUnitVectors(_dn,_vb);arm.el.quaternion.copy(_q1).invert().multiply(_q2);
+  arm.hand.rotation.set(0,roll||0,0);arm.reach=r.reach;arm.err=Math.hypot(r.hand[0]-target.x,r.hand[1]-target.y,r.hand[2]-target.z);return r;}
+function rigArms(dim,sd,fishing,sT){if(!ARM)ARM={R:{sh:ME.shL,el:ME.elL,hand:ME.handL},L:{sh:ME.shR,el:ME.elR,hand:ME.handR}};
+  const ry=P.rotation.y,fx=Math.sin(ry),fz=Math.cos(ry),rx=-Math.cos(ry),rz=Math.sin(ry),fr=RS.fr;if(!fr)return;
+  const rod=ARM[sd.rodHand],crk=ARM[sd.crankHand],sgR=sd.rodHand==='R'?1:-1;
+  // 竿を握る手：リールシートを上から包む（ベイトはリールの後ろから手のひらで包む）
+  const up=fr.up,fw=fr.fwd;if(!dim.bait)_tg.set(RS.seat.x+up[0]*.022,RS.seat.y+up[1]*.022,RS.seat.z+up[2]*.022);else _tg.set(RS.seat.x-fw[0]*.05+up[0]*.03,RS.seat.y-fw[1]*.05+up[1]*.03,RS.seat.z-fw[2]*.05+up[2]*.03);
+  rod.sh.getWorldPosition(_S);_po.set(_S.x+rx*sgR*.35-fx*.15,_S.y-.45,_S.z+rz*sgR*.35-fz*.15);// ひじは下・外・少し後ろ
+  armIK(rod,_tg,_po,0);RS.rodTarget=_tg.clone();
+  if(!fishing){crk.done=false;return;}// 歩いている時は空いた手は振る（animHuman）
+  // 回す手：ハンドルのノブ（ノブの外側をつまむ）。投げる時は竿尻を持つ
+  reel.updateMatrixWorld(true);reel.userData.knob.getWorldPosition(_kn);const sgK=sd.handle==='L'?-1:1;// ノブの外側（竿の右が +）
+  _kn.x+=fr.right[0]*sgK*.022;_kn.y+=fr.right[1]*sgK*.022;_kn.z+=fr.right[2]*sgK*.022;
+  const castHold=F.st==='aim'||F.st==='fly'?1:0;RS.cb+=(castHold-RS.cb)*Math.min(1,(RS.dtR||.016)*(castHold?14:6));
+  _tg.set(lerp(_kn.x,_b.x,RS.cb),lerp(_kn.y,_b.y,RS.cb),lerp(_kn.z,_b.z,RS.cb));RS.crankTarget=_tg.clone();RS.knob=_kn.clone();
+  crk.sh.getWorldPosition(_S);const sgC=-sgR;_po.set(_S.x+rx*sgC*.3-fx*.25,_S.y-.4,_S.z+rz*sgC*.3-fz*.25);
+  armIK(crk,_tg,_po,-reelAng*(1-RS.cb));}// 手首：ハンドルの回転に合わせてひねる
 function updRod(t){
   const fishing=!!nearSpot||F.st!=='idle',show=$('title').hidden&&!(RIDE&&RIDE.sp.kind==='car');rodMesh.visible=reel.visible=show;lineObj.visible=show&&F.st!=='idle'&&F.st!=='aim';bobber.visible=false;jig.visible=false;
   if(!show)return;
-  P.updateMatrixWorld(true);ME.handR.getWorldPosition(_h);
-  const dtR=Math.min(.05,Math.max(0,t-(RS.t||t)));RS.t=t;
+  P.updateMatrixWorld(true);
+  const dtR=Math.min(.05,Math.max(0,t-(RS.t||t)));RS.t=t;RS.dtR=dtR;
   // ファイト中は魚のいる方へ竿先が回る（ゆっくり追従）
   {let yt=0;if(F.st==='fight'){const fp=fishPos();yt=clamp(wrapA(Math.atan2(fp[1]-F.oy,fp[0]-F.ox)-F.ang)*.8,-.5,.5);}RS.yo+=(yt-RS.yo)*Math.min(1,dtR*3);}
   const a=(F.st!=='idle'?F.ang:nearSpot?idleDir:Math.atan2(Math.cos(P.rotation.y),Math.sin(P.rotation.y)))+RS.yo;const dx=Math.cos(a),dz=Math.sin(a);
@@ -2514,7 +2552,7 @@ function updRod(t){
     el=(36+(F.reelHold?6:0)+kick*(big?48:16))*Math.PI/180;bend=.04+(F.reelHold?.1+S.spd*.06:0)+kick*(big?.45:.2)+(F.reelHold?.015*Math.sin(t*18):0);}
   else if(F.st==='wait'){el=38*Math.PI/180;bend=.05+.02*Math.sin(t*2);}
   else if(F.st==='bite'){const k=F.short?.35:clamp(F.biteStr||1,.4,1.3);el=40*Math.PI/180;bend=(.3+.25*Math.sin(t*38))*k;}
-  else if(F.st==='fight'){el=(52+(F.hold?6:0)-clamp(F.ten/F.lineKg,0,1)*8)*Math.PI/180;bend=clamp(F.ten/F.lineKg,0,1.15)*1.0;}
+  else if(F.st==='fight'){el=(52+(F.hold?6:0)-clamp(F.ten/F.lineKg,0,1)*8+(F.t<.35?Math.sin(F.t/.35*Math.PI)*26:0)+(F.dist<6?14:0))*Math.PI/180;bend=clamp(F.ten/F.lineKg,0,1.15)*1.0;}/* 掛けた瞬間に竿を立てる（フッキング）・寄せ切りは竿を起こす */
   // ばね：急に戻らず、少し行き過ぎて落ち着く（投げる動作は速く）
   {const fast=F.st==='aim'||F.st==='fly',kb=fast?260:F.st==='fight'?48:90,ke=fast?320:110;
     if(!RS.init){RS.b=bend;RS.e=el;RS.init=true;}
@@ -2522,8 +2560,19 @@ function updRod(t){
     if(!isFinite(RS.b)||!isFinite(RS.e)){RS.b=bend;RS.bv=0;RS.e=el;RS.ev=0;}bend=RS.b;el=RS.e;
     // 強い引き・突っ込みで小刻みに震える（魚の大きさと引きの強さで変わる）
     if(F.st==='fight'){const sn=clamp((F.surge||0)/Math.max(.3,F.P||1),0,1.4),r=F.ten/F.lineKg;bend+=(.01+.05*sn+(r>.85?.03:0))*Math.min(1.4,.6+(F.P||1)*.3)*Math.sin(t*(24+(F.P||1)*3));}}
-  _b.set(_h.x-dx*.45*Math.cos(el),_h.y-.45*Math.sin(el),_h.z-dz*.45*Math.cos(el));
-  _t0.set(_h.x+dx*L*Math.cos(el),_h.y+L*Math.sin(el),_h.z+dz*L*Math.cos(el));
+  // 構えの位置＝リールシート（竿を握る手の側の、体の前）。投げる時は肩の上へ、ファイトはテンションで持ち上がる
+  const dim=RIG.gearDims({lengthM:L},reelOf()),sd=RIG.handSides(reelOf(),S.handle);
+  {const ry=P.rotation.y,fx=Math.sin(ry),fz=Math.cos(ry),rx=-Math.cos(ry),rz=Math.sin(ry),sg=sd.rodHand==='R'?1:-1;let f=.3,u=1.13,sw=.05;/* おなかの少し前・やや竿を持つ手の側（両手が無理なく届く） */
+    if(!fishing){f=.16;u=.98;sw=.24;}
+    else if(F.st==='aim'){f=lerp(.3,-.06,F.pw);u=lerp(1.13,1.62,F.pw);sw=lerp(.05,.2,F.pw);}
+    else if(F.st==='fly'){const k=F.t/.9,q=k<.2?k/.2:1;f=lerp(-.06,.3,q);u=lerp(1.62,1.13,q);sw=lerp(.2,.05,q);}
+    else if(F.st==='fight'){const b=clamp(F.ten/F.lineKg,0,1);f=.28-.04*b;u=1.15+.06*b+(F.dist<6?.14:0);sw=.05;}
+    const kk=Math.min(1,dtR*(F.st==='aim'||F.st==='fly'?30:8));RS.af+=(f-RS.af)*kk;RS.au+=(u-RS.au)*kk;RS.as+=(sw-RS.as)*kk;
+    _h.set(P.position.x+fx*RS.af+rx*RS.as*sg,P.position.y+RS.au,P.position.z+fz*RS.af+rz*RS.as*sg);}
+  // 尻手（リールシートから後ろ）は竿の長さで変わる。グリップの色も合わせる
+  {const k=dim.butt/L,key=L.toFixed(2);if(RS.rodKey!==key){RS.rodKey=key;ROD_SEG.forEach((m,i)=>{m.material=(i+1)/ROD_N<=k+.035?gripMat:rodMat;});}}
+  _b.set(_h.x-dx*dim.butt*Math.cos(el),_h.y-dim.butt*Math.sin(el),_h.z-dz*dim.butt*Math.cos(el));
+  _t0.set(_h.x+dx*(L-dim.butt)*Math.cos(el),_h.y+(L-dim.butt)*Math.sin(el),_h.z+dz*(L-dim.butt)*Math.cos(el));
   let ex,ey,ez;
   if(F.st==='fly'){const k=clamp(F.t/.9,0,1);ex=lerp(_t0.x,F.tx,k);ez=lerp(_t0.z,F.ty,k);ey=lerp(_t0.y,.05,k)+Math.sin(k*Math.PI)*Math.min(18,F.d0*.35);}
   else if(F.st==='fight'){const fp=fishPos();ex=fp[0];ez=fp[1];ey=.02;}
@@ -2538,9 +2587,14 @@ function updRod(t){
   for(let i=0;i<ROD_N;i++){bez(i/ROD_N,_rp);bez((i+1)/ROD_N,_rp2);_rd.subVectors(_rp2,_rp);const l=_rd.length()||1e-4;const m=ROD_SEG[i];m.position.copy(_rp);m.quaternion.setFromUnitVectors(_ry,_rd.multiplyScalar(1/l));m.scale.set(1,l,1);}
   for(const[k,g]of ROD_GUIDES){bez(k,_rp);bez(Math.min(1,k+.02),_rp2);_rd.subVectors(_rp2,_rp).normalize();g.position.copy(_rp).addScaledVector(_ry,-.012);g.quaternion.setFromUnitVectors(new V3(0,0,1),_rd);}
   // リール：グリップの少し先（竿の2割）の下。巻く速さ＝巻き速度÷1回転の糸の長さ、ドラグが出ると逆回転
-  bez(.2,_rp);bez(.24,_rp2);_rd.subVectors(_rp2,_rp).normalize();reel.position.copy(_rp);reel.quaternion.setFromUnitVectors(new V3(0,0,1),_rd);
-  {const rl=TBYID.get(S.reelId),cm=(rl&&rl.retrieveCmPerTurn||70)/100,dt2=Math.min(.05,t-(updRod._t||t));updRod._t=t;const reeling=F.st==='fight'?(F.hold&&!(F.fg&&F.fg.slipping)?1.2:0):lureWait()&&F.reelHold?S.spd:0;
-    reelAng+=reeling/cm*6.283*dt2;if(F.st==='fight'&&F.fg&&F.fg.slipping)spoolAng-=dt2*(9+Math.max(0,F.ten-F.fg.drag)*14);/* ドラグで糸が出る：出る勢いで逆回転 */reel.userData.handle.rotation.x=reelAng;reel.userData.spool.rotation.z=spoolAng+reelAng*.3;reel.userData.spool.position.z=.04+Math.sin(reelAng*.5)*.006;reel.userData.bail.visible=F.st!=='aim'&&F.st!=='fly';/* 投げる時はベールを起こす */}
+  const sT=dim.butt/L;bez(sT,_rp);bez(Math.min(1,sT+.03),_rp2);_rd.subVectors(_rp2,_rp).normalize();
+  {const fr=RIG.rodFrame([_rd.x,_rd.y,_rd.z],[0,1,0]),key=dim.bait+':'+sd.handle+':'+dim.reelScale.toFixed(2);if(key!==REELKEY){REELKEY=key;buildReel(dim,sd.handle);}
+    _mx.makeBasis(_va.set(-fr.right[0],-fr.right[1],-fr.right[2]),_vb.set(fr.up[0],fr.up[1],fr.up[2]),_vc.set(fr.fwd[0],fr.fwd[1],fr.fwd[2]));reel.quaternion.setFromRotationMatrix(_mx);reel.position.copy(_rp);RS.fr=fr;RS.seat=_rp.clone();}
+  {const rl=TBYID.get(S.reelId),cm=(rl&&rl.retrieveCmPerTurn||70)/100,dt2=Math.min(.05,t-(updRod._t||t));updRod._t=t;let reeling=0;if(F.st==='fight'){const d0=RS.pd==null?F.dist:RS.pd;reeling=F.hold&&!(F.fg&&F.fg.slipping)&&dt2>0?clamp((d0-F.dist)/dt2,0,3):0;RS.pd=F.dist;}else{RS.pd=null;reeling=lureWait()&&F.reelHold?S.spd:0;}
+    reelAng+=reeling/cm*6.283*dt2;if(F.st==='fight'&&F.fg&&F.fg.slipping)spoolAng-=dt2*(9+Math.max(0,F.ten-F.fg.drag)*14);/* ドラグで糸が出る：出る勢いで逆回転 */{const U=reel.userData,fd=U.dim.footDir;U.handle.rotation.x=(fd<0?-1:1)*reelAng;/* ハンドル：rig.js の reelPoints と同じ向きに回る */
+      if(!U.dim.bait){U.spool.rotation.z=spoolAng+reelAng*.3;U.spool.position.z=.04*U.dim.reelScale+Math.sin(reelAng*.5)*.006;/* スピニング：ローターが回りスプールが前後 */}else U.spool.rotation.x=-reelAng*2.4+spoolAng;
+      if(U.bail)U.bail.rotation.z=F.st==='aim'||F.st==='fly'?-1.2:0;/* 投げる時はベールを起こす */}}
+  rigArms(dim,sd,fishing,sT);
   const tension=F.st==='fight'?clamp(F.ten/F.lineKg,0,1):F.st==='bite'?.6:F.st==='fly'?.9:lureWaitOrBite()&&(F.reelHold||F.rodKick<.5)?.75:.08;RS.ten+=(tension-RS.ten)*Math.min(1,dtR*(tension>RS.ten?14:5));const sag=(1-RS.ten)*Math.min(4,F.d0*.08+.3);
   const pa=lineGeo.attributes.position.array;
   const vib=F.st==='fight'?Math.max(0,tension-.75)*.08:0;// 張り詰めた糸の震え
@@ -2872,12 +2926,15 @@ function applyGfx(){const g=gfx();resize();renderer.shadowMap.enabled=!!g.shadow
 function renderSettings(sb){let h='<h3 class="hd">画質</h3><div class="gfx">';
   for(const[k,g]of Object.entries(GFX_LV))h+=`<button data-gfx="${k}" class="${GFX===k?'on':''}"><b>${g.n}${GFX===k?'（使用中）':''}</b><span>${g.d}</span></button>`;
   h+=`</div><h3 class="hd">表示</h3><div class="gfx"><button id="fpsT" class="${FPS_ON?'on':''}"><b>FPS（1秒あたりの描画回数）を表示：${FPS_ON?'オン':'オフ'}</b><span>動作の重さの確認用。30以上が目安</span></button></div>
+    <h3 class="hd">リールのハンドル</h3><div class="seg">${[['auto','自動（スピニングは左・ベイトは右）'],['L','左ハンドル'],['R','右ハンドル']].map(([v,n])=>`<button data-hand="${v}" class="${(S.handle||'auto')===v?'on':''}">${n}</button>`).join('')}</div>
+    <p class="sub" style="font-size:12px">左ハンドルは右手で竿を持ち左手で巻く。右ハンドルはその逆。</p>
     <h3 class="hd">カメラの回転の速さ</h3><div class="seg">${[[.6,'遅い'],[1,'ふつう'],[1.5,'速い']].map(([v,n])=>`<button data-sens="${v}" class="${Math.abs(CAM_SENS-v)<.01?'on':''}">${n}</button>`).join('')}</div>
     <p class="sub" style="font-size:12px">画面をドラッグで向きを変える。上へドラッグで見上げる（水平から約80°まで）。</p>
     <h3 class="hd">そのほか</h3><div class="gfx"><a class="gfxA" href="legacy/2026-10-pre-visual/" target="_blank" rel="noopener"><button><b>改善前のバージョンを開く</b><span>グラフィック・UI改善の前の状態（比較用。セーブは共通）</span></button></a></div>
     <h3 class="hd">出典</h3><p class="sub" style="font-size:12px;line-height:1.6">横浜の地図（陸・道路・鉄道・建物の形・地名）：「国土地理院ベクトルタイル」を加工して作成（建物の高さは種類と大きさからの推定）。湘南の丘の高さ：「国土地理院 標高タイル」を加工して作成（標高20mより上だけ立体。木の配置はおおよそ）。海岸線：GSHHS/GSHHG。地図データがある場合は © OpenStreetMap contributors。魚の写真は図鑑の各写真に出典を表示。素材の一覧は docs/ASSETS.md。</p>`;
   sb.innerHTML=h;
   sb.querySelectorAll('[data-gfx]').forEach(b=>b.onclick=()=>{GFX=b.dataset.gfx;try{localStorage.setItem(GFX_KEY,GFX);}catch(e){}applyGfx();renderTab();toast(`画質：${gfx().n}`);});
+  sb.querySelectorAll('[data-hand]').forEach(b=>b.onclick=()=>{S.handle=b.dataset.hand==='auto'?undefined:b.dataset.hand;save();renderTab();toast('リールのハンドル：'+b.textContent);});
   sb.querySelectorAll('[data-sens]').forEach(b=>b.onclick=()=>{CAM_SENS=+b.dataset.sens;try{localStorage.setItem('hama-tsuri-camsens',String(CAM_SENS));}catch(e){}renderTab();});
   $('fpsT').onclick=()=>{FPS_ON=!FPS_ON;try{localStorage.setItem('hama-tsuri-fps',FPS_ON?'1':'0');}catch(e){}renderTab();};}
 function updFps(dt){fpsS.t+=dt;fpsS.n++;if(fpsS.t>=1){fpsS.v=fpsS.n/fpsS.t;fpsS.t=0;fpsS.n=0;
